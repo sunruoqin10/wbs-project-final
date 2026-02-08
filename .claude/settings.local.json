@@ -1,0 +1,19 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(npm run build:*)",
+      "Bash(npx vite build:*)",
+      "Bash(xcopy:*)",
+      "Bash(powershell:*)",
+      "Bash(mvn:*)",
+      "Bash(timeout:*)",
+      "Bash(curl:*)",
+      "Bash(netstat:*)",
+      "Bash(findstr:*)",
+      "Bash(taskkill:*)",
+      "mcp__MySQL__execute_sql",
+      "Bash(npm run dev:*)",
+      "Bash(npx vue-tsc:*)"
+    ]
+  }
+}

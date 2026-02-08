@@ -1,0 +1,93 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+        "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.wbs.project.mapper.ProjectMapper">
+
+    <resultMap id="BaseResultMap" type="com.wbs.project.entity.Project">
+        <id column="id" property="id"/>
+        <result column="name" property="name"/>
+        <result column="description" property="description"/>
+        <result column="status" property="status"/>
+        <result column="priority" property="priority"/>
+        <result column="start_date" property="startDate"/>
+        <result column="end_date" property="endDate"/>
+        <result column="progress" property="progress"/>
+        <result column="owner_id" property="ownerId"/>
+        <result column="color" property="color"/>
+        <result column="created_at" property="createdAt"/>
+        <result column="updated_at" property="updatedAt"/>
+    </resultMap>
+
+    <sql id="Base_Column_List">
+        id, name, description, status, priority, start_date, end_date, progress, owner_id, color, created_at, updated_at
+    </sql>
+
+    <select id="selectAll" resultMap="BaseResultMap">
+        SELECT <include refid="Base_Column_List"/>
+        FROM sys_project
+        ORDER BY created_at DESC
+    </select>
+
+    <select id="selectById" resultMap="BaseResultMap">
+        SELECT <include refid="Base_Column_List"/>
+        FROM sys_project
+        WHERE id = #{id}
+    </select>
+
+    <select id="selectByStatus" resultMap="BaseResultMap">
+        SELECT <include refid="Base_Column_List"/>
+        FROM sys_project
+        WHERE status = #{status}
+        ORDER BY created_at DESC
+    </select>
+
+    <select id="selectByOwnerId" resultMap="BaseResultMap">
+        SELECT <include refid="Base_Column_List"/>
+        FROM sys_project
+        WHERE owner_id = #{ownerId}
+        ORDER BY created_at DESC
+    </select>
+
+    <select id="selectByMemberId" resultMap="BaseResultMap">
+        SELECT DISTINCT p.<include refid="Base_Column_List"/>
+        FROM sys_project p
+        INNER JOIN sys_project_member pm ON p.id = pm.project_id
+        WHERE pm.user_id = #{userId}
+        ORDER BY p.created_at DESC
+    </select>
+
+    <insert id="insert" parameterType="com.wbs.project.entity.Project">
+        INSERT INTO sys_project (id, name, description, status, priority, start_date, end_date, progress, owner_id, color, created_at, updated_at)
+        VALUES (#{id}, #{name}, #{description}, #{status}, #{priority}, #{startDate}, #{endDate}, #{progress}, #{ownerId}, #{color}, #{createdAt}, #{updatedAt})
+    </insert>
+
+    <update id="update" parameterType="com.wbs.project.entity.Project">
+        UPDATE sys_project
+        <set>
+            <if test="name != null">name = #{name},</if>
+            <if test="description != null">description = #{description},</if>
+            <if test="status != null">status = #{status},</if>
+            <if test="priority != null">priority = #{priority},</if>
+            <if test="startDate != null">start_date = #{startDate},</if>
+            <if test="endDate != null">end_date = #{endDate},</if>
+            <if test="progress != null">progress = #{progress},</if>
+            <if test="ownerId != null">owner_id = #{ownerId},</if>
+            <if test="color != null">color = #{color},</if>
+            updated_at = #{updatedAt}
+        </set>
+        WHERE id = #{id}
+    </update>
+
+    <delete id="deleteById">
+        DELETE FROM sys_project WHERE id = #{id}
+    </delete>
+
+    <select id="countTotal" resultType="int">
+        SELECT COUNT(*) FROM sys_project
+    </select>
+
+    <select id="countByStatus" resultType="int">
+        SELECT COUNT(*) FROM sys_project WHERE status = #{status}
+    </select>
+
+</mapper>
