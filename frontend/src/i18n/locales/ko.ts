@@ -5,6 +5,12 @@ export default {
     flag: '🇰🇷'
   },
 
+  // 언어 전환기
+  languageSwitcher: {
+    selectLanguage: '언어 선택',
+    currentLanguage: '현재 언어'
+  },
+
   // 공통
   common: {
     and: ' 및',
@@ -498,7 +504,7 @@ export default {
       projectExcel: '프로젝트 Excel',
       projectExcelDesc: '프로젝트 목록 내보내기',
       statisticsExcel: '통계 Excel',
-      statisticsExcelDesc: '통계 데이터 내보내기',
+      statisticsExcelDesc: '통계 데이터 및 각 프로젝트 간트 차트 내보내기',
       comprehensiveReport: '종합 보고서',
       comprehensiveReportDesc: '모든 데이터 포함'
     },

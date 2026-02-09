@@ -5,6 +5,12 @@ export default {
     flag: '🇨🇳'
   },
 
+  // 语言切换器
+  languageSwitcher: {
+    selectLanguage: '选择语言',
+    currentLanguage: '当前语言'
+  },
+
   // 通用
   common: {
     and: '和',
@@ -498,7 +504,7 @@ export default {
       projectExcel: '项目 Excel',
       projectExcelDesc: '导出项目列表',
       statisticsExcel: '统计 Excel',
-      statisticsExcelDesc: '导出统计数据',
+      statisticsExcelDesc: '导出统计数据及各项目甘特图',
       comprehensiveReport: '综合报表',
       comprehensiveReportDesc: '包含所有数据'
     },

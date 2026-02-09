@@ -290,25 +290,50 @@ export const exportToExcel = {
     XLSX.writeFile(wb, filename);
   },
 
-  // Export statistics to Excel
-  statistics: (stats: any, filename = 'statistics.xlsx') => {
-    const data = [
-      { '指标': '总项目数', '数值': stats.totalProjects || 0, '说明': '系统中所有项目总数' },
-      { '指标': '进行中项目', '数值': stats.activeProjects || 0, '说明': '状态为进行中的项目' },
-      { '指标': '已完成项目', '数值': stats.completedProjects || 0, '说明': '状态为已完成的项目' },
-      { '指标': '总任务数', '数值': stats.totalTasks || 0, '说明': '系统中所有任务总数' },
-      { '指标': '已完成任务', '数值': stats.completedTasks || 0, '说明': '状态为已完成的任务' },
-      { '指标': '进行中任务', '数值': stats.inProgressTasks || 0, '说明': '状态为进行中的任务' },
-      { '指标': '团队成员', '数值': stats.totalMembers || 0, '说明': '系统中注册的成员数量' },
-      { '指标': '完成率', '数值': `${stats.completionRate || 0}%`, '说明': '任务完成百分比' }
-    ];
-
-    const ws = XLSX.utils.json_to_sheet(data);
+  // Export statistics to Excel with project Gantt charts
+  statistics: (data: {
+    stats: any,
+    projects?: Project[],
+    tasks?: Task[],
+    users?: User[]
+  }, filename = 'statistics.xlsx') => {
     const wb = XLSX.utils.book_new();
-    XLSX.utils.book_append_sheet(wb, ws, '统计数据');
 
-    // Set column widths
-    ws['!cols'] = [{ wch: 15 }, { wch: 15 }, { wch: 30 }];
+    // Sheet 1: Statistics Summary
+    const statsData = [
+      { '指标': '总项目数', '数值': data.stats.totalProjects || 0, '说明': '系统中所有项目总数' },
+      { '指标': '进行中项目', '数值': data.stats.activeProjects || 0, '说明': '状态为进行中的项目' },
+      { '指标': '已完成项目', '数值': data.stats.completedProjects || 0, '说明': '状态为已完成的项目' },
+      { '指标': '总任务数', '数值': data.stats.totalTasks || 0, '说明': '系统中所有任务总数' },
+      { '指标': '已完成任务', '数值': data.stats.completedTasks || 0, '说明': '状态为已完成的任务' },
+      { '指标': '进行中任务', '数值': data.stats.inProgressTasks || 0, '说明': '状态为进行中的任务' },
+      { '指标': '团队成员', '数值': data.stats.totalMembers || 0, '说明': '系统中注册的成员数量' },
+      { '指标': '完成率', '数值': `${data.stats.completionRate || 0}%`, '说明': '任务完成百分比' }
+    ];
+    const statsWs = XLSX.utils.json_to_sheet(statsData);
+    statsWs['!cols'] = [{ wch: 15 }, { wch: 15 }, { wch: 30 }];
+    XLSX.utils.book_append_sheet(wb, statsWs, '统计数据');
+
+    // Add Gantt chart sheets for each project if projects data is available
+    if (data.projects && data.projects.length > 0) {
+      for (const project of data.projects) {
+        const projectTasks = data.tasks?.filter(t => t.projectId === project.id) || [];
+
+        if (projectTasks.length > 0) {
+          // Build hierarchical task list for Gantt chart
+          const ganttData = buildGanttData(projectTasks, data.users || []);
+
+          if (ganttData.length > 0) {
+            // Create Gantt chart sheet
+            const ganttWs = createGanttSheet(project.name, ganttData);
+
+            // Sanitize sheet name (Excel sheet names have restrictions)
+            const sheetName = sanitizeSheetName(project.name);
+            XLSX.utils.book_append_sheet(wb, ganttWs, sheetName);
+          }
+        }
+      }
+    }
 
     XLSX.writeFile(wb, filename);
   },
@@ -409,4 +434,139 @@ function getRoleLabel(role: string): string {
     viewer: '观察者'
   };
   return labels[normalizedRole] || role;
+}
+
+// Build hierarchical Gantt chart data from tasks
+function buildGanttData(tasks: Task[], users: User[]): any[] {
+  const result: any[] = [];
+  const taskMap = new Map<string, Task>();
+  const childrenMap = new Map<string, Task[]>();
+
+  // Build task map and children map
+  tasks.forEach(task => {
+    taskMap.set(task.id, task);
+    if (task.parentTaskId) {
+      if (!childrenMap.has(task.parentTaskId)) {
+        childrenMap.set(task.parentTaskId, []);
+      }
+      childrenMap.get(task.parentTaskId)!.push(task);
+    }
+  });
+
+  // Find root tasks (tasks without parent)
+  const rootTasks = tasks.filter(t => !t.parentTaskId);
+
+  // Recursively build tree structure
+  const buildTree = (task: Task, level: number): void => {
+    const assignee = users.find(u => u.id === task.assigneeId);
+    const row: any = {
+      '层级': level,
+      '任务ID': task.id,
+      '任务名称': task.title,
+      '状态': getStatusLabel(task.status),
+      '优先级': getPriorityLabel(task.priority),
+      '负责人': assignee?.name || '未分配',
+      '开始日期': task.startDate,
+      '结束日期': task.endDate,
+      '工期(天)': calculateDuration(task.startDate, task.endDate),
+      '进度': `${task.progress}%`,
+      '预估工时': task.estimatedHours || '-',
+      '实际工时': task.actualHours || '-'
+    };
+
+    // Add indentation based on level
+    row['任务名称'] = '  '.repeat(level) + row['任务名称'];
+
+    result.push(row);
+
+    // Process children
+    const children = childrenMap.get(task.id) || [];
+    children.sort((a, b) => a.startDate.localeCompare(b.startDate));
+    children.forEach(child => buildTree(child, level + 1));
+  };
+
+  // Sort root tasks by start date and build tree
+  rootTasks.sort((a, b) => a.startDate.localeCompare(b.startDate));
+  rootTasks.forEach(task => buildTree(task, 0));
+
+  return result;
+}
+
+// Calculate duration in days between two dates
+function calculateDuration(startDate: string, endDate: string): number {
+  const start = new Date(startDate);
+  const end = new Date(endDate);
+  const diffTime = Math.abs(end.getTime() - start.getTime());
+  return Math.ceil(diffTime / (1000 * 60 * 60 * 24));
+}
+
+// Create a Gantt chart worksheet
+function createGanttSheet(projectName: string, ganttData: any[]): XLSX.WorkSheet {
+  // Add project info as header
+  const header = [
+    { '指标': '项目名称', '数值': projectName, '': '' },
+    { '指标': '', '数值': '', '': '' },
+    { '指标': '', '数值': '', '': '' }
+  ];
+
+  // Add column headers
+  const columnHeaders = [
+    {
+      '层级': '层级',
+      '任务ID': '任务ID',
+      '任务名称': '任务名称',
+      '状态': '状态',
+      '优先级': '优先级',
+      '负责人': '负责人',
+      '开始日期': '开始日期',
+      '结束日期': '结束日期',
+      '工期(天)': '工期(天)',
+      '进度': '进度',
+      '预估工时': '预估工时',
+      '实际工时': '实际工时'
+    }
+  ];
+
+  const allData = [...header, ...columnHeaders, ...ganttData];
+
+  const ws = XLSX.utils.json_to_sheet(allData);
+
+  // Set column widths
+  ws['!cols'] = [
+    { wch: 6 },   // 层级
+    { wch: 15 },  // 任务ID
+    { wch: 40 },  // 任务名称
+    { wch: 10 },  // 状态
+    { wch: 10 },  // 优先级
+    { wch: 15 },  // 负责人
+    { wch: 12 },  // 开始日期
+    { wch: 12 },  // 结束日期
+    { wch: 10 },  // 工期
+    { wch: 8 },   // 进度
+    { wch: 10 },  // 预估工时
+    { wch: 10 }   // 实际工时
+  ];
+
+  return ws;
+}
+
+// Sanitize sheet name to comply with Excel restrictions
+// Max length 31, no special characters: \ / ? * [ ]
+function sanitizeSheetName(name: string): string {
+  let sanitized = name
+    .replace(/[\\/?*[\]]/g, '') // Remove invalid characters
+    .replace(/\s+/g, ' ')        // Replace multiple spaces with single space
+    .trim();                     // Remove leading/trailing spaces
+
+  // Truncate to 31 characters (Excel limit)
+  if (sanitized.length > 31) {
+    sanitized = sanitized.substring(0, 31);
+  }
+
+  // If empty after sanitization, use a default name
+  if (!sanitized) {
+    sanitized = '项目';
+  }
+
+  return sanitized;
 }

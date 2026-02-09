@@ -456,8 +456,16 @@ const exportProjectsExcel = () => {
 
 const exportStatisticsExcel = () => {
   try {
-    exportToExcel.statistics(statistics.value, `${t('reports.export.statisticsExcel')}_${getTimestamp()}.xlsx`);
-    alert(`${t('reports.export.statisticsExcelDesc')}${t('reports.messages.exportSuccess')}`);
+    exportToExcel.statistics(
+      {
+        stats: statistics.value,
+        projects: projectStore.projects,
+        tasks: taskStore.tasks,
+        users: userStore.users
+      },
+      `${t('reports.export.statisticsExcel')}_${getTimestamp()}.xlsx`
+    );
+    alert(`${t('reports.messages.exportSuccess')}`);
   } catch (error) {
     console.error('Export failed:', error);
     alert(t('reports.messages.exportFailed'));

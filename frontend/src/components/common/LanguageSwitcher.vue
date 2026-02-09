@@ -16,7 +16,7 @@
     <transition name="dropdown">
       <div v-if="isOpen" class="dropdown-menu">
         <div class="dropdown-header">
-          <span class="dropdown-title">{{ t('settings.language') }}</span>
+          <span class="dropdown-title">{{ t('languageSwitcher.selectLanguage') }}</span>
         </div>
         <div class="dropdown-content">
           <button
