@@ -3,8 +3,8 @@
     <div class="space-y-6">
       <!-- Page Header -->
       <div>
-        <h1 class="text-2xl font-bold text-secondary-900">报表统计</h1>
-        <p class="mt-1 text-sm text-secondary-600">查看项目数据和统计信息</p>
+        <h1 class="text-2xl font-bold text-secondary-900">{{ $t('reports.title') }}</h1>
+        <p class="mt-1 text-sm text-secondary-600">{{ $t('reports.subtitle') }}</p>
       </div>
 
       <!-- Summary Stats -->
@@ -22,7 +22,7 @@
               </svg>
             </div>
             <div class="ml-4">
-              <p class="text-sm font-medium text-secondary-600">总项目数</p>
+              <p class="text-sm font-medium text-secondary-600">{{ $t('reports.stats.totalProjects') }}</p>
               <p class="text-2xl font-semibold text-secondary-900">{{ statistics.totalProjects }}</p>
             </div>
           </div>
@@ -41,7 +41,7 @@
               </svg>
             </div>
             <div class="ml-4">
-              <p class="text-sm font-medium text-secondary-600">完成率</p>
+              <p class="text-sm font-medium text-secondary-600">{{ $t('reports.stats.completionRate') }}</p>
               <p class="text-2xl font-semibold text-secondary-900">{{ completionRate }}%</p>
             </div>
           </div>
@@ -60,7 +60,7 @@
               </svg>
             </div>
             <div class="ml-4">
-              <p class="text-sm font-medium text-secondary-600">总任务数</p>
+              <p class="text-sm font-medium text-secondary-600">{{ $t('reports.stats.totalTasks') }}</p>
               <p class="text-2xl font-semibold text-secondary-900">{{ statistics.totalTasks }}</p>
             </div>
           </div>
@@ -79,7 +79,7 @@
               </svg>
             </div>
             <div class="ml-4">
-              <p class="text-sm font-medium text-secondary-600">进行中的任务数</p>
+              <p class="text-sm font-medium text-secondary-600">{{ $t('reports.stats.inProgressTasks') }}</p>
               <p class="text-2xl font-semibold text-secondary-900">{{ statistics.inProgressTasks }}</p>
             </div>
           </div>
@@ -91,7 +91,7 @@
         <!-- Project Status Distribution -->
         <Card>
           <template #header>
-            <h3 class="text-lg font-semibold text-secondary-900">项目状态分布</h3>
+            <h3 class="text-lg font-semibold text-secondary-900">{{ $t('reports.charts.projectStatusDistribution') }}</h3>
           </template>
           <div class="h-80" ref="projectStatusChartRef"></div>
         </Card>
@@ -99,7 +99,7 @@
         <!-- Task Priority Distribution -->
         <Card>
           <template #header>
-            <h3 class="text-lg font-semibold text-secondary-900">任务优先级分布</h3>
+            <h3 class="text-lg font-semibold text-secondary-900">{{ $t('reports.charts.taskPriorityDistribution') }}</h3>
           </template>
           <div class="h-80" ref="taskPriorityChartRef"></div>
         </Card>
@@ -107,7 +107,7 @@
         <!-- Project Completion Progress -->
         <Card>
           <template #header>
-            <h3 class="text-lg font-semibold text-secondary-900">项目完成进度</h3>
+            <h3 class="text-lg font-semibold text-secondary-900">{{ $t('reports.charts.projectCompletionProgress') }}</h3>
           </template>
           <div class="h-80" ref="projectProgressChartRef"></div>
         </Card>
@@ -115,7 +115,7 @@
         <!-- Team Performance -->
         <Card>
           <template #header>
-            <h3 class="text-lg font-semibold text-secondary-900">团队绩效</h3>
+            <h3 class="text-lg font-semibold text-secondary-900">{{ $t('reports.charts.teamPerformance') }}</h3>
           </template>
           <div class="h-80" ref="teamPerformanceChartRef"></div>
         </Card>
@@ -124,7 +124,7 @@
       <!-- Export Options -->
       <Card>
         <template #header>
-          <h3 class="text-lg font-semibold text-secondary-900">导出报表</h3>
+          <h3 class="text-lg font-semibold text-secondary-900">{{ $t('reports.export.title') }}</h3>
         </template>
         <div class="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3">
           <button @click="exportProjectsExcel" class="flex items-center justify-center gap-2 rounded-lg border border-secondary-200 p-4 transition-colors hover:bg-secondary-50">
@@ -132,8 +132,8 @@
               <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 10v6m0 0l-3-3m3 3l3-3m2 8H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
             </svg>
             <div class="text-left">
-              <div class="font-medium text-secondary-900">项目 Excel</div>
-              <div class="text-xs text-secondary-500">导出项目列表</div>
+              <div class="font-medium text-secondary-900">{{ $t('reports.export.projectExcel') }}</div>
+              <div class="text-xs text-secondary-500">{{ $t('reports.export.projectExcelDesc') }}</div>
             </div>
           </button>
 
@@ -142,8 +142,8 @@
               <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 17v-2m3 2v-4m3 4v-6m2 10H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
             </svg>
             <div class="text-left">
-              <div class="font-medium text-secondary-900">统计 Excel</div>
-              <div class="text-xs text-secondary-500">导出统计数据</div>
+              <div class="font-medium text-secondary-900">{{ $t('reports.export.statisticsExcel') }}</div>
+              <div class="text-xs text-secondary-500">{{ $t('reports.export.statisticsExcelDesc') }}</div>
             </div>
           </button>
 
@@ -152,8 +152,8 @@
               <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 17v-2m3 2v-4m3 4v-6m2 10H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
             </svg>
             <div class="text-left">
-              <div class="font-medium text-primary-900">综合报表</div>
-              <div class="text-xs text-primary-600">包含所有数据</div>
+              <div class="font-medium text-primary-900">{{ $t('reports.export.comprehensiveReport') }}</div>
+              <div class="text-xs text-primary-600">{{ $t('reports.export.comprehensiveReportDesc') }}</div>
             </div>
           </button>
         </div>
@@ -164,6 +164,7 @@
 
 <script setup lang="ts">
 import { ref, computed, onMounted } from 'vue';
+import { useI18n } from 'vue-i18n';
 import * as echarts from 'echarts';
 import MainLayout from '@/components/layout/MainLayout.vue';
 import Card from '@/components/common/Card.vue';
@@ -172,6 +173,7 @@ import { useTaskStore } from '@/stores/task';
 import { useUserStore } from '@/stores/user';
 import { exportToExcel } from '@/utils/export';
 
+const { t } = useI18n();
 const projectStore = useProjectStore();
 const taskStore = useTaskStore();
 const userStore = useUserStore();
@@ -213,10 +215,10 @@ const initProjectStatusChart = () => {
 
   const chart = echarts.init(projectStatusChartRef.value);
   const statusData = [
-    { value: projectStore.projects.filter(p => p.status === 'planning').length, name: '计划中', itemStyle: { color: '#0891b2' } },
-    { value: projectStore.projects.filter(p => p.status === 'active').length, name: '进行中', itemStyle: { color: '#3b82f6' } },
-    { value: projectStore.projects.filter(p => p.status === 'completed').length, name: '已完成', itemStyle: { color: '#10b981' } },
-    { value: projectStore.projects.filter(p => p.status === 'on-hold').length, name: '已暂停', itemStyle: { color: '#f59e0b' } }
+    { value: projectStore.projects.filter(p => p.status === 'planning').length, name: t('reports.statuses.planning'), itemStyle: { color: '#0891b2' } },
+    { value: projectStore.projects.filter(p => p.status === 'active').length, name: t('reports.statuses.active'), itemStyle: { color: '#3b82f6' } },
+    { value: projectStore.projects.filter(p => p.status === 'completed').length, name: t('reports.statuses.completed'), itemStyle: { color: '#10b981' } },
+    { value: projectStore.projects.filter(p => p.status === 'on-hold').length, name: t('reports.statuses.onHold'), itemStyle: { color: '#f59e0b' } }
   ];
 
   const option = {
@@ -229,7 +231,7 @@ const initProjectStatusChart = () => {
     },
     series: [
       {
-        name: '项目状态',
+        name: t('reports.charts.projectStatus'),
         type: 'pie',
         radius: ['40%', '70%'],
         avoidLabelOverlap: false,
@@ -268,10 +270,10 @@ const initTaskPriorityChart = () => {
   const leafTasks = taskStore.tasks.filter(t => leafTaskIds.has(t.id));
 
   const priorityData = [
-    { value: leafTasks.filter(t => t.priority === 'low').length, name: '低', itemStyle: { color: '#64748b' } },
-    { value: leafTasks.filter(t => t.priority === 'medium').length, name: '中', itemStyle: { color: '#0891b2' } },
-    { value: leafTasks.filter(t => t.priority === 'high').length, name: '高', itemStyle: { color: '#d97706' } },
-    { value: leafTasks.filter(t => t.priority === 'urgent').length, name: '紧急', itemStyle: { color: '#dc2626' } }
+    { value: leafTasks.filter(t => t.priority === 'low').length, name: t('reports.priorities.low'), itemStyle: { color: '#64748b' } },
+    { value: leafTasks.filter(t => t.priority === 'medium').length, name: t('reports.priorities.medium'), itemStyle: { color: '#0891b2' } },
+    { value: leafTasks.filter(t => t.priority === 'high').length, name: t('reports.priorities.high'), itemStyle: { color: '#d97706' } },
+    { value: leafTasks.filter(t => t.priority === 'urgent').length, name: t('reports.priorities.urgent'), itemStyle: { color: '#dc2626' } }
   ];
 
   const option = {
@@ -284,7 +286,7 @@ const initTaskPriorityChart = () => {
     },
     series: [
       {
-        name: '任务优先级',
+        name: t('reports.charts.taskPriority'),
         type: 'pie',
         radius: ['40%', '70%'],
         avoidLabelOverlap: false,
@@ -340,11 +342,11 @@ const initProjectProgressChart = () => {
     yAxis: {
       type: 'value',
       max: 100,
-      name: '进度(%)'
+      name: `${t('reports.charts.progress')}(%`
     },
     series: [
       {
-        name: '进度',
+        name: t('reports.charts.progress'),
         type: 'bar',
         data: projectStore.projects.map(p => ({
           value: p.progress,
@@ -383,7 +385,7 @@ const initTeamPerformanceChart = () => {
       }
     },
     legend: {
-      data: ['已完成', '进行中']
+      data: [t('reports.charts.completed'), t('reports.charts.inProgress')]
     },
     grid: {
       left: '3%',
@@ -397,18 +399,18 @@ const initTeamPerformanceChart = () => {
     },
     yAxis: {
       type: 'value',
-      name: '任务数'
+      name: t('reports.charts.taskCount')
     },
     series: [
       {
-        name: '已完成',
+        name: t('reports.charts.completed'),
         type: 'bar',
         stack: 'total',
         data: userData.map(u => u.completed),
         itemStyle: { color: '#10b981' }
       },
       {
-        name: '进行中',
+        name: t('reports.charts.inProgress'),
         type: 'bar',
         stack: 'total',
         data: userData.map(u => u.inProgress),
@@ -440,31 +442,31 @@ onMounted(async () => {
 // Export functions
 const exportProjectsExcel = () => {
   if (projectStore.projects.length === 0) {
-    alert('暂无项目数据可导出！');
+    alert(t('reports.messages.noProjectData'));
     return;
   }
   try {
-    exportToExcel.projects(projectStore.projects, `项目列表_${getTimestamp()}.xlsx`);
-    alert('项目列表导出成功！');
+    exportToExcel.projects(projectStore.projects, `${t('reports.export.projectExcel')}_${getTimestamp()}.xlsx`);
+    alert(`${t('reports.export.projectExcelDesc')}${t('reports.messages.exportSuccess')}`);
   } catch (error) {
-    console.error('导出失败:', error);
-    alert('导出失败，请稍后重试！');
+    console.error('Export failed:', error);
+    alert(t('reports.messages.exportFailed'));
   }
 };
 
 const exportStatisticsExcel = () => {
   try {
-    exportToExcel.statistics(statistics.value, `统计数据_${getTimestamp()}.xlsx`);
-    alert('统计数据导出成功！');
+    exportToExcel.statistics(statistics.value, `${t('reports.export.statisticsExcel')}_${getTimestamp()}.xlsx`);
+    alert(`${t('reports.export.statisticsExcelDesc')}${t('reports.messages.exportSuccess')}`);
   } catch (error) {
-    console.error('导出失败:', error);
-    alert('导出失败，请稍后重试！');
+    console.error('Export failed:', error);
+    alert(t('reports.messages.exportFailed'));
   }
 };
 
 const exportComprehensive = () => {
   if (projectStore.projects.length === 0) {
-    alert('暂无数据可导出！');
+    alert(t('reports.messages.noData'));
     return;
   }
 
@@ -477,12 +479,12 @@ const exportComprehensive = () => {
         users: userStore.users,
         stats: statistics.value
       },
-      `综合报表_${getTimestamp()}.xlsx`
+      `${t('reports.export.comprehensiveReport')}_${getTimestamp()}.xlsx`
     );
-    alert('综合报表导出成功！');
+    alert(`${t('reports.export.comprehensiveReport')}${t('reports.messages.exportSuccess')}`);
   } catch (error) {
-    console.error('导出失败:', error);
-    alert('导出失败，请稍后重试！');
+    console.error('Export failed:', error);
+    alert(t('reports.messages.exportFailed'));
   }
 };
 

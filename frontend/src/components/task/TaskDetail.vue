@@ -10,7 +10,7 @@
             v-if="hasSubtasks"
             class="rounded-md bg-secondary-100 px-2 py-1 text-xs text-secondary-600"
           >
-            状态由子任务自动确定
+            {{ t('taskDetail.statusAutoCalculated') }}
           </div>
         </div>
       </div>
@@ -44,7 +44,7 @@
 
     <!-- Description -->
     <div v-if="task.description">
-      <h4 class="mb-2 text-sm font-medium text-secondary-700">描述</h4>
+      <h4 class="mb-2 text-sm font-medium text-secondary-700">{{ t('taskDetail.description') }}</h4>
       <p class="text-secondary-600 whitespace-pre-wrap">{{ task.description }}</p>
     </div>
 
@@ -52,7 +52,7 @@
     <div class="grid grid-cols-2 gap-4">
       <!-- Assignee -->
       <div v-if="assignee">
-        <h4 class="mb-2 text-sm font-medium text-secondary-700">负责人</h4>
+        <h4 class="mb-2 text-sm font-medium text-secondary-700">{{ t('common.owner') }}</h4>
         <div class="flex items-center gap-3">
           <img
             :src="assignee.avatar"
@@ -68,13 +68,13 @@
 
       <!-- Priority -->
       <div>
-        <h4 class="mb-2 text-sm font-medium text-secondary-700">优先级</h4>
+        <h4 class="mb-2 text-sm font-medium text-secondary-700">{{ t('common.priority') }}</h4>
         <Badge :variant="priorityVariant">{{ priorityLabel }}</Badge>
       </div>
 
       <!-- Start Date -->
       <div>
-        <h4 class="mb-2 text-sm font-medium text-secondary-700">开始日期</h4>
+        <h4 class="mb-2 text-sm font-medium text-secondary-700">{{ t('common.startDate') }}</h4>
         <div class="flex items-center gap-2 text-secondary-600">
           <svg class="h-5 w-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" />
@@ -85,13 +85,13 @@
           v-if="hasSubtasks"
           class="mt-2 rounded-md bg-blue-50 px-3 py-2 text-xs text-blue-600"
         >
-          开始时间由子任务自动计算（最早子任务的开始时间）
+          {{ t('taskDetail.startDateAutoCalculated') }}
         </div>
       </div>
 
       <!-- End Date -->
       <div>
-        <h4 class="mb-2 text-sm font-medium text-secondary-700">结束日期</h4>
+        <h4 class="mb-2 text-sm font-medium text-secondary-700">{{ t('common.endDate') }}</h4>
         <div class="flex items-center gap-2 text-secondary-600">
           <svg class="h-5 w-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" />
@@ -102,7 +102,7 @@
           v-if="hasSubtasks"
           class="mt-2 rounded-md bg-blue-50 px-3 py-2 text-xs text-blue-600"
         >
-          结束时间由子任务自动计算（最晚子任务的结束时间）
+          {{ t('taskDetail.endDateAutoCalculated') }}
         </div>
       </div>
     </div>
@@ -110,7 +110,7 @@
     <!-- Progress -->
     <div>
       <div class="mb-2 flex items-center justify-between">
-        <h4 class="text-sm font-medium text-secondary-700">进度</h4>
+        <h4 class="text-sm font-medium text-secondary-700">{{ t('common.progress') }}</h4>
         <span class="text-sm font-medium text-secondary-900">{{ displayProgress }}%</span>
       </div>
       <ProgressBar :value="displayProgress" />
@@ -118,31 +118,31 @@
         v-if="hasSubtasks"
         class="mt-2 rounded-md bg-secondary-100 px-3 py-2 text-xs text-secondary-600"
       >
-        此任务有子任务，进度由子任务自动汇总计算
+        {{ t('taskDetail.progressAutoCalculated') }}
       </div>
       <div
         v-if="task.status === 'done' && !hasSubtasks"
         class="mt-2 rounded-md bg-green-50 px-3 py-2 text-xs text-green-600"
       >
-        已完成状态的任务进度固定为100%
+        {{ t('taskDetail.progressFixedWhenDone') }}
       </div>
     </div>
 
     <!-- Hours -->
     <div v-if="task.estimatedHours || task.actualHours" class="grid grid-cols-2 gap-4">
       <div v-if="task.estimatedHours">
-        <h4 class="mb-2 text-sm font-medium text-secondary-700">预估工时</h4>
+        <h4 class="mb-2 text-sm font-medium text-secondary-700">{{ t('taskDetail.estimatedHours') }}</h4>
         <p class="text-lg font-semibold text-secondary-900">{{ task.estimatedHours }}h</p>
       </div>
       <div v-if="task.actualHours">
-        <h4 class="mb-2 text-sm font-medium text-secondary-700">实际工时</h4>
+        <h4 class="mb-2 text-sm font-medium text-secondary-700">{{ t('taskDetail.actualHours') }}</h4>
         <p class="text-lg font-semibold text-secondary-900">{{ task.actualHours }}h</p>
       </div>
     </div>
 
     <!-- Tags -->
     <div v-if="task.tags && task.tags.length > 0">
-      <h4 class="mb-2 text-sm font-medium text-secondary-700">标签</h4>
+      <h4 class="mb-2 text-sm font-medium text-secondary-700">{{ t('common.tags') }}</h4>
       <div class="flex flex-wrap gap-2">
         <span
           v-for="tag in task.tags"
@@ -157,7 +157,7 @@
     <!-- Subtasks -->
     <div>
       <div class="mb-3 flex items-center justify-between">
-        <h4 class="text-sm font-medium text-secondary-700">子任务 ({{ subtasks.length }})</h4>
+        <h4 class="text-sm font-medium text-secondary-700">{{ t('taskDetail.subtasks') }} ({{ subtasks.length }})</h4>
         <Button
           variant="secondary"
           size="sm"
@@ -166,7 +166,7 @@
           <svg class="mr-1 h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4" />
           </svg>
-          添加子任务
+          {{ t('taskDetail.addSubtask') }}
         </Button>
       </div>
 
@@ -199,13 +199,13 @@
       </div>
 
       <div v-else class="rounded-lg border-2 border-dashed border-secondary-200 p-6 text-center text-sm text-secondary-500">
-        暂无子任务，点击上方按钮添加
+        {{ t('taskDetail.noSubtasks') }}
       </div>
     </div>
 
     <!-- Attachments -->
     <div v-if="task.attachments && task.attachments.length > 0">
-      <h4 class="mb-3 text-sm font-medium text-secondary-700">附件 ({{ task.attachments.length }})</h4>
+      <h4 class="mb-3 text-sm font-medium text-secondary-700">{{ t('taskDetail.attachments') }} ({{ task.attachments.length }})</h4>
       <div class="space-y-2">
         <div
           v-for="attachment in task.attachments"
@@ -227,7 +227,7 @@
             rel="noopener noreferrer"
             class="text-sm font-medium text-primary-600 hover:text-primary-700"
           >
-            下载
+            {{ t('taskDetail.download') }}
           </a>
         </div>
       </div>
@@ -235,7 +235,7 @@
 
     <!-- Comments -->
     <div v-if="task.comments && task.comments.length > 0">
-      <h4 class="mb-3 text-sm font-medium text-secondary-700">评论 ({{ task.comments.length }})</h4>
+      <h4 class="mb-3 text-sm font-medium text-secondary-700">{{ t('taskDetail.comments') }} ({{ task.comments.length }})</h4>
       <div class="space-y-4">
         <div
           v-for="comment in task.comments"
@@ -265,13 +265,13 @@
         <svg class="mr-2 h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
           <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" />
         </svg>
-        编辑
+        {{ t('taskDetail.editTask') }}
       </Button>
       <Button variant="danger" @click="handleDelete">
         <svg class="mr-2 h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
           <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
         </svg>
-        删除
+        {{ t('taskDetail.deleteTask') }}
       </Button>
     </div>
   </div>
@@ -279,12 +279,14 @@
 
 <script setup lang="ts">
 import { computed } from 'vue';
+import { useI18n } from 'vue-i18n';
 import Badge from '@/components/common/Badge.vue';
 import ProgressBar from '@/components/common/ProgressBar.vue';
 import Button from '@/components/common/Button.vue';
 import type { Task } from '@/types';
 import { useUserStore } from '@/stores/user';
 import { useTaskStore } from '@/stores/task';
+import { currentLocale } from '@/i18n';
 import dayjs from 'dayjs';
 
 interface Props {
@@ -300,6 +302,7 @@ interface Emits {
 
 const props = defineProps<Props>();
 const emit = defineEmits<Emits>();
+const { t } = useI18n();
 const userStore = useUserStore();
 const taskStore = useTaskStore();
 
@@ -351,9 +354,9 @@ const assignee = computed(() => {
 
 const statusLabel = computed(() => {
   const labels: Record<string, string> = {
-    'todo': '待办',
-    'in-progress': '进行中',
-    'done': '已完成'
+    'todo': t('taskStatus.todo'),
+    'in-progress': t('taskStatus.inProgress'),
+    'done': t('taskStatus.done')
   };
   return labels[props.task.status] || props.task.status;
 });
@@ -369,10 +372,10 @@ const statusVariant = computed(() => {
 
 const priorityLabel = computed(() => {
   const labels: Record<string, string> = {
-    low: '低',
-    medium: '中',
-    high: '高',
-    urgent: '紧急'
+    low: t('priorities.low'),
+    medium: t('priorities.medium'),
+    high: t('priorities.high'),
+    urgent: t('priorities.urgent')
   };
   return labels[props.task.priority] || props.task.priority;
 });
@@ -388,10 +391,18 @@ const priorityVariant = computed(() => {
 });
 
 const formattedStartDate = computed(() => {
+  const locale = currentLocale();
+  if (locale === 'ko') {
+    return dayjs(props.task.startDate).format('YYYY년 MM월 DD일');
+  }
   return dayjs(props.task.startDate).format('YYYY年MM月DD日');
 });
 
 const formattedEndDate = computed(() => {
+  const locale = currentLocale();
+  if (locale === 'ko') {
+    return dayjs(props.task.endDate).format('YYYY년 MM월 DD일');
+  }
   return dayjs(props.task.endDate).format('YYYY年MM月DD日');
 });
 
@@ -426,7 +437,7 @@ const handleEdit = () => {
 };
 
 const handleDelete = () => {
-  if (confirm('确定要删除此任务吗？')) {
+  if (confirm(t('taskDetail.deleteConfirm'))) {
     emit('delete', props.task);
   }
 };
@@ -434,9 +445,9 @@ const handleDelete = () => {
 // 子任务相关函数
 const getSubtaskStatusLabel = (status: Task['status']) => {
   const labels: Record<string, string> = {
-    'todo': '待办',
-    'in-progress': '进行中',
-    'done': '已完成'
+    'todo': t('taskStatus.todo'),
+    'in-progress': t('taskStatus.inProgress'),
+    'done': t('taskStatus.done')
   };
   return labels[status] || status;
 };
@@ -452,10 +463,10 @@ const getSubtaskStatusClass = (status: Task['status']) => {
 
 const getSubtaskPriorityLabel = (priority: Task['priority']) => {
   const labels: Record<string, string> = {
-    low: '低',
-    medium: '中',
-    high: '高',
-    urgent: '紧急'
+    low: t('priorities.low'),
+    medium: t('priorities.medium'),
+    high: t('priorities.high'),
+    urgent: t('priorities.urgent')
   };
   return labels[priority] || priority;
 };

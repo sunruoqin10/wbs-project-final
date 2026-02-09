@@ -15,8 +15,8 @@
           </div>
         </div>
         <div class="flex items-center gap-3">
-          <Button variant="secondary" @click="editProject">编辑</Button>
-          <Button variant="danger" @click="deleteProject">删除</Button>
+          <Button variant="secondary" @click="editProject">{{ $t('projectDetail.editProject') }}</Button>
+          <Button variant="danger" @click="deleteProject">{{ $t('projectDetail.deleteProject') }}</Button>
         </div>
       </div>
 
@@ -25,36 +25,36 @@
         <div class="grid grid-cols-1 gap-6 md:grid-cols-2 lg:grid-cols-5">
           <Card>
             <div class="p-4">
-              <p class="text-sm font-medium text-secondary-600">状态</p>
+              <p class="text-sm font-medium text-secondary-600">{{ $t('projectDetail.status') }}</p>
               <p class="mt-2 text-lg font-semibold text-secondary-900">{{ getStatusLabel(project.status) }}</p>
             </div>
           </Card>
 
           <Card>
             <div class="p-4">
-              <p class="text-sm font-medium text-secondary-600">优先级</p>
+              <p class="text-sm font-medium text-secondary-600">{{ $t('projectDetail.priority') }}</p>
               <p class="mt-2 text-lg font-semibold text-secondary-900">{{ getPriorityLabel(project.priority) }}</p>
             </div>
           </Card>
 
           <Card>
             <div class="p-4">
-              <p class="text-sm font-medium text-secondary-600">进度</p>
+              <p class="text-sm font-medium text-secondary-600">{{ $t('projectDetail.progress') }}</p>
               <p class="mt-2 text-lg font-semibold text-secondary-900">{{ project.progress }}%</p>
             </div>
           </Card>
 
           <Card>
             <div class="p-4">
-              <p class="text-sm font-medium text-secondary-600">预估工时</p>
-              <p class="mt-2 text-lg font-semibold text-secondary-900">{{ displayEstimatedHours }} 小时</p>
+              <p class="text-sm font-medium text-secondary-600">{{ $t('projectDetail.estimatedHours') }}</p>
+              <p class="mt-2 text-lg font-semibold text-secondary-900">{{ displayEstimatedHours }} {{ $t('projectDetail.hours') }}</p>
             </div>
           </Card>
 
           <Card>
             <div class="p-4">
-              <p class="text-sm font-medium text-secondary-600">团队成员</p>
-              <p class="mt-2 text-lg font-semibold text-secondary-900">{{ members.length }} 人</p>
+              <p class="text-sm font-medium text-secondary-600">{{ $t('projectDetail.members') }}</p>
+              <p class="mt-2 text-lg font-semibold text-secondary-900">{{ members.length }} {{ $t('projectDetail.people') }}</p>
             </div>
           </Card>
         </div>
@@ -62,17 +62,17 @@
         <!-- Progress Section -->
         <Card>
           <template #header>
-            <h3 class="text-lg font-semibold text-secondary-900">项目进度</h3>
+            <h3 class="text-lg font-semibold text-secondary-900">{{ $t('projectDetail.projectProgress') }}</h3>
           </template>
           <div class="space-y-4">
             <ProgressBar :value="project.progress" :show-label="true" />
             <div class="grid grid-cols-2 gap-4 text-sm">
               <div>
-                <span class="text-secondary-600">开始日期：</span>
+                <span class="text-secondary-600">{{ $t('projectDetail.startDate') }}：</span>
                 <span class="font-medium text-secondary-900">{{ formattedDate(project.startDate) }}</span>
               </div>
               <div>
-                <span class="text-secondary-600">结束日期：</span>
+                <span class="text-secondary-600">{{ $t('projectDetail.endDate') }}：</span>
                 <span class="font-medium text-secondary-900">{{ formattedDate(project.endDate) }}</span>
               </div>
             </div>
@@ -82,7 +82,7 @@
         <!-- Team Members -->
         <Card>
           <template #header>
-            <h3 class="text-lg font-semibold text-secondary-900">团队成员</h3>
+            <h3 class="text-lg font-semibold text-secondary-900">{{ $t('projectDetail.members') }}</h3>
           </template>
           <div class="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3">
             <div
@@ -102,7 +102,7 @@
         <!-- Tags -->
         <Card v-if="project.tags && project.tags.length > 0">
           <template #header>
-            <h3 class="text-lg font-semibold text-secondary-900">标签</h3>
+            <h3 class="text-lg font-semibold text-secondary-900">{{ $t('projectDetail.tags') }}</h3>
           </template>
           <div class="flex flex-wrap gap-2">
             <span
@@ -118,7 +118,7 @@
         <!-- Quick Actions -->
         <Card>
           <template #header>
-            <h3 class="text-lg font-semibold text-secondary-900">快速操作</h3>
+            <h3 class="text-lg font-semibold text-secondary-900">{{ $t('projectDetail.quickActions') }}</h3>
           </template>
           <div class="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3">
             <button
@@ -142,8 +142,8 @@
                 </svg>
               </div>
               <div>
-                <p class="font-medium text-secondary-900">查看任务</p>
-                <p class="text-sm text-secondary-600">{{ projectTasks.length }} 个任务</p>
+                <p class="font-medium text-secondary-900">{{ $t('projectDetail.viewTasks') }}</p>
+                <p class="text-sm text-secondary-600">{{ projectTasks.length }} {{ $t('projectDetail.tasksCount') }}</p>
               </div>
             </button>
 
@@ -162,8 +162,8 @@
                 </svg>
               </div>
               <div>
-                <p class="font-medium text-secondary-900">甘特图</p>
-                <p class="text-sm text-secondary-600">时间线视图</p>
+                <p class="font-medium text-secondary-900">{{ $t('projectDetail.ganttChart') }}</p>
+                <p class="text-sm text-secondary-600">{{ $t('projectDetail.timelineView') }}</p>
               </div>
             </button>
 
@@ -183,8 +183,8 @@
                 </svg>
               </div>
               <div>
-                <p class="font-medium text-secondary-900">新建任务</p>
-                <p class="text-sm text-secondary-600">添加新任务</p>
+                <p class="font-medium text-secondary-900">{{ $t('projectDetail.newTask') }}</p>
+                <p class="text-sm text-secondary-600">{{ $t('projectDetail.addNewTask') }}</p>
               </div>
             </button>
           </div>
@@ -197,9 +197,9 @@
           <svg class="mx-auto h-24 w-24 text-secondary-300" fill="none" stroke="currentColor" viewBox="0 0 24 24">
             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1" d="M3 7v10a2 2 0 002 2h14a2 2 0 002-2V9a2 2 0 00-2-2h-6l-2-2H5a2 2 0 00-2 2z" />
           </svg>
-          <h3 class="mt-4 text-lg font-medium text-secondary-900">项目不存在</h3>
-          <p class="mt-2 text-sm text-secondary-600">请检查项目ID是否正确</p>
-          <Button variant="primary" class="mt-4" @click="goBack">返回项目列表</Button>
+          <h3 class="mt-4 text-lg font-medium text-secondary-900">{{ $t('projectDetail.emptyState.title') }}</h3>
+          <p class="mt-2 text-sm text-secondary-600">{{ $t('projectDetail.emptyState.message') }}</p>
+          <Button variant="primary" class="mt-4" @click="goBack">{{ $t('projectDetail.emptyState.backToList') }}</Button>
         </div>
       </Card>
 
@@ -217,6 +217,7 @@
 <script setup lang="ts">
 import { ref, computed, onMounted, watch } from 'vue';
 import { useRoute, useRouter } from 'vue-router';
+import { useI18n } from 'vue-i18n';
 import MainLayout from '@/components/layout/MainLayout.vue';
 import Card from '@/components/common/Card.vue';
 import Button from '@/components/common/Button.vue';
@@ -230,6 +231,7 @@ import dayjs from 'dayjs';
 
 const route = useRoute();
 const router = useRouter();
+const { t } = useI18n();
 const projectStore = useProjectStore();
 const taskStore = useTaskStore();
 const userStore = useUserStore();
@@ -440,40 +442,50 @@ watch(projectTasks, async () => {
 }, { deep: true });
 
 const formattedDate = (date: string) => {
-  return dayjs(date).format('YYYY年MM月DD日');
+  // 使用本地化日期格式
+  const locale = t('common.locale') || 'zh';
+  if (locale === 'ko') {
+    return dayjs(date).format('YYYY년 MM월 DD일');
+  } else {
+    return dayjs(date).format('YYYY年MM月DD日');
+  }
 };
 
 const getStatusLabel = (status: string) => {
-  const labels: Record<string, string> = {
-    planning: '计划中',
-    active: '进行中',
-    completed: '已完成',
-    'on-hold': '已暂停',
-    cancelled: '废弃'
+  const labelMap: Record<string, string> = {
+    planning: 'projectStatus.planning',
+    active: 'projectStatus.active',
+    completed: 'projectStatus.completed',
+    'on-hold': 'projectStatus.onHold',
+    cancelled: 'projectStatus.cancelled'
   };
-  return labels[status] || status;
+  const key = labelMap[status];
+  return key ? t(key) : status;
 };
 
 const getPriorityLabel = (priority: string) => {
-  const labels: Record<string, string> = {
-    low: '低',
-    medium: '中',
-    high: '高',
-    critical: '紧急'
+  const labelMap: Record<string, string> = {
+    low: 'priorities.low',
+    medium: 'priorities.medium',
+    high: 'priorities.high',
+    critical: 'priorities.critical',
+    urgent: 'priorities.urgent'
   };
-  return labels[priority] || priority;
+  const key = labelMap[priority];
+  return key ? t(key) : priority;
 };
 
 const getRoleLabel = (role: string) => {
   // 标准化角色名称：处理下划线和连字符的兼容性
   const normalizedRole = role?.replace(/_/g, '-');
 
-  const labels: Record<string, string> = {
-    admin: '管理员',
-    'project-manager': '项目经理',
-    member: '成员'
+  const labelMap: Record<string, string> = {
+    admin: 'roles.admin',
+    'project-manager': 'roles.projectManager',
+    member: 'roles.member'
   };
-  return labels[normalizedRole] || role;
+  const key = labelMap[normalizedRole];
+  return key ? t(key) : role;
 };
 
 const goBack = () => {
@@ -511,7 +523,7 @@ const handleSaveProject = async (projectData: Partial<Project>) => {
 };
 
 const deleteProject = () => {
-  if (confirm('确定要删除这个项目吗？')) {
+  if (confirm(t('projectDetail.deleteConfirm'))) {
     projectStore.deleteProject(projectId.value);
     router.push('/projects');
   }

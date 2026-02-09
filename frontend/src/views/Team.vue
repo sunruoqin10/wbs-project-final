@@ -4,14 +4,14 @@
       <!-- Page Header -->
       <div class="flex items-center justify-between">
         <div>
-          <h1 class="text-2xl font-bold text-secondary-900">团队成员</h1>
-          <p class="mt-1 text-sm text-secondary-600">管理项目团队成员和权限</p>
+          <h1 class="text-2xl font-bold text-secondary-900">{{ $t('team.title') }}</h1>
+          <p class="mt-1 text-sm text-secondary-600">{{ $t('team.subtitle') }}</p>
         </div>
         <Button variant="primary" @click="showAddMemberModal = true">
           <svg class="mr-2 h-5 w-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4" />
           </svg>
-          添加成员
+          {{ $t('team.addMember') }}
         </Button>
       </div>
 
@@ -19,28 +19,28 @@
       <div class="grid grid-cols-1 gap-6 sm:grid-cols-2 lg:grid-cols-4">
         <Card>
           <div class="p-4">
-            <p class="text-sm font-medium text-secondary-600">总成员数</p>
+            <p class="text-sm font-medium text-secondary-600">{{ $t('common.members') }}</p>
             <p class="mt-2 text-2xl font-semibold text-secondary-900">{{ users.length }}</p>
           </div>
         </Card>
 
         <Card>
           <div class="p-4">
-            <p class="text-sm font-medium text-secondary-600">管理员</p>
+            <p class="text-sm font-medium text-secondary-600">{{ $t('roles.admin') }}</p>
             <p class="mt-2 text-2xl font-semibold text-secondary-900">{{ adminCount }}</p>
           </div>
         </Card>
 
         <Card>
           <div class="p-4">
-            <p class="text-sm font-medium text-secondary-600">项目经理</p>
+            <p class="text-sm font-medium text-secondary-600">{{ $t('roles.projectManager') }}</p>
             <p class="mt-2 text-2xl font-semibold text-secondary-900">{{ pmCount }}</p>
           </div>
         </Card>
 
         <Card>
           <div class="p-4">
-            <p class="text-sm font-medium text-secondary-600">成员</p>
+            <p class="text-sm font-medium text-secondary-600">{{ $t('roles.member') }}</p>
             <p class="mt-2 text-2xl font-semibold text-secondary-900">{{ memberCount }}</p>
           </div>
         </Card>
@@ -49,29 +49,29 @@
       <!-- Team Members List -->
       <Card>
         <template #header>
-          <h3 class="text-lg font-semibold text-secondary-900">所有成员</h3>
+          <h3 class="text-lg font-semibold text-secondary-900">{{ $t('team.allMembers') }}</h3>
         </template>
         <div class="overflow-x-auto">
           <table class="min-w-full divide-y divide-secondary-200">
             <thead class="bg-secondary-50">
               <tr>
                 <th class="px-6 py-3 text-left text-xs font-medium uppercase tracking-wider text-secondary-500">
-                  成员
+                  {{ $t('team.name') }}
                 </th>
                 <th class="px-6 py-3 text-left text-xs font-medium uppercase tracking-wider text-secondary-500">
-                  角色
+                  {{ $t('team.role') }}
                 </th>
                 <th class="px-6 py-3 text-left text-xs font-medium uppercase tracking-wider text-secondary-500">
-                  部门
+                  {{ $t('team.department') }}
                 </th>
                 <th class="px-6 py-3 text-left text-xs font-medium uppercase tracking-wider text-secondary-500">
-                  技能
+                  {{ $t('team.skills') }}
                 </th>
                 <th class="px-6 py-3 text-left text-xs font-medium uppercase tracking-wider text-secondary-500">
-                  加入时间
+                  {{ $t('team.joinedAt') }}
                 </th>
                 <th class="px-6 py-3 text-left text-xs font-medium uppercase tracking-wider text-secondary-500">
-                  操作
+                  {{ $t('team.actions') }}
                 </th>
               </tr>
             </thead>
@@ -122,13 +122,13 @@
                     @click="openEditModal(user)"
                     class="text-primary-600 hover:text-primary-900 mr-3"
                   >
-                    编辑
+                    {{ $t('team.edit') }}
                   </button>
                   <button
                     @click="handleDeleteMember(user.id)"
                     class="text-red-600 hover:text-red-900"
                   >
-                    删除
+                    {{ $t('team.delete') }}
                   </button>
                 </td>
               </tr>
@@ -140,7 +140,7 @@
       <!-- Workload Distribution -->
       <Card>
         <template #header>
-          <h3 class="text-lg font-semibold text-secondary-900">工作负载分布</h3>
+          <h3 class="text-lg font-semibold text-secondary-900">{{ $t('team.workloadDistribution') }}</h3>
         </template>
         <div class="h-80" ref="workloadChartRef"></div>
       </Card>
@@ -148,76 +148,76 @@
 
     <!-- Add/Edit Member Modal -->
     <Modal
-      v-model:open="showAddMemberModal"
-      :title="isEditMode ? '编辑成员' : '添加新成员'"
+      v-model="showAddMemberModal"
+      :title="isEditMode ? $t('team.editMember') : $t('team.addNewMember')"
       size="lg"
       @close="closeModal"
     >
       <form @submit.prevent="handleSaveMember" class="space-y-4">
         <div>
-          <label class="block text-sm font-medium text-secondary-700 mb-1">姓名 *</label>
+          <label class="block text-sm font-medium text-secondary-700 mb-1">{{ $t('team.form.nameLabel') }} *</label>
           <input
             v-model="newMember.name"
             type="text"
             required
             class="w-full rounded-lg border border-secondary-300 px-3 py-2 text-sm focus:border-primary-500 focus:outline-none focus:ring-1 focus:ring-primary-500"
-            placeholder="请输入成员姓名"
+            :placeholder="$t('team.form.namePlaceholder')"
           />
         </div>
 
         <div>
-          <label class="block text-sm font-medium text-secondary-700 mb-1">邮箱 *</label>
+          <label class="block text-sm font-medium text-secondary-700 mb-1">{{ $t('team.form.emailLabel') }} *</label>
           <input
             v-model="newMember.email"
             type="email"
             required
             class="w-full rounded-lg border border-secondary-300 px-3 py-2 text-sm focus:border-primary-500 focus:outline-none focus:ring-1 focus:ring-primary-500"
-            placeholder="example@company.com"
+            :placeholder="$t('team.form.emailPlaceholder')"
           />
         </div>
 
         <div>
-          <label class="block text-sm font-medium text-secondary-700 mb-1">角色 *</label>
+          <label class="block text-sm font-medium text-secondary-700 mb-1">{{ $t('team.form.roleLabel') }} *</label>
           <select
             v-model="newMember.role"
             required
             class="w-full rounded-lg border border-secondary-300 px-3 py-2 text-sm focus:border-primary-500 focus:outline-none focus:ring-1 focus:ring-primary-500"
           >
-            <option value="">请选择角色</option>
-            <option value="member">成员</option>
-            <option value="project-manager">项目经理</option>
-            <option value="admin">管理员</option>
+            <option value="">{{ $t('team.form.rolePlaceholder') }}</option>
+            <option value="member">{{ $t('roles.member') }}</option>
+            <option value="project-manager">{{ $t('roles.projectManager') }}</option>
+            <option value="admin">{{ $t('roles.admin') }}</option>
           </select>
         </div>
 
         <div>
-          <label class="block text-sm font-medium text-secondary-700 mb-1">部门 *</label>
+          <label class="block text-sm font-medium text-secondary-700 mb-1">{{ $t('team.form.departmentLabel') }} *</label>
           <input
             v-model="newMember.department"
             type="text"
             required
             class="w-full rounded-lg border border-secondary-300 px-3 py-2 text-sm focus:border-primary-500 focus:outline-none focus:ring-1 focus:ring-primary-500"
-            placeholder="例如：研发部"
+            :placeholder="$t('team.form.departmentPlaceholder')"
           />
         </div>
 
         <div>
-          <label class="block text-sm font-medium text-secondary-700 mb-1">技能</label>
+          <label class="block text-sm font-medium text-secondary-700 mb-1">{{ $t('team.form.skillsLabel') }}</label>
           <input
             v-model="skillsInput"
             type="text"
             class="w-full rounded-lg border border-secondary-300 px-3 py-2 text-sm focus:border-primary-500 focus:outline-none focus:ring-1 focus:ring-primary-500"
-            placeholder="用逗号分隔，例如：Vue, TypeScript, Node.js"
+            :placeholder="$t('team.form.skillsPlaceholder')"
           />
-          <p class="mt-1 text-xs text-secondary-500">多个技能请用逗号分隔</p>
+          <p class="mt-1 text-xs text-secondary-500">{{ $t('team.form.skillsHint') }}</p>
         </div>
       </form>
 
       <template #footer>
         <div class="flex justify-end gap-3">
-          <Button variant="secondary" @click="closeModal">取消</Button>
+          <Button variant="secondary" @click="closeModal">{{ $t('common.cancel') }}</Button>
           <Button variant="primary" @click="handleSaveMember">
-            {{ isEditMode ? '保存修改' : '添加成员' }}
+            {{ isEditMode ? $t('team.buttons.saveChanges') : $t('team.buttons.addMember') }}
           </Button>
         </div>
       </template>
@@ -227,6 +227,7 @@
 
 <script setup lang="ts">
 import { ref, computed, onMounted, reactive } from 'vue';
+import { useI18n } from 'vue-i18n';
 import * as echarts from 'echarts';
 import MainLayout from '@/components/layout/MainLayout.vue';
 import Card from '@/components/common/Card.vue';
@@ -238,6 +239,7 @@ import { useTaskStore } from '@/stores/task';
 import type { User } from '@/types';
 import dayjs from 'dayjs';
 
+const { t } = useI18n();
 const userStore = useUserStore();
 const taskStore = useTaskStore();
 
@@ -291,7 +293,7 @@ const openEditModal = (user: User) => {
 
 const handleSaveMember = async () => {
   if (!newMember.name || !newMember.email || !newMember.department) {
-    alert('请填写所有必填项！');
+    alert(t('team.messages.requiredFields'));
     return;
   }
 
@@ -311,7 +313,7 @@ const handleSaveMember = async () => {
         department: newMember.department,
         skills: skillsArray
       });
-      alert('成员信息更新成功！');
+      alert(t('team.messages.updateSuccess'));
     } else {
       // Add new user
       const avatar = `https://api.dicebear.com/7.x/avataaars/svg?seed=${encodeURIComponent(newMember.name)}`;
@@ -321,7 +323,7 @@ const handleSaveMember = async () => {
         avatar,
         joinedAt: new Date().toISOString()
       });
-      alert('新成员添加成功！');
+      alert(t('team.messages.createSuccess'));
     }
 
     // Close modal and reset form
@@ -333,7 +335,7 @@ const handleSaveMember = async () => {
     }, 200);
   } catch (error) {
     console.error('Failed to save member:', error);
-    alert('操作失败，请稍后重试。');
+    alert(t('team.messages.operationFailed'));
   }
 };
 
@@ -341,10 +343,10 @@ const handleDeleteMember = async (userId: string) => {
   const user = users.value.find(u => u.id === userId);
   if (!user) return;
 
-  if (confirm(`确定要删除成员 "${user.name}" 吗？此操作不可恢复。`)) {
+  if (confirm(t('team.messages.deleteConfirm', { name: user.name }))) {
     try {
       await userStore.deleteUser(userId);
-      alert('成员删除成功！');
+      alert(t('team.messages.deleteSuccess'));
 
       // Refresh chart after a short delay
       setTimeout(() => {
@@ -352,7 +354,7 @@ const handleDeleteMember = async (userId: string) => {
       }, 200);
     } catch (error) {
       console.error('Failed to delete member:', error);
-      alert('删除失败，请稍后重试。');
+      alert(t('team.messages.deleteFailed'));
     }
   }
 };
@@ -366,11 +368,12 @@ const getRoleLabel = (role: string) => {
   const normalizedRole = role?.replace(/_/g, '-');
 
   const labels: Record<string, string> = {
-    admin: '管理员',
-    'project-manager': '项目经理',
-    member: '成员'
+    admin: 'roles.admin',
+    'project-manager': 'roles.projectManager',
+    member: 'roles.member'
   };
-  return labels[normalizedRole] || role;
+  const key = labels[normalizedRole];
+  return key ? t(key) : role;
 };
 
 const getRoleBadgeVariant = (role: string) => {
@@ -386,7 +389,13 @@ const getRoleBadgeVariant = (role: string) => {
 };
 
 const formattedDate = (date: string) => {
-  return dayjs(date).format('YYYY年MM月');
+  // Use localized date format based on current locale
+  const locale = t('common.locale') || 'zh';
+  if (locale === 'ko') {
+    return dayjs(date).format('YYYY년 MM월');
+  } else {
+    return dayjs(date).format('YYYY年MM月');
+  }
 };
 
 const initWorkloadChart = () => {
@@ -431,7 +440,7 @@ const initWorkloadChart = () => {
     },
     yAxis: {
       type: 'value',
-      name: '任务数'
+      name: t('team.taskCount')
     },
     series: [
       {

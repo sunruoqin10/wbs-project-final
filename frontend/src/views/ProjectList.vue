@@ -4,14 +4,14 @@
       <!-- Page Header -->
       <div class="flex items-center justify-between">
         <div>
-          <h1 class="text-2xl font-bold text-secondary-900">项目列表</h1>
-          <p class="mt-1 text-sm text-secondary-600">管理和查看所有项目</p>
+          <h1 class="text-2xl font-bold text-secondary-900">{{ $t('routes.projectList') }}</h1>
+          <p class="mt-1 text-sm text-secondary-600">{{ $t('projectList.subtitle') }}</p>
         </div>
         <Button variant="primary" @click="createNewProject">
           <svg class="mr-2 h-5 w-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4" />
           </svg>
-          新建项目
+          {{ $t('projectList.newProject') }}
         </Button>
       </div>
 
@@ -22,7 +22,7 @@
           <div class="flex-1 min-w-[200px]">
             <Input
               v-model="searchQuery"
-              placeholder="搜索项目..."
+              :placeholder="$t('projectList.searchPlaceholder')"
               type="text"
             >
               <template #prefix>
@@ -35,7 +35,7 @@
 
           <!-- Status Filter -->
           <div class="flex items-center gap-2">
-            <span class="text-sm font-medium text-secondary-700">状态:</span>
+            <span class="text-sm font-medium text-secondary-700">{{ $t('common.status') }}:</span>
             <div class="flex gap-2">
               <button
                 v-for="status in statusOptions"
@@ -60,7 +60,7 @@
             size="sm"
             @click="clearFilters"
           >
-            清除筛选
+            {{ $t('projectList.clearFilters') }}
           </Button>
         </div>
       </Card>
@@ -80,12 +80,12 @@
           <svg class="mx-auto h-24 w-24 text-secondary-300" fill="none" stroke="currentColor" viewBox="0 0 24 24">
             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1" d="M3 7v10a2 2 0 002 2h14a2 2 0 002-2V9a2 2 0 00-2-2h-6l-2-2H5a2 2 0 00-2 2z" />
           </svg>
-          <h3 class="mt-4 text-lg font-medium text-secondary-900">暂无项目</h3>
+          <h3 class="mt-4 text-lg font-medium text-secondary-900">{{ $t('projectList.emptyState.title') }}</h3>
           <p class="mt-2 text-sm text-secondary-600">
-            {{ searchQuery || selectedStatuses.length > 0 ? '没有找到匹配的项目' : '开始创建您的第一个项目吧' }}
+            {{ searchQuery || selectedStatuses.length > 0 ? $t('projectList.emptyState.noResults') : $t('projectList.emptyState.createFirst') }}
           </p>
           <Button v-if="!searchQuery && selectedStatuses.length === 0" variant="primary" class="mt-4" @click="openCreateModal">
-            创建项目
+            {{ $t('projectList.emptyState.createButton') }}
           </Button>
         </div>
       </Card>
@@ -104,6 +104,7 @@
 <script setup lang="ts">
 import { ref, computed, onMounted } from 'vue';
 import { useRouter } from 'vue-router';
+import { useI18n } from 'vue-i18n';
 import MainLayout from '@/components/layout/MainLayout.vue';
 import ProjectCard from '@/components/project/ProjectCard.vue';
 import ProjectModal from '@/components/project/ProjectModal.vue';
@@ -114,6 +115,7 @@ import { useProjectStore } from '@/stores/project';
 import type { Project } from '@/types';
 
 const router = useRouter();
+const { t } = useI18n();
 const projectStore = useProjectStore();
 
 const searchQuery = ref('');
@@ -159,14 +161,14 @@ onMounted(async () => {
   }
 });
 
-const statusOptions = [
-  { label: '全部', value: '' },
-  { label: '计划中', value: 'planning' },
-  { label: '进行中', value: 'active' },
-  { label: '已完成', value: 'completed' },
-  { label: '已暂停', value: 'on-hold' },
-  { label: '废弃', value: 'cancelled' }
-];
+const statusOptions = computed(() => [
+  { label: t('projectList.statuses.all'), value: '' },
+  { label: t('projectList.statuses.planning'), value: 'planning' },
+  { label: t('projectList.statuses.active'), value: 'active' },
+  { label: t('projectList.statuses.completed'), value: 'completed' },
+  { label: t('projectList.statuses.onHold'), value: 'on-hold' },
+  { label: t('projectList.statuses.cancelled'), value: 'cancelled' }
+]);
 
 const filteredProjects = computed(() => {
   let result = projectStore.projects;

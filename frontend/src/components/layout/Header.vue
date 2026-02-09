@@ -11,12 +11,15 @@
 
       <!-- Right Actions -->
       <div class="flex items-center gap-4">
+        <!-- Language Switcher -->
+        <LanguageSwitcher />
+
         <!-- Search -->
         <div class="relative">
           <input
             v-model="searchQuery"
             type="text"
-            placeholder="搜索..."
+            :placeholder="$t('header.searchPlaceholder')"
             class="w-64 rounded-lg border border-secondary-200 px-4 py-2 pl-10 text-sm focus:border-primary-500 focus:outline-none focus:ring-2 focus:ring-primary-500/20"
           />
           <svg
@@ -121,7 +124,7 @@
                       d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z"
                     />
                   </svg>
-                  个人中心
+                  {{ t('header.userMenu.profile') }}
                 </a>
                 <a
                   href="#"
@@ -142,7 +145,7 @@
                       d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"
                     />
                   </svg>
-                  账号设置
+                  {{ t('header.userMenu.settings') }}
                 </a>
               </div>
 
@@ -161,7 +164,7 @@
                       d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1"
                     />
                   </svg>
-                  退出系统
+                  {{ t('header.userMenu.logout') }}
                 </a>
               </div>
             </div>
@@ -177,10 +180,13 @@ import { ref, computed, onMounted, onUnmounted } from 'vue';
 import { useRouter } from 'vue-router';
 import { useUserStore } from '@/stores/user';
 import { useUiStore } from '@/stores/ui';
+import { useI18n } from 'vue-i18n';
+import LanguageSwitcher from '@/components/common/LanguageSwitcher.vue';
 
 const router = useRouter();
 const userStore = useUserStore();
 const uiStore = useUiStore();
+const { t } = useI18n();
 
 const searchQuery = ref('');
 const showUserMenu = ref(false);
@@ -190,17 +196,34 @@ const currentUser = computed(() => userStore.currentUser);
 const sidebarWidth = computed(() => (uiStore.sidebarCollapsed ? '5rem' : '16rem'));
 
 const pageTitle = computed(() => {
-  return router.currentRoute.value.meta.title as string || 'WBS项目管理系统';
+  const routeName = router.currentRoute.value.name as string;
+  // 路由名称到翻译键的映射
+  const routeKeyMap: Record<string, string> = {
+    Login: 'routes.login',
+    Test: 'routes.test',
+    Dashboard: 'routes.dashboard',
+    SimpleDashboard: 'routes.simpleDashboard',
+    ProjectList: 'routes.projectList',
+    ProjectNew: 'routes.projectNew',
+    ProjectDetail: 'routes.projectDetail',
+    TaskBoard: 'routes.taskBoard',
+    GanttView: 'routes.ganttView',
+    Team: 'routes.team',
+    Reports: 'routes.reports',
+    Settings: 'routes.settings'
+  };
+  const titleKey = routeKeyMap[routeName] || 'app.name';
+  return t(titleKey);
 });
 
 const roleLabel = computed(() => {
-  const labels = {
-    admin: '管理员',
-    'project-manager': '项目经理',
-    member: '成员',
-    viewer: '观察者'
+  const roleMap = {
+    admin: 'roles.admin',
+    'project-manager': 'roles.projectManager',
+    member: 'roles.member',
+    viewer: 'roles.viewer'
   };
-  return currentUser.value ? labels[currentUser.value.role] : '';
+  return currentUser.value ? t(roleMap[currentUser.value.role] || '') : '';
 });
 
 // 切换用户菜单

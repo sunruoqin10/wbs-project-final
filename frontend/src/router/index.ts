@@ -1,13 +1,14 @@
 import { createRouter, createWebHistory } from 'vue-router';
 import type { RouteRecordRaw } from 'vue-router';
 import { useUserStore } from '@/stores/user';
+import i18n from '@/i18n';
 
 const routes: RouteRecordRaw[] = [
   {
     path: '/login',
     name: 'Login',
     component: () => import('@/views/Login.vue'),
-    meta: { title: '登录' }
+    meta: { titleKey: 'routes.login' }
   },
   {
     path: '/',
@@ -17,67 +18,67 @@ const routes: RouteRecordRaw[] = [
     path: '/test',
     name: 'Test',
     component: () => import('@/views/Test.vue'),
-    meta: { title: '测试页面' }
+    meta: { titleKey: 'routes.test' }
   },
   {
     path: '/dashboard',
     name: 'Dashboard',
     component: () => import('@/views/Dashboard.vue'),
-    meta: { title: '仪表盘' }
+    meta: { titleKey: 'routes.dashboard' }
   },
   {
     path: '/simple-dashboard',
     name: 'SimpleDashboard',
     component: () => import('@/views/SimpleDashboard.vue'),
-    meta: { title: '仪表盘（简化版）' }
+    meta: { titleKey: 'routes.simpleDashboard' }
   },
   {
     path: '/projects',
     name: 'ProjectList',
     component: () => import('@/views/ProjectList.vue'),
-    meta: { title: '项目列表' }
+    meta: { titleKey: 'routes.projectList' }
   },
   {
     path: '/projects/new',
     name: 'ProjectNew',
     component: () => import('@/views/ProjectDetail.vue'),
-    meta: { title: '创建项目' }
+    meta: { titleKey: 'routes.projectNew' }
   },
   {
     path: '/projects/:id',
     name: 'ProjectDetail',
     component: () => import('@/views/ProjectDetail.vue'),
-    meta: { title: '项目详情' }
+    meta: { titleKey: 'routes.projectDetail' }
   },
   {
     path: '/projects/:id/tasks',
     name: 'TaskBoard',
     component: () => import('@/views/TaskBoard.vue'),
-    meta: { title: '任务看板' }
+    meta: { titleKey: 'routes.taskBoard' }
   },
   {
     path: '/projects/:id/gantt',
     name: 'GanttView',
     component: () => import('@/views/GanttView.vue'),
-    meta: { title: '甘特图' }
+    meta: { titleKey: 'routes.ganttView' }
   },
   {
     path: '/team',
     name: 'Team',
     component: () => import('@/views/Team.vue'),
-    meta: { title: '团队成员' }
+    meta: { titleKey: 'routes.team' }
   },
   {
     path: '/reports',
     name: 'Reports',
     component: () => import('@/views/Reports.vue'),
-    meta: { title: '报表统计' }
+    meta: { titleKey: 'routes.reports' }
   },
   {
     path: '/settings',
     name: 'Settings',
     component: () => import('@/views/Settings.vue'),
-    meta: { title: '设置' }
+    meta: { titleKey: 'routes.settings' }
   }
 ];
 
@@ -90,7 +91,9 @@ const router = createRouter({
 const whiteList = ['/login', '/test'];
 
 router.beforeEach((to, from, next) => {
-  document.title = `${to.meta.title || 'WBS项目管理系统'} - WBS`;
+  const titleKey = to.meta.titleKey as string;
+  const title = titleKey ? i18n.global.t(titleKey) : i18n.global.t('app.name');
+  document.title = `${title} - WBS`;
 
   const userStore = useUserStore();
 

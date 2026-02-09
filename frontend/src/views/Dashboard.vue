@@ -4,8 +4,8 @@
       <!-- Page Header -->
       <div class="flex items-center">
         <div>
-          <h1 class="text-2xl font-bold text-secondary-900">仪表盘</h1>
-          <p class="mt-1 text-sm text-secondary-600">欢迎回来，{{ currentUser?.name }}！</p>
+          <h1 class="text-2xl font-bold text-secondary-900">{{ $t('routes.dashboard') }}</h1>
+          <p class="mt-1 text-sm text-secondary-600">{{ $t('dashboard.welcome') }}，{{ currentUser?.name }}！</p>
         </div>
       </div>
 
@@ -24,7 +24,7 @@
               </svg>
             </div>
             <div class="ml-4">
-              <p class="text-sm font-medium text-secondary-600">总项目数</p>
+              <p class="text-sm font-medium text-secondary-600">{{ $t('dashboard.stats.totalProjects') }}</p>
               <p class="text-2xl font-semibold text-secondary-900">{{ statistics.totalProjects }}</p>
             </div>
           </div>
@@ -43,7 +43,7 @@
               </svg>
             </div>
             <div class="ml-4">
-              <p class="text-sm font-medium text-secondary-600">进行中的项目数</p>
+              <p class="text-sm font-medium text-secondary-600">{{ $t('dashboard.stats.activeProjects') }}</p>
               <p class="text-2xl font-semibold text-secondary-900">{{ statistics.activeProjects }}</p>
             </div>
           </div>
@@ -62,7 +62,7 @@
               </svg>
             </div>
             <div class="ml-4">
-              <p class="text-sm font-medium text-secondary-600">总任务数</p>
+              <p class="text-sm font-medium text-secondary-600">{{ $t('dashboard.stats.totalTasks') }}</p>
               <p class="text-2xl font-semibold text-secondary-900">{{ statistics.totalTasks }}</p>
             </div>
           </div>
@@ -81,7 +81,7 @@
               </svg>
             </div>
             <div class="ml-4">
-              <p class="text-sm font-medium text-secondary-600">团队成员</p>
+              <p class="text-sm font-medium text-secondary-600">{{ $t('dashboard.stats.totalMembers') }}</p>
               <p class="text-2xl font-semibold text-secondary-900">{{ statistics.totalMembers }}</p>
             </div>
           </div>
@@ -93,7 +93,7 @@
         <!-- Task Status Distribution -->
         <Card>
           <template #header>
-            <h3 class="text-lg font-semibold text-secondary-900">任务状态分布</h3>
+            <h3 class="text-lg font-semibold text-secondary-900">{{ $t('dashboard.charts.taskStatusDistribution') }}</h3>
           </template>
           <div class="h-64" ref="taskChartRef"></div>
         </Card>
@@ -101,7 +101,7 @@
         <!-- Project Progress -->
         <Card>
           <template #header>
-            <h3 class="text-lg font-semibold text-secondary-900">项目进度概览</h3>
+            <h3 class="text-lg font-semibold text-secondary-900">{{ $t('dashboard.charts.projectProgressOverview') }}</h3>
           </template>
           <div class="h-64" ref="projectChartRef"></div>
         </Card>
@@ -111,9 +111,9 @@
       <Card>
         <template #header>
           <div class="flex items-center justify-between">
-            <h3 class="text-lg font-semibold text-secondary-900">最近项目</h3>
+            <h3 class="text-lg font-semibold text-secondary-900">{{ $t('dashboard.recentProjects.title') }}</h3>
             <router-link to="/projects" class="text-sm text-primary-600 hover:text-primary-700">
-              查看全部
+              {{ $t('dashboard.recentProjects.viewAll') }}
             </router-link>
           </div>
         </template>
@@ -122,16 +122,16 @@
             <thead class="bg-secondary-50">
               <tr>
                 <th class="px-6 py-3 text-left text-xs font-medium uppercase tracking-wider text-secondary-500">
-                  项目名称
+                  {{ $t('dashboard.recentProjects.projectName') }}
                 </th>
                 <th class="px-6 py-3 text-left text-xs font-medium uppercase tracking-wider text-secondary-500">
-                  状态
+                  {{ $t('dashboard.recentProjects.status') }}
                 </th>
                 <th class="px-6 py-3 text-left text-xs font-medium uppercase tracking-wider text-secondary-500">
-                  进度
+                  {{ $t('dashboard.recentProjects.progress') }}
                 </th>
                 <th class="px-6 py-3 text-left text-xs font-medium uppercase tracking-wider text-secondary-500">
-                  截止日期
+                  {{ $t('dashboard.recentProjects.deadline') }}
                 </th>
               </tr>
             </thead>
@@ -168,7 +168,7 @@
       <!-- Upcoming Tasks -->
       <Card>
         <template #header>
-          <h3 class="text-lg font-semibold text-secondary-900">即将到期的任务</h3>
+          <h3 class="text-lg font-semibold text-secondary-900">{{ $t('dashboard.upcomingTasks.title') }}</h3>
         </template>
         <div class="space-y-3">
           <div
@@ -193,7 +193,7 @@
                   <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" />
                 </svg>
                 <div>
-                  <p class="text-xs text-secondary-500">开始时间</p>
+                  <p class="text-xs text-secondary-500">{{ $t('dashboard.upcomingTasks.startTime') }}</p>
                   <p class="text-sm font-medium text-secondary-900">{{ formattedDate(task.startDate) }}</p>
                 </div>
               </div>
@@ -204,7 +204,7 @@
                   <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
                 </svg>
                 <div>
-                  <p class="text-xs text-secondary-500">结束时间</p>
+                  <p class="text-xs text-secondary-500">{{ $t('dashboard.upcomingTasks.endTime') }}</p>
                   <p class="text-sm font-medium text-secondary-900">{{ formattedDate(task.endDate) }}</p>
                 </div>
               </div>
@@ -215,7 +215,7 @@
                   <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" />
                 </svg>
                 <div>
-                  <p class="text-xs text-secondary-500">负责人</p>
+                  <p class="text-xs text-secondary-500">{{ $t('dashboard.upcomingTasks.assignee') }}</p>
                   <p class="text-sm font-medium text-secondary-900">{{ getAssigneeName(task.assigneeId) }}</p>
                 </div>
               </div>
@@ -226,7 +226,7 @@
                   <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
                 </svg>
                 <div>
-                  <p class="text-xs text-secondary-500">剩余时间</p>
+                  <p class="text-xs text-secondary-500">{{ $t('dashboard.upcomingTasks.remainingTime') }}</p>
                   <span :class="getDaysRemainingClass(task.endDate)" class="text-xs font-medium">
                     {{ getDaysRemainingLabel(task.endDate) }}
                   </span>
@@ -242,6 +242,7 @@
 
 <script setup lang="ts">
 import { ref, computed, onMounted, onUnmounted, watch, nextTick } from 'vue';
+import { useI18n } from 'vue-i18n';
 import * as echarts from 'echarts';
 import MainLayout from '@/components/layout/MainLayout.vue';
 import Card from '@/components/common/Card.vue';
@@ -252,6 +253,7 @@ import { useTaskStore } from '@/stores/task';
 import { useUserStore } from '@/stores/user';
 import dayjs from 'dayjs';
 
+const { t } = useI18n();
 const projectStore = useProjectStore();
 const taskStore = useTaskStore();
 const userStore = useUserStore();
@@ -328,13 +330,14 @@ const formattedDate = (date: string) => {
 };
 
 const getStatusLabel = (status: string) => {
-  const labels: Record<string, string> = {
-    planning: '计划中',
-    active: '进行中',
-    completed: '已完成',
-    'on-hold': '已暂停'
+  const labelMap: Record<string, string> = {
+    planning: 'projectStatus.planning',
+    active: 'projectStatus.active',
+    completed: 'projectStatus.completed',
+    'on-hold': 'projectStatus.onHold'
   };
-  return labels[status] || status;
+  const key = labelMap[status];
+  return key ? t(key) : status;
 };
 
 const getStatusVariant = (status: string) => {
@@ -348,13 +351,14 @@ const getStatusVariant = (status: string) => {
 };
 
 const getPriorityLabel = (priority: string) => {
-  const labels: Record<string, string> = {
-    low: '低',
-    medium: '中',
-    high: '高',
-    urgent: '紧急'
+  const labelMap: Record<string, string> = {
+    low: 'priorities.low',
+    medium: 'priorities.medium',
+    high: 'priorities.high',
+    urgent: 'priorities.urgent'
   };
-  return labels[priority] || priority;
+  const key = labelMap[priority];
+  return key ? t(key) : priority;
 };
 
 const getPriorityVariant = (priority: string) => {
@@ -379,17 +383,13 @@ const getDaysRemainingLabel = (endDate: string): string => {
   const days = getDaysRemaining(endDate);
 
   if (days < 0) {
-    return `已逾期 ${Math.abs(days)} 天`;
+    return t('dashboard.upcomingTasks.daysRemaining.overdue', { days: Math.abs(days) });
   } else if (days === 0) {
-    return '今天到期';
+    return t('dashboard.upcomingTasks.daysRemaining.today');
   } else if (days === 1) {
-    return '明天到期';
-  } else if (days <= 3) {
-    return `剩余 ${days} 天`;
-  } else if (days <= 7) {
-    return `剩余 ${days} 天`;
+    return t('dashboard.upcomingTasks.daysRemaining.tomorrow');
   } else {
-    return `剩余 ${days} 天`;
+    return t('dashboard.upcomingTasks.daysRemaining.days', { days });
   }
 };
 
@@ -418,9 +418,9 @@ const getProjectName = (projectId: string): string => {
 
 // 获取负责人名称
 const getAssigneeName = (assigneeId: string | undefined): string => {
-  if (!assigneeId) return '未分配';
+  if (!assigneeId) return t('dashboard.upcomingTasks.unassigned');
   const user = userStore.users.find(u => u.id === assigneeId);
-  return user?.name || '未分配';
+  return user?.name || t('dashboard.upcomingTasks.unassigned');
 };
 
 const initTaskChart = () => {
@@ -438,7 +438,7 @@ const initTaskChart = () => {
     // 显示空状态
     const option = {
       title: {
-        text: '暂无任务数据',
+        text: t('dashboard.charts.noTaskData'),
         left: 'center',
         top: 'center',
         textStyle: {
@@ -453,9 +453,9 @@ const initTaskChart = () => {
 
   // 准备图表数据
   const chartData = [
-    { value: statistics.value.todoTasks, name: '待办', itemStyle: { color: '#94a3b8' } },
-    { value: statistics.value.inProgressTasks, name: '进行中', itemStyle: { color: '#3b82f6' } },
-    { value: statistics.value.completedTasks, name: '已完成', itemStyle: { color: '#10b981' } }
+    { value: statistics.value.todoTasks, name: t('taskStatus.todo'), itemStyle: { color: '#94a3b8' } },
+    { value: statistics.value.inProgressTasks, name: t('taskStatus.inProgress'), itemStyle: { color: '#3b82f6' } },
+    { value: statistics.value.completedTasks, name: t('taskStatus.done'), itemStyle: { color: '#10b981' } }
   ];
 
   // 计算总数用于百分比显示
@@ -528,7 +528,7 @@ const initProjectChart = () => {
     // 显示空状态
     const option = {
       title: {
-        text: '暂无项目数据',
+        text: t('dashboard.charts.noProjectData'),
         left: 'center',
         top: 'center',
         textStyle: {
@@ -550,7 +550,7 @@ const initProjectChart = () => {
       formatter: (params: any) => {
         const param = params[0];
         const project = recentProjects.value[param.dataIndex];
-        return `${project.name}<br/>进度: ${project.progress}%`;
+        return `${project.name}<br/>${t('dashboard.recentProjects.progress')}: ${project.progress}%`;
       }
     },
     grid: {
@@ -576,7 +576,7 @@ const initProjectChart = () => {
     },
     series: [
       {
-        name: '进度',
+        name: t('dashboard.recentProjects.progress'),
         type: 'bar',
         data: recentProjects.value.map(p => ({
           value: p.progress || 0,

@@ -11,14 +11,14 @@
           </button>
           <div>
             <h1 class="text-2xl font-bold text-secondary-900">{{ project?.name }}</h1>
-            <p class="mt-1 text-sm text-secondary-600">任务看板</p>
+            <p class="mt-1 text-sm text-secondary-600">{{ $t('taskBoard.title') }}</p>
           </div>
         </div>
         <Button variant="primary" @click="openCreateModal">
           <svg class="mr-2 h-5 w-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4" />
           </svg>
-          新建任务
+          {{ $t('taskBoard.newTask') }}
         </Button>
       </div>
 
@@ -27,7 +27,7 @@
         <!-- Todo Column -->
         <div class="rounded-xl bg-secondary-50 p-4">
           <div class="mb-4 flex items-center justify-between">
-            <h3 class="font-semibold text-secondary-900">待办</h3>
+            <h3 class="font-semibold text-secondary-900">{{ $t('taskBoard.columns.todo') }}</h3>
             <Badge variant="default">{{ todoTasks.length }}</Badge>
           </div>
           <draggable
@@ -65,14 +65,14 @@
             <svg class="mr-2 h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
               <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4" />
             </svg>
-            添加任务
+            {{ $t('taskBoard.addTask') }}
           </button>
         </div>
 
         <!-- In Progress Column -->
         <div class="rounded-xl bg-secondary-50 p-4">
           <div class="mb-4 flex items-center justify-between">
-            <h3 class="font-semibold text-secondary-900">进行中</h3>
+            <h3 class="font-semibold text-secondary-900">{{ $t('taskBoard.columns.inProgress') }}</h3>
             <Badge variant="primary">{{ inProgressTasksList.length }}</Badge>
           </div>
           <draggable
@@ -110,14 +110,14 @@
             <svg class="mr-2 h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
               <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4" />
             </svg>
-            添加任务
+            {{ $t('taskBoard.addTask') }}
           </button>
         </div>
 
         <!-- Done Column -->
         <div class="rounded-xl bg-secondary-50 p-4">
           <div class="mb-4 flex items-center justify-between">
-            <h3 class="font-semibold text-secondary-900">已完成</h3>
+            <h3 class="font-semibold text-secondary-900">{{ $t('taskBoard.columns.done') }}</h3>
             <Badge variant="success">{{ doneTasksList.length }}</Badge>
           </div>
           <draggable
@@ -155,7 +155,7 @@
             <svg class="mr-2 h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
               <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4" />
             </svg>
-            添加任务
+            {{ $t('taskBoard.addTask') }}
           </button>
         </div>
       </div>
@@ -175,7 +175,7 @@
       <!-- Task Detail Drawer -->
       <Drawer
         :open="drawerOpen"
-        title="任务详情"
+        :title="$t('taskBoard.taskDetail')"
         @close="drawerOpen = false"
       >
         <TaskDetail
@@ -194,6 +194,7 @@
 <script setup lang="ts">
 import { ref, computed, onMounted } from 'vue';
 import { useRoute, useRouter } from 'vue-router';
+import { useI18n } from 'vue-i18n';
 import draggable from 'vuedraggable';
 import MainLayout from '@/components/layout/MainLayout.vue';
 import TaskCard from '@/components/task/TaskCard.vue';
@@ -209,6 +210,7 @@ import type { Task } from '@/types';
 
 const route = useRoute();
 const router = useRouter();
+const { t } = useI18n();
 const projectStore = useProjectStore();
 const taskStore = useTaskStore();
 
@@ -377,7 +379,7 @@ const handleDeleteTask = async (task: Task) => {
     console.log('TaskBoard: 任务删除成功，抽屉已关闭');
   } catch (error) {
     console.error('TaskBoard: 删除任务失败', error);
-    alert('删除任务失败: ' + (error as Error).message);
+    alert(t('taskBoard.messages.deleteFailed') + (error as Error).message);
   }
 };
 

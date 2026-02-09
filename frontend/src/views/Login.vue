@@ -5,6 +5,11 @@
 
     <!-- 登录表单卡片 -->
     <div class="login-card">
+      <!-- 语言切换按钮 -->
+      <div class="language-switcher-wrapper">
+        <LanguageSwitcher />
+      </div>
+
       <!-- Logo和标题 -->
       <div class="login-header">
         <div class="logo">
@@ -12,8 +17,8 @@
             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 10V3L4 14h7v7l9-11h-7z" />
           </svg>
         </div>
-        <h1 class="login-title">项目管理系统</h1>
-        <p class="login-subtitle">欢迎回来</p>
+        <h1 class="login-title">{{ $t('login.title') }}</h1>
+        <p class="login-subtitle">{{ $t('login.subtitle') }}</p>
       </div>
 
       <!-- 登录表单 -->
@@ -26,7 +31,7 @@
             <input
               v-model="loginForm.userId"
               type="text"
-              placeholder="用户ID"
+              :placeholder="$t('login.userIdPlaceholder')"
               required
               class="form-input"
             />
@@ -41,7 +46,7 @@
             <input
               v-model="loginForm.password"
               :type="showPassword ? 'text' : 'password'"
-              placeholder="密码"
+              :placeholder="$t('login.passwordPlaceholder')"
               required
               class="form-input"
             />
@@ -64,23 +69,26 @@
         <div class="form-options">
           <label class="checkbox-label">
             <input v-model="loginForm.remember" type="checkbox" class="checkbox" />
-            <span>记住我</span>
+            <span>{{ $t('login.rememberMe') }}</span>
           </label>
         </div>
 
         <button type="submit" class="login-button" :disabled="isLoading">
-          <span v-if="!isLoading">登录</span>
-          <span v-else class="loading-spinner"></span>
+          <span v-if="!isLoading">{{ $t('login.loginButton') }}</span>
+          <span v-else class="loading-content">
+            <span class="loading-spinner"></span>
+            <span class="loading-text">{{ $t('login.loggingIn') }}</span>
+          </span>
         </button>
       </form>
 
       <!-- 底部链接 -->
       <div class="login-footer">
         <p class="footer-text">
-          登录即表示您同意我们的
-          <a href="#" class="footer-link">服务条款</a>
-          和
-          <a href="#" class="footer-link">隐私政策</a>
+          {{ $t('login.footerText') }}
+          <a href="#" class="footer-link">{{ $t('login.termsOfService') }}</a>
+          {{ $t('common.and') }}
+          <a href="#" class="footer-link">{{ $t('login.privacyPolicy') }}</a>
         </p>
       </div>
     </div>
@@ -98,10 +106,13 @@
 import { ref, onMounted, onBeforeUnmount } from 'vue';
 import { useRouter } from 'vue-router';
 import { useUserStore } from '@/stores/user';
+import { useI18n } from 'vue-i18n';
 import apiService from '@/services/api';
+import LanguageSwitcher from '@/components/common/LanguageSwitcher.vue';
 
 const router = useRouter();
 const userStore = useUserStore();
+const { t } = useI18n();
 
 const particleCanvas = ref<HTMLCanvasElement>();
 const showPassword = ref(false);
@@ -204,7 +215,7 @@ const handleResize = () => {
 
 const handleLogin = async () => {
   if (!loginForm.value.userId || !loginForm.value.password) {
-    alert('请输入用户ID和密码');
+    alert(`${t('login.validation.userIdRequired')}${t('common.and')}${t('login.validation.passwordRequired')}`);
     return;
   }
 
@@ -221,7 +232,7 @@ const handleLogin = async () => {
     const redirect = router.currentRoute.value.query.redirect as string || '/dashboard';
     router.push(redirect);
   } catch (error: any) {
-    alert(error.message || '登录失败，请检查用户ID和密码');
+    alert(error.message || t('login.error.loginFailed'));
   } finally {
     isLoading.value = false;
   }
@@ -332,6 +343,13 @@ onBeforeUnmount(() => {
     opacity: 1;
     transform: translateY(0);
   }
+}
+
+.language-switcher-wrapper {
+  position: absolute;
+  top: 20px;
+  right: 20px;
+  z-index: 20;
 }
 
 .login-header {
@@ -492,6 +510,13 @@ onBeforeUnmount(() => {
   cursor: not-allowed;
 }
 
+.loading-content {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 12px;
+}
+
 .loading-spinner {
   display: inline-block;
   width: 20px;
@@ -500,6 +525,11 @@ onBeforeUnmount(() => {
   border-top-color: white;
   border-radius: 50%;
   animation: spin 0.8s linear infinite;
+}
+
+.loading-text {
+  font-size: 16px;
+  font-weight: 600;
 }
 
 @keyframes spin {
