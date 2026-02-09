@@ -362,10 +362,54 @@ export default {
     week: '주',
     month: '월',
     quarter: '분기',
+    dayView: '일 보기',
+    weekView: '주 보기',
+    monthView: '월 보기',
     zoomIn: '확대',
     zoomOut: '축소',
     fitToScreen: '화면에 맞추기',
-    export: '차트 내보내기'
+    export: '차트 내보내기',
+    // 상태 범례
+    status: '상태',
+    statusTodo: '할 일',
+    statusInProgress: '진행 중',
+    statusDone: '완료',
+    // 열 이름
+    taskName: '작업 이름',
+    startDate: '시작일',
+    duration: '공수',
+    // 날짜 형식
+    yearFormat: '%Y년',
+    monthFormat: '%m월',
+    yearMonthFormat: '%Y년 %m월',
+    weekFormat: '제%W주',
+    dayFormat: '%d',
+    // 도구 설명
+    tooltip: {
+      assignee: '담당자',
+      status: '상태',
+      priority: '우선순위',
+      startTime: '시작',
+      endTime: '종료',
+      duration: '공수',
+      days: '일',
+      estimated: '예상',
+      actual: '실제',
+      progress: '진행률'
+    },
+    // dhtmlx gantt locale 설정
+    locale: {
+      newTask: '새 작업',
+      todayButton: '오늘',
+      confirmDeleting: '작업을 삭제하시겠습니까?',
+      description: '설명',
+      timePeriod: '기간',
+      type: '유형'
+    },
+    // 날짜 관련
+    months: ['1월', '2월', '3월', '4월', '5월', '6월', '7월', '8월', '9월', '10월', '11월', '12월'],
+    days: ['일요일', '월요일', '화요일', '수요일', '목요일', '금요일', '토요일'],
+    daysShort: ['일', '월', '화', '수', '목', '금', '토']
   },
 
   // 팀 구성원
@@ -481,13 +525,64 @@ export default {
   // 설정
   settings: {
     title: '설정',
-    subtitle: '시스템 설정을 관리하세요',
-    profile: '프로필',
-    account: '계정 설정',
-    preferences: '환경 설정',
-    notifications: '알림 설정',
-    language: '언어',
-    theme: '테마',
+    subtitle: '시스템 구성 및 환경 설정 관리',
+    navigation: {
+      profile: '프로필',
+      notifications: '알림 설정',
+      display: '디스플레이 설정',
+      security: '보안 설정',
+      account: '계정 설정',
+      preferences: '환경 설정'
+    },
+    // 프로필
+    profile: {
+      title: '프로필',
+      changeAvatar: '아바타 변경',
+      avatarHint: 'JPG, PNG 형식 지원, 최대 2MB',
+      name: '이름',
+      email: '이메일',
+      department: '부서',
+      role: '역할',
+      saveChanges: '변경사항 저장'
+    },
+    // 알림 설정
+    notifications: {
+      title: '알림 설정',
+      emailNotifications: '이메일 알림',
+      emailNotificationsDesc: '프로젝트 업데이트 및 작업 배정에 대한 이메일 알림 수신',
+      browserNotifications: '브라우저 알림',
+      browserNotificationsDesc: '브라우저에서 데스크톱 알림 표시',
+      taskReminders: '작업 알림',
+      taskRemindersDesc: '작업 마감일 전 알림',
+      saveChanges: '변경사항 저장'
+    },
+    // 디스플레이 설정
+    display: {
+      title: '디스플레이 설정',
+      theme: '테마',
+      language: '언어',
+      dateFormat: '날짜 형식',
+      saveChanges: '변경사항 저장',
+      themes: {
+        light: '라이트',
+        dark: '다크',
+        auto: '자동'
+      }
+    },
+    // 보안 설정
+    security: {
+      title: '보안 설정',
+      changePassword: '비밀번호 변경',
+      changePasswordDesc: '정기적으로 비밀번호를 변경하면 계정 보안에 도움이 됩니다',
+      currentPassword: '현재 비밀번호',
+      newPassword: '새 비밀번호',
+      confirmPassword: '새 비밀번호 확인',
+      updatePassword: '비밀번호 업데이트',
+      twoFactor: '2단계 인증',
+      twoFactorDesc: '계정 보호를 위한 추가 보안 레이어',
+      enableTwoFactor: '2단계 인증 사용'
+    },
+    // 공통
     logout: '로그아웃'
   },
 

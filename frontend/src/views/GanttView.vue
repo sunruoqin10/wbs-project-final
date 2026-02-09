@@ -11,14 +11,14 @@
           </button>
           <div>
             <h1 class="text-2xl font-bold text-secondary-900">{{ project?.name }}</h1>
-            <p class="mt-1 text-sm text-secondary-600">甘特图</p>
+            <p class="mt-1 text-sm text-secondary-600">{{ t('gantt.title') }}</p>
           </div>
         </div>
         <div class="flex items-center gap-3">
           <Select v-model="scale" class="w-32">
-            <option value="day">日视图</option>
-            <option value="week">周视图</option>
-            <option value="month">月视图</option>
+            <option value="day">{{ t('gantt.dayView') }}</option>
+            <option value="week">{{ t('gantt.weekView') }}</option>
+            <option value="month">{{ t('gantt.monthView') }}</option>
           </Select>
           <Button variant="secondary" @click="zoomIn">
             <svg class="h-5 w-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -35,25 +35,25 @@
 
       <!-- Gantt Chart -->
       <Card>
-        <GanttChart :tasks="projectTasks" :project="project!" :scale="scale" />
+        <GanttChart v-if="project" :tasks="projectTasks" :project="project" :scale="scale" />
       </Card>
 
       <!-- Legend -->
       <Card>
         <div class="flex items-center justify-between">
-          <h3 class="font-semibold text-secondary-900">状态</h3>
+          <h3 class="font-semibold text-secondary-900">{{ t('gantt.status') }}</h3>
           <div class="flex items-center gap-6">
             <div class="flex items-center gap-2">
               <div class="h-3 w-3 rounded" style="background-color: #95a5a6;"></div>
-              <span class="text-sm text-secondary-600">待办</span>
+              <span class="text-sm text-secondary-600">{{ t('gantt.statusTodo') }}</span>
             </div>
             <div class="flex items-center gap-2">
               <div class="h-3 w-3 rounded" style="background-color: #3498db;"></div>
-              <span class="text-sm text-secondary-600">进行中</span>
+              <span class="text-sm text-secondary-600">{{ t('gantt.statusInProgress') }}</span>
             </div>
             <div class="flex items-center gap-2">
               <div class="h-3 w-3 rounded" style="background-color: #27ae60;"></div>
-              <span class="text-sm text-secondary-600">已完成</span>
+              <span class="text-sm text-secondary-600">{{ t('gantt.statusDone') }}</span>
             </div>
           </div>
         </div>
@@ -65,6 +65,7 @@
 <script setup lang="ts">
 import { ref, computed, onMounted } from 'vue';
 import { useRoute, useRouter } from 'vue-router';
+import { useI18n } from 'vue-i18n';
 import MainLayout from '@/components/layout/MainLayout.vue';
 import GanttChart from '@/components/gantt/GanttChart.vue';
 import Card from '@/components/common/Card.vue';
@@ -75,6 +76,7 @@ import { useTaskStore } from '@/stores/task';
 
 const route = useRoute();
 const router = useRouter();
+const { t } = useI18n();
 const projectStore = useProjectStore();
 const taskStore = useTaskStore();
 

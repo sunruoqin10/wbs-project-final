@@ -6,6 +6,7 @@
 
 <script setup lang="ts">
 import { ref, onMounted, watch, onBeforeUnmount } from 'vue';
+import { useI18n } from 'vue-i18n';
 import { gantt } from 'dhtmlx-gantt';
 import 'dhtmlx-gantt/codebase/skins/dhtmlxgantt_meadow.css';
 import type { Task as GanttTask } from 'dhtmlx-gantt';
@@ -21,6 +22,7 @@ interface Props {
 }
 
 const props = defineProps<Props>();
+const { t } = useI18n();
 const userStore = useUserStore();
 const taskStore = useTaskStore();
 const isInitialized = ref(false);
@@ -89,23 +91,23 @@ const getScaleConfig = () => {
   switch (props.scale) {
     case 'day':
       return [
-        { unit: 'month', step: 1, format: '%Y年 %m月' },
-        { unit: 'day', step: 1, format: '%d' }
+        { unit: 'month', step: 1, format: t('gantt.yearMonthFormat') },
+        { unit: 'day', step: 1, format: t('gantt.dayFormat') }
       ];
     case 'week':
       return [
-        { unit: 'month', step: 1, format: '%Y年 %m月' },
-        { unit: 'week', step: 1, format: '第%W周' }
+        { unit: 'month', step: 1, format: t('gantt.yearMonthFormat') },
+        { unit: 'week', step: 1, format: t('gantt.weekFormat') }
       ];
     case 'month':
       return [
-        { unit: 'year', step: 1, format: '%Y年' },
-        { unit: 'month', step: 1, format: '%m月' }
+        { unit: 'year', step: 1, format: t('gantt.yearFormat') },
+        { unit: 'month', step: 1, format: t('gantt.monthFormat') }
       ];
     default:
       return [
-        { unit: 'month', step: 1, format: '%Y年 %m月' },
-        { unit: 'day', step: 1, format: '%d' }
+        { unit: 'month', step: 1, format: t('gantt.yearMonthFormat') },
+        { unit: 'day', step: 1, format: t('gantt.dayFormat') }
       ];
   }
 };
@@ -157,20 +159,20 @@ const initGantt = () => {
   gantt.config.columns = [
     {
       name: 'text',
-      label: '任务名称',
+      label: t('gantt.taskName'),
       tree: true,
       width: '*',
       resize: true
     },
     {
       name: 'start_date',
-      label: '开始时间',
+      label: t('gantt.startDate'),
       align: 'center',
       width: 100
     },
     {
       name: 'duration',
-      label: '工期',
+      label: t('gantt.duration'),
       align: 'center',
       width: 60
     }
@@ -209,23 +211,23 @@ const initGantt = () => {
     if (ganttTask.assigneeId) {
       const assignee = userStore.users.find(u => u.id === ganttTask.assigneeId);
       if (assignee) {
-        assigneeInfo = `<b>负责人：</b>${assignee.name}<br/>`;
+        assigneeInfo = `<b>${t('gantt.tooltip.assignee')}：</b>${assignee.name}<br/>`;
       }
     }
 
     // 状态映射
     const statusMap: Record<string, string> = {
-      'todo': '待办',
-      'in-progress': '进行中',
-      'done': '已完成'
+      'todo': t('gantt.statusTodo'),
+      'in-progress': t('gantt.statusInProgress'),
+      'done': t('gantt.statusDone')
     };
 
     // 优先级映射
     const priorityMap: Record<string, string> = {
-      'low': '低',
-      'medium': '中',
-      'high': '高',
-      'urgent': '紧急'
+      'low': t('priorities.low'),
+      'medium': t('priorities.medium'),
+      'high': t('priorities.high'),
+      'urgent': t('priorities.urgent')
     };
 
     // 格式化日期
@@ -252,11 +254,11 @@ const initGantt = () => {
     // 基本信息
     tooltip += `
       <div style="margin-bottom: 4px;">
-        <span style="color: #95a5a6;">状态：</span>
+        <span style="color: #95a5a6;">${t('gantt.tooltip.status')}：</span>
         <span style="color: ${getStatusColor(ganttTask.status)}; font-weight: bold;">
           ${statusMap[ganttTask.status] || ganttTask.status}
         </span>
-        <span style="margin-left: 10px; color: #95a5a6;">优先级：</span>
+        <span style="margin-left: 10px; color: #95a5a6;">${t('gantt.tooltip.priority')}：</span>
         <span style="color: ${getPriorityColor(ganttTask.priority)}; font-weight: bold;">
           ${priorityMap[ganttTask.priority] || ganttTask.priority}
         </span>
@@ -266,9 +268,9 @@ const initGantt = () => {
     // 时间信息
     tooltip += `
       <div style="margin-top: 6px; padding-top: 6px; border-top: 1px dashed #bdc3c7;">
-        <div style="color: #95a5a6;">开始：${formatDate(start)}</div>
-        <div style="color: #95a5a6;">结束：${formatDate(end)}</div>
-        <div style="color: #95a5a6;">工期：${ganttTask.duration} 天</div>
+        <div style="color: #95a5a6;">${t('gantt.tooltip.startTime')}：${formatDate(start)}</div>
+        <div style="color: #95a5a6;">${t('gantt.tooltip.endTime')}：${formatDate(end)}</div>
+        <div style="color: #95a5a6;">${t('gantt.tooltip.duration')}：${ganttTask.duration} ${t('gantt.tooltip.days')}</div>
       </div>
     `;
 
@@ -276,10 +278,10 @@ const initGantt = () => {
     if (ganttTask.estimatedHours || ganttTask.actualHours) {
       tooltip += `<div style="margin-top: 4px;">`;
       if (ganttTask.estimatedHours) {
-        tooltip += `<span style="color: #95a5a6;">预估：${ganttTask.estimatedHours}h</span>`;
+        tooltip += `<span style="color: #95a5a6;">${t('gantt.tooltip.estimated')}：${ganttTask.estimatedHours}h</span>`;
       }
       if (ganttTask.actualHours) {
-        tooltip += `<span style="margin-left: 10px; color: #95a5a6;">实际：${ganttTask.actualHours}h</span>`;
+        tooltip += `<span style="margin-left: 10px; color: #95a5a6;">${t('gantt.tooltip.actual')}：${ganttTask.actualHours}h</span>`;
       }
       tooltip += `</div>`;
     }
@@ -292,7 +294,7 @@ const initGantt = () => {
     // 进度信息
     tooltip += `
       <div style="margin-top: 6px; padding-top: 6px; border-top: 1px dashed #bdc3c7;">
-        <div style="color: #95a5a6;">进度：${Math.round(ganttTask.progress * 100)}%</div>
+        <div style="color: #95a5a6;">${t('gantt.tooltip.progress')}：${Math.round(ganttTask.progress * 100)}%</div>
         <div style="width: 100%; background: #ecf0f1; height: 6px; border-radius: 3px; margin-top: 4px;">
           <div style="width: ${Math.round(ganttTask.progress * 100)}%; background: #3498db; height: 100%; border-radius: 3px;"></div>
         </div>
@@ -375,31 +377,31 @@ const refreshGantt = () => {
 onMounted(() => {
   gantt.config.locale = {
     date: {
-      month_full: ['1月', '2月', '3月', '4月', '5月', '6月', '7月', '8月', '9月', '10月', '11月', '12月'],
-      month_short: ['1月', '2月', '3月', '4月', '5月', '6月', '7月', '8月', '9月', '10月', '11月', '12月'],
-      day_full: ['星期日', '星期一', '星期二', '星期三', '星期四', '星期五', '星期六'],
-      day_short: ['日', '一', '二', '三', '四', '五', '六']
+      month_full: t('gantt.months'),
+      month_short: t('gantt.months'),
+      day_full: t('gantt.days'),
+      day_short: t('gantt.daysShort')
     },
     labels: {
-      new_task: '新任务',
-      dhx_cal_today_button: '今天',
-      day_tab: '日',
-      week_tab: '周',
-      month_tab: '月',
-      new_event: '新事件',
-      icon_save: '保存',
-      icon_cancel: '关闭',
-      icon_details: '详情',
-      icon_edit: '编辑',
-      icon_delete: '删除',
+      new_task: t('gantt.locale.newTask'),
+      dhx_cal_today_button: t('gantt.locale.todayButton'),
+      day_tab: t('gantt.day'),
+      week_tab: t('gantt.week'),
+      month_tab: t('gantt.month'),
+      new_event: t('gantt.locale.newTask'),
+      icon_save: t('common.save'),
+      icon_cancel: t('common.cancel'),
+      icon_details: t('common.description'),
+      icon_edit: t('common.edit'),
+      icon_delete: t('common.delete'),
       confirm_closing: '',
-      confirm_deleting: '确定删除任务?',
-      section_description: '描述',
-      section_time: '时间周期',
-      section_type: '类型',
-      column_text: '任务名',
-      column_start_date: '开始时间',
-      column_duration: '工期',
+      confirm_deleting: t('gantt.locale.confirmDeleting'),
+      section_description: t('gantt.locale.description'),
+      section_time: t('gantt.locale.timePeriod'),
+      section_type: t('gantt.locale.type'),
+      column_text: t('gantt.taskName'),
+      column_start_date: t('gantt.startDate'),
+      column_duration: t('gantt.duration'),
       column_add: ''
     }
   };

@@ -362,10 +362,54 @@ export default {
     week: '周',
     month: '月',
     quarter: '季度',
+    dayView: '日视图',
+    weekView: '周视图',
+    monthView: '月视图',
     zoomIn: '放大',
     zoomOut: '缩小',
     fitToScreen: '适应屏幕',
-    export: '导出图表'
+    export: '导出图表',
+    // 状态图例
+    status: '状态',
+    statusTodo: '待办',
+    statusInProgress: '进行中',
+    statusDone: '已完成',
+    // 列名
+    taskName: '任务名称',
+    startDate: '开始时间',
+    duration: '工期',
+    // 日期格式
+    yearFormat: '%Y年',
+    monthFormat: '%m月',
+    yearMonthFormat: '%Y年 %m月',
+    weekFormat: '第%W周',
+    dayFormat: '%d',
+    // 工具提示
+    tooltip: {
+      assignee: '负责人',
+      status: '状态',
+      priority: '优先级',
+      startTime: '开始',
+      endTime: '结束',
+      duration: '工期',
+      days: '天',
+      estimated: '预估',
+      actual: '实际',
+      progress: '进度'
+    },
+    // dhtmlx gantt locale 配置
+    locale: {
+      newTask: '新任务',
+      todayButton: '今天',
+      confirmDeleting: '确定删除任务?',
+      description: '描述',
+      timePeriod: '时间周期',
+      type: '类型'
+    },
+    // 日期相关
+    months: ['1月', '2月', '3月', '4月', '5月', '6月', '7月', '8月', '9月', '10月', '11月', '12月'],
+    days: ['星期日', '星期一', '星期二', '星期三', '星期四', '星期五', '星期六'],
+    daysShort: ['日', '一', '二', '三', '四', '五', '六']
   },
 
   // 团队成员
@@ -481,13 +525,64 @@ export default {
   // 设置
   settings: {
     title: '设置',
-    subtitle: '管理系统设置',
-    profile: '个人资料',
-    account: '账号设置',
-    preferences: '偏好设置',
-    notifications: '通知设置',
-    language: '语言',
-    theme: '主题',
+    subtitle: '管理系统配置和偏好设置',
+    navigation: {
+      profile: '个人资料',
+      notifications: '通知设置',
+      display: '显示设置',
+      security: '安全设置',
+      account: '账号设置',
+      preferences: '偏好设置'
+    },
+    // 个人资料
+    profile: {
+      title: '个人资料',
+      changeAvatar: '更换头像',
+      avatarHint: '支持 JPG、PNG 格式，最大 2MB',
+      name: '姓名',
+      email: '邮箱',
+      department: '部门',
+      role: '角色',
+      saveChanges: '保存更改'
+    },
+    // 通知设置
+    notifications: {
+      title: '通知设置',
+      emailNotifications: '邮件通知',
+      emailNotificationsDesc: '接收项目更新和任务分配的邮件通知',
+      browserNotifications: '浏览器通知',
+      browserNotificationsDesc: '在浏览器中显示桌面通知',
+      taskReminders: '任务提醒',
+      taskRemindersDesc: '任务截止日期前的提醒通知',
+      saveChanges: '保存更改'
+    },
+    // 显示设置
+    display: {
+      title: '显示设置',
+      theme: '主题',
+      language: '语言',
+      dateFormat: '日期格式',
+      saveChanges: '保存更改',
+      themes: {
+        light: '浅色',
+        dark: '深色',
+        auto: '自动'
+      }
+    },
+    // 安全设置
+    security: {
+      title: '安全设置',
+      changePassword: '修改密码',
+      changePasswordDesc: '定期修改密码可以保护您的账户安全',
+      currentPassword: '当前密码',
+      newPassword: '新密码',
+      confirmPassword: '确认新密码',
+      updatePassword: '更新密码',
+      twoFactor: '两步验证',
+      twoFactorDesc: '添加额外的安全层来保护您的账户',
+      enableTwoFactor: '启用两步验证'
+    },
+    // 通用
     logout: '退出系统'
   },
 

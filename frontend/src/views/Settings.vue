@@ -3,8 +3,8 @@
     <div class="space-y-6">
       <!-- Page Header -->
       <div>
-        <h1 class="text-2xl font-bold text-secondary-900">设置</h1>
-        <p class="mt-1 text-sm text-secondary-600">管理系统配置和偏好设置</p>
+        <h1 class="text-2xl font-bold text-secondary-900">{{ t('settings.title') }}</h1>
+        <p class="mt-1 text-sm text-secondary-600">{{ t('settings.subtitle') }}</p>
       </div>
 
       <div class="grid grid-cols-1 gap-6 lg:grid-cols-3">
@@ -35,7 +35,7 @@
           <!-- Profile Settings -->
           <Card v-if="activeSection === 'profile'">
             <template #header>
-              <h3 class="text-lg font-semibold text-secondary-900">个人资料</h3>
+              <h3 class="text-lg font-semibold text-secondary-900">{{ t('settings.profile.title') }}</h3>
             </template>
             <div class="space-y-6">
               <!-- Avatar -->
@@ -46,25 +46,25 @@
                   class="h-20 w-20 rounded-full border-4 border-secondary-200"
                 />
                 <div>
-                  <Button variant="secondary" size="sm">更换头像</Button>
-                  <p class="mt-1 text-xs text-secondary-500">支持 JPG、PNG 格式，最大 2MB</p>
+                  <Button variant="secondary" size="sm">{{ t('settings.profile.changeAvatar') }}</Button>
+                  <p class="mt-1 text-xs text-secondary-500">{{ t('settings.profile.avatarHint') }}</p>
                 </div>
               </div>
 
               <!-- Form -->
               <div class="grid grid-cols-1 gap-4 sm:grid-cols-2">
-                <Input label="姓名" v-model="profileForm.name" />
-                <Input label="邮箱" v-model="profileForm.email" type="email" />
-                <Input label="部门" v-model="profileForm.department" />
-                <Select label="角色" v-model="profileForm.role">
-                  <option value="admin">管理员</option>
-                  <option value="project-manager">项目经理</option>
-                  <option value="member">成员</option>
+                <Input :label="t('settings.profile.name')" v-model="profileForm.name" />
+                <Input :label="t('settings.profile.email')" v-model="profileForm.email" type="email" />
+                <Input :label="t('settings.profile.department')" v-model="profileForm.department" />
+                <Select :label="t('settings.profile.role')" v-model="profileForm.role">
+                  <option value="admin">{{ t('roles.admin') }}</option>
+                  <option value="project-manager">{{ t('roles.projectManager') }}</option>
+                  <option value="member">{{ t('roles.member') }}</option>
                 </Select>
               </div>
 
               <div class="flex justify-end">
-                <Button variant="primary">保存更改</Button>
+                <Button variant="primary">{{ t('settings.profile.saveChanges') }}</Button>
               </div>
             </div>
           </Card>
@@ -72,13 +72,13 @@
           <!-- Notification Settings -->
           <Card v-if="activeSection === 'notifications'">
             <template #header>
-              <h3 class="text-lg font-semibold text-secondary-900">通知设置</h3>
+              <h3 class="text-lg font-semibold text-secondary-900">{{ t('settings.notifications.title') }}</h3>
             </template>
             <div class="space-y-4">
               <div class="flex items-center justify-between rounded-lg border border-secondary-200 p-4">
                 <div>
-                  <p class="font-medium text-secondary-900">邮件通知</p>
-                  <p class="text-sm text-secondary-600">接收项目更新和任务分配的邮件通知</p>
+                  <p class="font-medium text-secondary-900">{{ t('settings.notifications.emailNotifications') }}</p>
+                  <p class="text-sm text-secondary-600">{{ t('settings.notifications.emailNotificationsDesc') }}</p>
                 </div>
                 <button
                   @click="notificationSettings.email = !notificationSettings.email"
@@ -94,8 +94,8 @@
 
               <div class="flex items-center justify-between rounded-lg border border-secondary-200 p-4">
                 <div>
-                  <p class="font-medium text-secondary-900">浏览器通知</p>
-                  <p class="text-sm text-secondary-600">在浏览器中显示桌面通知</p>
+                  <p class="font-medium text-secondary-900">{{ t('settings.notifications.browserNotifications') }}</p>
+                  <p class="text-sm text-secondary-600">{{ t('settings.notifications.browserNotificationsDesc') }}</p>
                 </div>
                 <button
                   @click="notificationSettings.browser = !notificationSettings.browser"
@@ -111,8 +111,8 @@
 
               <div class="flex items-center justify-between rounded-lg border border-secondary-200 p-4">
                 <div>
-                  <p class="font-medium text-secondary-900">任务提醒</p>
-                  <p class="text-sm text-secondary-600">任务截止日期前的提醒通知</p>
+                  <p class="font-medium text-secondary-900">{{ t('settings.notifications.taskReminders') }}</p>
+                  <p class="text-sm text-secondary-600">{{ t('settings.notifications.taskRemindersDesc') }}</p>
                 </div>
                 <button
                   @click="notificationSettings.taskReminder = !notificationSettings.taskReminder"
@@ -127,7 +127,7 @@
               </div>
 
               <div class="flex justify-end">
-                <Button variant="primary">保存更改</Button>
+                <Button variant="primary">{{ t('settings.notifications.saveChanges') }}</Button>
               </div>
             </div>
           </Card>
@@ -135,11 +135,11 @@
           <!-- Display Settings -->
           <Card v-if="activeSection === 'display'">
             <template #header>
-              <h3 class="text-lg font-semibold text-secondary-900">显示设置</h3>
+              <h3 class="text-lg font-semibold text-secondary-900">{{ t('settings.display.title') }}</h3>
             </template>
             <div class="space-y-6">
               <div>
-                <label class="block text-sm font-medium text-secondary-700">主题</label>
+                <label class="block text-sm font-medium text-secondary-700">{{ t('settings.display.theme') }}</label>
                 <div class="mt-2 grid grid-cols-3 gap-3">
                   <button
                     v-for="theme in themes"
@@ -159,16 +159,15 @@
               </div>
 
               <div>
-                <label class="block text-sm font-medium text-secondary-700">语言</label>
+                <label class="block text-sm font-medium text-secondary-700">{{ t('settings.display.language') }}</label>
                 <Select v-model="displaySettings.language" class="mt-2">
-                  <option value="zh-CN">简体中文</option>
-                  <option value="en-US">English</option>
-                  <option value="ja-JP">日本語</option>
+                  <option value="zh-CN">{{ t('lang.name') }} {{ t('lang.flag') }}</option>
+                  <option value="ko">{{ t('lang.name', { locale: 'ko' }) }} {{ t('lang.flag', { locale: 'ko' }) }}</option>
                 </Select>
               </div>
 
               <div>
-                <label class="block text-sm font-medium text-secondary-700">日期格式</label>
+                <label class="block text-sm font-medium text-secondary-700">{{ t('settings.display.dateFormat') }}</label>
                 <Select v-model="displaySettings.dateFormat" class="mt-2">
                   <option value="YYYY-MM-DD">2024-01-31</option>
                   <option value="YYYY/MM/DD">2024/01/31</option>
@@ -178,7 +177,7 @@
               </div>
 
               <div class="flex justify-end">
-                <Button variant="primary">保存更改</Button>
+                <Button variant="primary">{{ t('settings.display.saveChanges') }}</Button>
               </div>
             </div>
           </Card>
@@ -186,29 +185,29 @@
           <!-- Security Settings -->
           <Card v-if="activeSection === 'security'">
             <template #header>
-              <h3 class="text-lg font-semibold text-secondary-900">安全设置</h3>
+              <h3 class="text-lg font-semibold text-secondary-900">{{ t('settings.security.title') }}</h3>
             </template>
             <div class="space-y-6">
               <div>
-                <h4 class="text-sm font-medium text-secondary-900">修改密码</h4>
-                <p class="text-sm text-secondary-600">定期修改密码可以保护您的账户安全</p>
+                <h4 class="text-sm font-medium text-secondary-900">{{ t('settings.security.changePassword') }}</h4>
+                <p class="text-sm text-secondary-600">{{ t('settings.security.changePasswordDesc') }}</p>
                 <div class="mt-4 space-y-4">
-                  <Input label="当前密码" type="password" />
-                  <Input label="新密码" type="password" />
-                  <Input label="确认新密码" type="password" />
+                  <Input :label="t('settings.security.currentPassword')" type="password" />
+                  <Input :label="t('settings.security.newPassword')" type="password" />
+                  <Input :label="t('settings.security.confirmPassword')" type="password" />
                 </div>
                 <div class="mt-4">
-                  <Button variant="primary">更新密码</Button>
+                  <Button variant="primary">{{ t('settings.security.updatePassword') }}</Button>
                 </div>
               </div>
 
               <hr class="border-secondary-200" />
 
               <div>
-                <h4 class="text-sm font-medium text-secondary-900">两步验证</h4>
-                <p class="text-sm text-secondary-600">添加额外的安全层来保护您的账户</p>
+                <h4 class="text-sm font-medium text-secondary-900">{{ t('settings.security.twoFactor') }}</h4>
+                <p class="text-sm text-secondary-600">{{ t('settings.security.twoFactorDesc') }}</p>
                 <div class="mt-4">
-                  <Button variant="secondary">启用两步验证</Button>
+                  <Button variant="secondary">{{ t('settings.security.enableTwoFactor') }}</Button>
                 </div>
               </div>
             </div>
@@ -221,6 +220,7 @@
 
 <script setup lang="ts">
 import { ref, computed } from 'vue';
+import { useI18n } from 'vue-i18n';
 import MainLayout from '@/components/layout/MainLayout.vue';
 import Card from '@/components/common/Card.vue';
 import Button from '@/components/common/Button.vue';
@@ -228,33 +228,34 @@ import Input from '@/components/common/Input.vue';
 import Select from '@/components/common/Select.vue';
 import { useUserStore } from '@/stores/user';
 
+const { t } = useI18n();
 const userStore = useUserStore();
 const currentUser = computed(() => userStore.currentUser);
 
 const activeSection = ref('profile');
 
-const settingsNav = [
+const settingsNav = computed(() => [
   {
     id: 'profile',
-    label: '个人资料',
+    label: t('settings.navigation.profile'),
     icon: '<svg class="h-5 w-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" /></svg>'
   },
   {
     id: 'notifications',
-    label: '通知设置',
+    label: t('settings.navigation.notifications'),
     icon: '<svg class="h-5 w-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 17h5l-1.405-1.405A2.032 2.032 0 0118 14.158V11a6.002 6.002 0 00-4-5.659V5a2 2 0 10-4 0v.341C7.67 6.165 6 8.388 6 11v3.159c0 .538-.214 1.055-.595 1.436L4 17h5m6 0v1a3 3 0 11-6 0v-1m6 0H9" /></svg>'
   },
   {
     id: 'display',
-    label: '显示设置',
+    label: t('settings.navigation.display'),
     icon: '<svg class="h-5 w-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9.75 17L9 20l-1 1h8l-1-1-.75-3M3 13h18M5 17h14a2 2 0 002-2V5a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z" /></svg>'
   },
   {
     id: 'security',
-    label: '安全设置',
+    label: t('settings.navigation.security'),
     icon: '<svg class="h-5 w-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z" /></svg>'
   }
-];
+]);
 
 const profileForm = ref({
   name: currentUser.value?.name || '',
@@ -275,9 +276,9 @@ const displaySettings = ref({
   dateFormat: 'YYYY-MM-DD'
 });
 
-const themes = [
-  { label: '浅色', value: 'light', color: '#f8fafc' },
-  { label: '深色', value: 'dark', color: '#1e293b' },
-  { label: '自动', value: 'auto', color: '#64748b' }
-];
+const themes = computed(() => [
+  { label: t('settings.display.themes.light'), value: 'light', color: '#f8fafc' },
+  { label: t('settings.display.themes.dark'), value: 'dark', color: '#1e293b' },
+  { label: t('settings.display.themes.auto'), value: 'auto', color: '#64748b' }
+]);
 </script>
