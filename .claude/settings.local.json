@@ -14,7 +14,8 @@
       "mcp__MySQL__execute_sql",
       "Bash(npm run dev:*)",
       "Bash(npx vue-tsc:*)",
-      "Bash(npm install:*)"
+      "Bash(npm install:*)",
+      "Bash(git push:*)"
     ]
   }
 }
