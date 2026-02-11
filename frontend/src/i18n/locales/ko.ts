@@ -90,6 +90,7 @@ export default {
     footerText: '로그인하면 다음 사항에 동의하는 것으로 간주됩니다',
     termsOfService: '서비스 약관',
     privacyPolicy: '개인정보 처리방침',
+    testAccount: '테스트 계정',
     validation: {
       userIdRequired: '사용자 ID를 입력하세요',
       passwordRequired: '비밀번호를 입력하세요'

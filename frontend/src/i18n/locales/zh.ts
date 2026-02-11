@@ -90,6 +90,7 @@ export default {
     footerText: '登录即表示您同意我们的',
     termsOfService: '服务条款',
     privacyPolicy: '隐私政策',
+    testAccount: '测试账号',
     validation: {
       userIdRequired: '请输入用户ID',
       passwordRequired: '请输入密码'

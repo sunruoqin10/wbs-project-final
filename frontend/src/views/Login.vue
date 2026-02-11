@@ -80,6 +80,11 @@
             <span class="loading-text">{{ $t('login.loggingIn') }}</span>
           </span>
         </button>
+
+        <!-- 测试账号提示 -->
+        <div class="test-account-hint">
+          <span>{{ $t('login.testAccount') }}: user001 / 1</span>
+        </div>
       </form>
 
       <!-- 底部链接 -->
@@ -119,6 +124,7 @@ const showPassword = ref(false);
 const isLoading = ref(false);
 
 const loginForm = ref({
+  // 测试账号: userId: 'user001', password: '1'
   userId: '',
   password: '',
   remember: false
@@ -508,6 +514,16 @@ onBeforeUnmount(() => {
 .login-button:disabled {
   opacity: 0.7;
   cursor: not-allowed;
+}
+
+.test-account-hint {
+  text-align: center;
+  padding: 12px;
+  background: #f0f4ff;
+  border-radius: 8px;
+  font-size: 13px;
+  color: #667eea;
+  border: 1px dashed #667eea;
 }
 
 .loading-content {
