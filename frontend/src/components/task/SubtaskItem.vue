@@ -48,11 +48,19 @@
           />
           <span>{{ getAssigneeName(task.assigneeId) }}</span>
         </div>
-        <span v-if="task.startDate || task.endDate" class="meta-item date-range">
+        <span v-if="task.startDate || task.endDate" class="meta-item date-range" :class="dueDateClass">
           <svg class="w-3 h-3 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" />
           </svg>
           {{ formatStartDate }} ~ {{ formatEndDate }}
+        </span>
+
+        <!-- 延期标识 -->
+        <Badge v-if="task.isDelayed || (task.delayedDays || 0) > 0" :variant="delaySeverity" size="sm">
+          {{ delayLabel }}
+        </Badge>
+        <span v-if="task.delayedDays && task.delayedDays > 0" class="meta-item" :class="delayTextClass">
+          +{{ task.delayedDays }}天
         </span>
         <span v-if="hasChildren" class="meta-item child-count">
           → {{ getSubtasks(task.id).length }} 个子任务
@@ -200,6 +208,41 @@ const totalEstimatedHours = computed(() => {
 const totalActualHours = computed(() => {
   return props.task.actualHours || 0;
 });
+
+// 日期样式（根据到期时间显示颜色）
+const dueDateClass = computed(() => {
+  if (!props.task.endDate) return '';
+
+  const now = dayjs();
+  const dueDate = dayjs(props.task.endDate);
+  const diff = dueDate.diff(now, 'day');
+
+  if (diff < 0) return 'text-danger-600 font-medium';
+  if (diff <= 2) return 'text-warning-600 font-medium';
+  return '';
+});
+
+// 延期相关计算属性
+const delaySeverity = computed(() => {
+  const days = props.task.delayedDays || 0;
+  if (days >= 7) return 'danger';
+  if (days >= 3) return 'warning';
+  return 'info';
+});
+
+const delayLabel = computed(() => {
+  const days = props.task.delayedDays || 0;
+  if (days >= 7) return '严重延期';
+  if (days >= 3) return '已延期';
+  return '延期';
+});
+
+const delayTextClass = computed(() => {
+  const days = props.task.delayedDays || 0;
+  if (days >= 7) return 'text-danger-600';
+  if (days >= 3) return 'text-warning-600';
+  return 'text-info-600';
+});
 </script>
 
 <style scoped>
@@ -314,6 +357,33 @@ const totalActualHours = computed(() => {
   align-items: center;
   color: #9ca3af;
   font-size: 11px;
+}
+
+/* 延期文本样式 */
+.meta-item.text-danger-600 {
+  color: #dc2626;
+  font-weight: 500;
+}
+
+.meta-item.text-warning-600 {
+  color: #d97706;
+  font-weight: 500;
+}
+
+.meta-item.text-info-600 {
+  color: #2563eb;
+  font-weight: 500;
+}
+
+/* 日期范围样式 */
+.meta-item.date-range.text-danger-600 {
+  color: #dc2626;
+  font-weight: 500;
+}
+
+.meta-item.date-range.text-warning-600 {
+  color: #d97706;
+  font-weight: 500;
 }
 
 .nested-subtasks {

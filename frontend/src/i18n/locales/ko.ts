@@ -233,6 +233,14 @@ export default {
     groupBy: '그룹화 기준',
     filterBy: '필터 조건',
     clearFilters: '필터 지우기',
+    delayFilter: '지연 필터',
+    showDelayedOnly: '지연된 작업만 표시',
+    delayOptions: {
+      all: '전체',
+      delayed: '지연됨',
+      critical: '심각한 지연（≥7일）',
+      warning: '중간 지연（3-6일）'
+    },
     columns: {
       todo: '할 일',
       inProgress: '진행 중',
@@ -486,7 +494,11 @@ export default {
       totalProjects: '총 프로젝트 수',
       completionRate: '완료율',
       totalTasks: '총 작업 수',
-      inProgressTasks: '진행 중인 작업 수'
+      inProgressTasks: '진행 중인 작업 수',
+      delayedTasks: '지연된 작업 수',
+      totalDelayedDays: '총 지연 일수',
+      delayRate: '지연율',
+      criticalDelays: '심각한 지연（≥7일）'
     },
     charts: {
       projectStatusDistribution: '프로젝트 상태 분포',

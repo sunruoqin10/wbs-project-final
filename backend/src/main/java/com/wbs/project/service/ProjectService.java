@@ -1,6 +1,7 @@
 package com.wbs.project.service;
 
 import com.wbs.project.entity.Project;
+import com.wbs.project.entity.Task;
 import com.wbs.project.mapper.ProjectMapper;
 import com.wbs.project.mapper.ProjectMemberMapper;
 import lombok.RequiredArgsConstructor;
@@ -20,6 +21,7 @@ public class ProjectService {
 
     private final ProjectMapper projectMapper;
     private final ProjectMemberMapper projectMemberMapper;
+    private final TaskService taskService;
 
     /**
      * 查询所有项目（包含成员信息）
@@ -171,5 +173,74 @@ public class ProjectService {
      */
     public int getActiveProjectsCount() {
         return projectMapper.countByStatus("active");
+    }
+
+    // ==================== 延期管理方法 ====================
+
+    /**
+     * 更新项目的延期状态（基于项目中的任务）
+     */
+    public void updateProjectDelayedStatus(Project project) {
+        if (project == null) {
+            return;
+        }
+
+        // 获取项目的所有任务
+        List<Task> tasks = taskService.getTasksByProjectId(project.getId());
+        if (tasks == null || tasks.isEmpty()) {
+            // 如果没有任务，检查项目日期是否延期
+            updateProjectDelayedStatusByDate(project);
+            return;
+        }
+
+        // 计算任务的延期统计
+        taskService.updateDelayedStatus(tasks);
+
+        int delayedTasks = 0;
+        int totalDelayedDays = 0;
+
+        for (Task task : tasks) {
+            if (task.getIsDelayed() != null && task.getIsDelayed()) {
+                delayedTasks++;
+                if (task.getDelayedDays() != null) {
+                    totalDelayedDays += task.getDelayedDays();
+                }
+            }
+        }
+
+        project.setDelayedTasks(delayedTasks);
+        project.setTotalDelayedDays(totalDelayedDays);
+        project.setIsDelayed(delayedTasks > 0);
+    }
+
+    /**
+     * 更新项目的延期状态（基于项目日期）
+     */
+    private void updateProjectDelayedStatusByDate(Project project) {
+        if (project.getEndDate() == null || "completed".equals(project.getStatus())) {
+            project.setIsDelayed(false);
+            project.setDelayedTasks(0);
+            project.setTotalDelayedDays(0);
+            return;
+        }
+
+        // 检查项目是否延期
+        boolean isDelayed = project.getEndDate().isBefore(java.time.LocalDate.now());
+        project.setIsDelayed(isDelayed);
+        project.setDelayedTasks(0);
+        project.setTotalDelayedDays(0);
+    }
+
+    /**
+     * 批量更新项目的延期状态
+     */
+    public void updateProjectsDelayedStatus(List<Project> projects) {
+        if (projects == null || projects.isEmpty()) {
+            return;
+        }
+
+        for (Project project : projects) {
+            updateProjectDelayedStatus(project);
+        }
     }
 }

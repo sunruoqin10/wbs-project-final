@@ -1,6 +1,6 @@
 // API Service Layer - Connects to Spring Boot backend
 
-import type { Project, Task, User } from '@/types';
+import type { Project, Task, User, DelayStats } from '@/types';
 import { useUserStore } from '@/stores/user';
 
 const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || '/api';
@@ -272,6 +272,26 @@ class ApiService {
 
   async getTaskStats(): Promise<any> {
     return request<any>('/tasks/stats');
+  }
+
+  // Delay management API
+  async getDelayedTasks(projectId?: string | number, includeCompleted = false): Promise<Task[]> {
+    const params = new URLSearchParams();
+    if (projectId) params.append('projectId', String(projectId));
+    params.append('includeCompleted', String(includeCompleted));
+
+    return request<Task[]>(`/tasks/delayed?${params.toString()}`);
+  }
+
+  async getProjectDelayStats(projectId: string | number): Promise<DelayStats> {
+    return request<DelayStats>(`/tasks/project/${projectId}/delay-stats`);
+  }
+
+  async recordTaskDelay(taskId: string | number, newEndDate: string, delayReason: string): Promise<Task> {
+    return request<Task>(`/tasks/${taskId}/delay`, {
+      method: 'POST',
+      body: JSON.stringify({ newEndDate, delayReason }),
+    });
   }
 
   // Users API

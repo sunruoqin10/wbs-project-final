@@ -17,8 +17,19 @@
             <svg class="h-5 w-5" :class="priorityColor" fill="currentColor" viewBox="0 0 20 20">
               <path d="M5 3a2 2 0 00-2 2v2a2 2 0 002 2h2a2 2 0 002-2V5a2 2 0 00-2-2H5zM5 11a2 2 0 00-2 2v2a2 2 0 002 2h2a2 2 0 002-2v-2a2 2 0 00-2-2H5zM11 5a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2h-2a2 2 0 01-2-2V5zM11 13a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2h-2a2 2 0 01-2-2v-2z" />
             </svg>
+            <!-- 延期标识 -->
+            <Badge v-if="project.isDelayed || (project.delayedTasks || 0) > 0" :variant="delaySeverity" size="sm">
+              {{ delayLabel }}
+            </Badge>
           </div>
           <p class="mt-1 text-sm text-secondary-600 line-clamp-2">{{ project.description }}</p>
+          <!-- 延期详细信息 -->
+          <div v-if="project.isDelayed && (project.delayedTasks || 0) > 0" class="mt-2 flex items-center gap-2 text-xs">
+            <span :class="delayTextClass">{{ project.delayedTasks }} 个任务延期</span>
+            <span v-if="project.totalDelayedDays && project.totalDelayedDays > 0" :class="delayTextClass">
+              累计 {{ project.totalDelayedDays }} 天
+            </span>
+          </div>
         </div>
       </div>
 
@@ -142,4 +153,38 @@ const priorityColor = computed(() => {
 const handleClick = () => {
   router.push(`/projects/${props.project.id}`);
 };
+
+// 延期相关计算属性
+const delaySeverity = computed(() => {
+  const delayedTasks = props.project.delayedTasks || 0;
+  const totalDelayedDays = props.project.totalDelayedDays || 0;
+
+  // 如果延期任务数>=3 或总延期天数>=7天，显示严重延期
+  if (delayedTasks >= 3 || totalDelayedDays >= 7) return 'danger';
+  // 如果延期任务数>=1 或总延期天数>=3天，显示已延期
+  if (delayedTasks >= 1 || totalDelayedDays >= 3) return 'warning';
+  return 'info';
+});
+
+const delayLabel = computed(() => {
+  const delayedTasks = props.project.delayedTasks || 0;
+  const totalDelayedDays = props.project.totalDelayedDays || 0;
+
+  // 如果延期任务数>=3 或总延期天数>=7天，显示严重延期
+  if (delayedTasks >= 3 || totalDelayedDays >= 7) return '严重延期';
+  // 如果延期任务数>=1 或总延期天数>=3天，显示已延期
+  if (delayedTasks >= 1 || totalDelayedDays >= 3) return '已延期';
+  return '有延期';
+});
+
+const delayTextClass = computed(() => {
+  const delayedTasks = props.project.delayedTasks || 0;
+  const totalDelayedDays = props.project.totalDelayedDays || 0;
+
+  // 如果延期任务数>=3 或总延期天数>=7天，显示红色
+  if (delayedTasks >= 3 || totalDelayedDays >= 7) return 'text-danger-600 font-medium';
+  // 如果延期任务数>=1 或总延期天数>=3天，显示橙色
+  if (delayedTasks >= 1 || totalDelayedDays >= 3) return 'text-warning-600 font-medium';
+  return 'text-info-600';
+});
 </script>

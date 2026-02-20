@@ -125,6 +125,23 @@
         </div>
       </div>
 
+      <!-- 延期原因输入（仅当检测到日期延后时显示） -->
+      <div v-if="showDelayReasonInput">
+        <label class="mb-1 block text-sm font-medium text-secondary-700">
+          延期原因
+          <span class="text-warning-500">*</span>
+        </label>
+        <textarea
+          v-model="formData.delayReason"
+          rows="3"
+          class="w-full rounded-lg border border-warning-300 px-4 py-2 focus:border-warning-500 focus:outline-none focus:ring-2 focus:ring-warning-500/20"
+          placeholder="请说明延期原因..."
+        ></textarea>
+        <div class="mt-1 rounded-md bg-warning-50 px-3 py-2 text-xs text-warning-700">
+          ⚠️ 检测到结束日期延后，请说明延期原因
+        </div>
+      </div>
+
       <div class="grid grid-cols-2 gap-4">
         <!-- Assignee -->
         <Select
@@ -332,7 +349,18 @@ const formData = reactive({
   parentTaskId: '',
   estimatedHours: undefined as number | undefined,
   progress: 0,
-  tags: [] as string[]
+  tags: [] as string[],
+  delayReason: ''
+});
+
+// 延期相关
+const originalEndDate = ref('');
+
+const showDelayReasonInput = computed(() => {
+  if (!isEditing.value || !formData.endDate || !originalEndDate.value) {
+    return false;
+  }
+  return new Date(formData.endDate) > new Date(originalEndDate.value);
 });
 
 // 确保状态始终有默认值（防止响应式丢失）
@@ -382,12 +410,14 @@ const loadTaskData = () => {
     formData.priority = props.task.priority;
     formData.startDate = props.task.startDate;
     formData.endDate = props.task.endDate;
+    originalEndDate.value = props.task.endDate; // 记录原始结束日期
     formData.assigneeId = props.task.assigneeId || '';
     formData.parentTaskId = props.task.parentTaskId || '';
     formData.estimatedHours = props.task.estimatedHours || calculateEstimatedHours();
     formData.progress = props.task.progress;
     // 确保 tags 是数组，避免 undefined 错误
     formData.tags = props.task.tags && Array.isArray(props.task.tags) ? [...props.task.tags] : [];
+    formData.delayReason = props.task.delayReason || '';
   } else {
     // 新建任务时，明确设置默认值
     formData.title = '';
@@ -497,6 +527,12 @@ const validateForm = (): boolean => {
     }
   }
 
+  // 验证延期原因（如果检测到延期）
+  if (showDelayReasonInput.value && !formData.delayReason.trim()) {
+    errors.delayReason = '请说明延期原因';
+    isValid = false;
+  }
+
   // 验证负责人
   if (!formData.assigneeId) {
     errors.assigneeId = '请选择负责人';
@@ -540,7 +576,8 @@ const handleSubmit = async () => {
     startDate: formData.startDate || undefined,
     endDate: formData.endDate || undefined,
     estimatedHours: formData.estimatedHours,
-    progress: formData.progress
+    progress: formData.progress,
+    delayReason: formData.delayReason || undefined
   };
 
   console.log('TaskModal submitting data:', taskData);

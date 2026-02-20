@@ -27,4 +27,10 @@ public class Project {
 
     // 前端扩展字段，不直接映射到数据库，通过 memberIds 字段名传递
     private List<String> memberIds;
+
+    // 延期相关字段（运行时计算）
+    private Integer delayedTasks;          // 延期任务数
+    private Integer totalDelayedDays;      // 总延期天数
+    private Boolean isDelayed;             // 是否有延期任务
+    private Integer estimatedHours;        // 预估工时
 }

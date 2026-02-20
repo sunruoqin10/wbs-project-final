@@ -25,6 +25,7 @@ public class TaskController {
     @GetMapping
     public Result<List<Task>> getAllTasks() {
         List<Task> tasks = taskService.getAllTasks();
+        taskService.updateDelayedStatus(tasks); // 计算延期状态
         return Result.success(tasks);
     }
 
@@ -38,6 +39,7 @@ public class TaskController {
         if (task == null) {
             return Result.error("任务不存在");
         }
+        taskService.updateTaskDelayedStatus(task); // 计算延期状态
         return Result.success(task);
     }
 
@@ -48,6 +50,7 @@ public class TaskController {
     @GetMapping("/project/{projectId}")
     public Result<List<Task>> getTasksByProjectId(@PathVariable String projectId) {
         List<Task> tasks = taskService.getTasksByProjectId(projectId);
+        taskService.updateDelayedStatus(tasks); // 计算延期状态
         return Result.success(tasks);
     }
 
@@ -58,6 +61,7 @@ public class TaskController {
     @GetMapping("/parent/{parentTaskId}")
     public Result<List<Task>> getSubTasks(@PathVariable String parentTaskId) {
         List<Task> tasks = taskService.getSubTasks(parentTaskId);
+        taskService.updateDelayedStatus(tasks); // 计算延期状态
         return Result.success(tasks);
     }
 
@@ -68,6 +72,7 @@ public class TaskController {
     @GetMapping("/status/{status}")
     public Result<List<Task>> getTasksByStatus(@PathVariable String status) {
         List<Task> tasks = taskService.getTasksByStatus(status);
+        taskService.updateDelayedStatus(tasks); // 计算延期状态
         return Result.success(tasks);
     }
 
@@ -78,6 +83,7 @@ public class TaskController {
     @GetMapping("/assignee/{assigneeId}")
     public Result<List<Task>> getTasksByAssigneeId(@PathVariable String assigneeId) {
         List<Task> tasks = taskService.getTasksByAssigneeId(assigneeId);
+        taskService.updateDelayedStatus(tasks); // 计算延期状态
         return Result.success(tasks);
     }
 
@@ -165,6 +171,46 @@ public class TaskController {
         return Result.success(stats);
     }
 
+    // ==================== 延期管理 API ====================
+
+    /**
+     * 获取延期任务列表
+     * GET /api/tasks/delayed?projectId=xxx&includeCompleted=false
+     */
+    @GetMapping("/delayed")
+    public Result<List<Task>> getDelayedTasks(
+        @RequestParam(required = false) String projectId,
+        @RequestParam(required = false, defaultValue = "false") Boolean includeCompleted) {
+        List<Task> delayedTasks = taskService.getDelayedTasks(projectId, includeCompleted);
+        return Result.success(delayedTasks);
+    }
+
+    /**
+     * 获取项目延期统计
+     * GET /api/tasks/project/{projectId}/delay-stats
+     */
+    @GetMapping("/project/{projectId}/delay-stats")
+    public Result<TaskService.DelayStats> getProjectDelayStats(@PathVariable String projectId) {
+        TaskService.DelayStats stats = taskService.getProjectDelayStats(projectId);
+        return Result.success(stats);
+    }
+
+    /**
+     * 记录任务延期
+     * POST /api/tasks/{id}/delay
+     */
+    @PostMapping("/{id}/delay")
+    public Result<Task> recordTaskDelay(
+        @PathVariable String id,
+        @RequestBody DelayRequest request) {
+        try {
+            Task updatedTask = taskService.recordTaskDelay(id, request.getNewEndDate(), request.getDelayReason());
+            return Result.success("延期记录成功", updatedTask);
+        } catch (Exception e) {
+            return Result.error(e.getMessage());
+        }
+    }
+
     /**
      * 状态请求类
      */
@@ -234,6 +280,30 @@ public class TaskController {
 
         public void setDoneTasks(Integer doneTasks) {
             this.doneTasks = doneTasks;
+        }
+    }
+
+    /**
+     * 延期请求类
+     */
+    public static class DelayRequest {
+        private String newEndDate;
+        private String delayReason;
+
+        public String getNewEndDate() {
+            return newEndDate;
+        }
+
+        public void setNewEndDate(String newEndDate) {
+            this.newEndDate = newEndDate;
+        }
+
+        public String getDelayReason() {
+            return delayReason;
+        }
+
+        public void setDelayReason(String delayReason) {
+            this.delayReason = delayReason;
         }
     }
 }

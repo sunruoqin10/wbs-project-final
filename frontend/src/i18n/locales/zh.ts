@@ -233,6 +233,14 @@ export default {
     groupBy: '分组方式',
     filterBy: '筛选条件',
     clearFilters: '清除筛选',
+    delayFilter: '延期筛选',
+    showDelayedOnly: '仅显示延期任务',
+    delayOptions: {
+      all: '全部',
+      delayed: '已延期',
+      critical: '严重延期（≥7天）',
+      warning: '中度延期（3-6天）'
+    },
     columns: {
       todo: '待办',
       inProgress: '进行中',
@@ -486,7 +494,11 @@ export default {
       totalProjects: '总项目数',
       completionRate: '完成率',
       totalTasks: '总任务数',
-      inProgressTasks: '进行中的任务数'
+      inProgressTasks: '进行中的任务数',
+      delayedTasks: '延期任务数',
+      totalDelayedDays: '累计延期天数',
+      delayRate: '延期率',
+      criticalDelays: '严重延期（≥7天）'
     },
     charts: {
       projectStatusDistribution: '项目状态分布',

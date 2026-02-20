@@ -57,7 +57,15 @@ const calculateDuration = (start: string, end: string): number => {
 };
 
 const getTaskColor = (task: Task): string => {
-  // 基于状态设置颜色
+  // 优先显示延期状态
+  if (task.isDelayed || (task.delayedDays || 0) > 0) {
+    const days = task.delayedDays || 0;
+    if (days >= 7) return '#ef4444';    // 红色
+    if (days >= 3) return '#f59e0b';    // 橙色
+    return '#3b82f6';                    // 蓝色
+  }
+
+  // 按状态设置颜色
   const colors: Record<string, string> = {
     'todo': '#95a5a6',         // 灰色 - 待办
     'in-progress': '#3498db',  // 蓝色 - 进行中
@@ -190,7 +198,21 @@ const initGantt = () => {
   // Task template
   gantt.templates.task_class = (start, end, task) => {
     const ganttTask = task as any;
-    return ganttTask.status ? `gantt_task_${ganttTask.status}` : 'gantt_task_todo';
+    let classes = ['gantt_task'];
+
+    if (ganttTask.status) {
+      classes.push(`gantt_task_${ganttTask.status}`);
+    }
+
+    // 添加延期样式类
+    if (ganttTask.isDelayed || (ganttTask.delayedDays || 0) > 0) {
+      const days = ganttTask.delayedDays || 0;
+      if (days >= 7) classes.push('gantt_task_delayed_critical');
+      else if (days >= 3) classes.push('gantt_task_delayed_warning');
+      else classes.push('gantt_task_delayed');
+    }
+
+    return classes.join(' ');
   };
 
   // 设置任务条文本颜色为白色并显示进度百分比
@@ -507,5 +529,24 @@ onBeforeUnmount(() => {
   margin: 0 0 8px 0;
   font-size: 15px;
   font-weight: bold;
+}
+
+/* 延期任务样式 */
+.gantt_task_delayed {
+  box-shadow: 0 0 8px rgba(59, 130, 246, 0.5);
+}
+
+.gantt_task_delayed_warning {
+  box-shadow: 0 0 8px rgba(245, 158, 11, 0.5);
+}
+
+.gantt_task_delayed_critical {
+  box-shadow: 0 0 10px rgba(239, 68, 68, 0.6);
+  animation: pulse-red 2s infinite;
+}
+
+@keyframes pulse-red {
+  0%, 100% { opacity: 1; }
+  50% { opacity: 0.85; }
 }
 </style>

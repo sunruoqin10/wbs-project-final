@@ -27,4 +27,12 @@ public class Task {
     private Integer progress;
     private LocalDateTime createdAt;
     private LocalDateTime updatedAt;
+
+    // 延期相关字段
+    private LocalDate originalEndDate;  // 原始结束日期
+    private Integer delayedDays;        // 累计延期天数
+    private String delayReason;         // 延期原因
+    private Integer delayCount;         // 延期次数
+    private LocalDate lastDelayDate;    // 最后延期日期
+    private Boolean isDelayed;          // 是否已延期（运行时计算）
 }

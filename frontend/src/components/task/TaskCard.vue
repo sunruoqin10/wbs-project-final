@@ -107,6 +107,14 @@
       {{ formattedStartDate }} ~ {{ formattedEndDate }}
     </div>
 
+    <!-- 延期标识 -->
+    <div v-if="task.isDelayed || (task.delayedDays || 0) > 0" class="mt-2 flex items-center gap-2">
+      <Badge :variant="delaySeverity" size="sm">{{ delayLabel }}</Badge>
+      <span v-if="task.delayedDays && task.delayedDays > 0" class="text-xs" :class="delayTextClass">
+        延期 {{ task.delayedDays }} 天
+      </span>
+    </div>
+
     <!-- 子任务摘要（仅父任务显示） -->
     <div v-if="hasSubtasks && summary" class="subtask-summary">
       <div class="summary-header">
@@ -230,6 +238,28 @@ const dueDateClass = computed(() => {
   if (diff < 0) return 'text-danger-600 font-medium';
   if (diff <= 2) return 'text-warning-600 font-medium';
   return 'text-secondary-500';
+});
+
+// 延期相关计算属性
+const delaySeverity = computed(() => {
+  const days = props.task.delayedDays || 0;
+  if (days >= 7) return 'danger';
+  if (days >= 3) return 'warning';
+  return 'info';
+});
+
+const delayLabel = computed(() => {
+  const days = props.task.delayedDays || 0;
+  if (days >= 7) return '严重延期';
+  if (days >= 3) return '已延期';
+  return '延期';
+});
+
+const delayTextClass = computed(() => {
+  const days = props.task.delayedDays || 0;
+  if (days >= 7) return 'text-danger-600';
+  if (days >= 3) return 'text-warning-600';
+  return 'text-info-600';
 });
 
 // 直接使用任务的工时值（数据库中已经维护了正确的值）

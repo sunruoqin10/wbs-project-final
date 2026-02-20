@@ -86,6 +86,69 @@
         </Card>
       </div>
 
+      <!-- 延期统计卡片 -->
+      <div class="grid grid-cols-1 gap-6 sm:grid-cols-2 lg:grid-cols-4">
+        <!-- 延期任务数 -->
+        <Card>
+          <div class="flex items-center">
+            <div class="rounded-lg bg-danger-100 p-3">
+              <svg class="h-6 w-6 text-danger-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
+              </svg>
+            </div>
+            <div class="ml-4">
+              <p class="text-sm font-medium text-secondary-600">延期任务数</p>
+              <p class="text-2xl font-semibold text-danger-600">{{ delayStats.delayedTasks }}</p>
+            </div>
+          </div>
+        </Card>
+
+        <!-- 累计延期天数 -->
+        <Card>
+          <div class="flex items-center">
+            <div class="rounded-lg bg-warning-100 p-3">
+              <svg class="h-6 w-6 text-warning-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 7h8m0 0v8m0-8l-8 8-4-4-6 6" />
+              </svg>
+            </div>
+            <div class="ml-4">
+              <p class="text-sm font-medium text-secondary-600">累计延期天数</p>
+              <p class="text-2xl font-semibold text-warning-600">{{ delayStats.totalDelayedDays }}</p>
+            </div>
+          </div>
+        </Card>
+
+        <!-- 延期率 -->
+        <Card>
+          <div class="flex items-center">
+            <div class="rounded-lg bg-info-100 p-3">
+              <svg class="h-6 w-6 text-info-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z" />
+              </svg>
+            </div>
+            <div class="ml-4">
+              <p class="text-sm font-medium text-secondary-600">延期率</p>
+              <p class="text-2xl font-semibold text-info-600">{{ delayStats.delayRate.toFixed(1) }}%</p>
+            </div>
+          </div>
+        </Card>
+
+        <!-- 严重延期任务 -->
+        <Card>
+          <div class="flex items-center">
+            <div class="rounded-lg bg-accent-100 p-3">
+              <svg class="h-6 w-6 text-accent-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" />
+              </svg>
+            </div>
+            <div class="ml-4">
+              <p class="text-sm font-medium text-secondary-600">严重延期（≥7天）</p>
+              <p class="text-2xl font-semibold text-accent-600">{{ delayStats.criticalDelayedTasks }}</p>
+            </div>
+          </div>
+        </Card>
+      </div>
+
       <!-- Charts -->
       <div class="grid grid-cols-1 gap-6 lg:grid-cols-2">
         <!-- Project Status Distribution -->
@@ -208,6 +271,35 @@ const statistics = computed(() => {
 const completionRate = computed(() => {
   if (statistics.value.totalTasks === 0) return 0;
   return Math.round((statistics.value.completedTasks / statistics.value.totalTasks) * 100);
+});
+
+// 延期统计
+const delayStats = computed(() => {
+  const allTasks = taskStore.tasks;
+  const today = new Date();
+
+  // 计算延期任务
+  const delayedTasks = allTasks.filter(t => {
+    if (t.status === 'done') return false;
+    const endDate = new Date(t.endDate);
+    return endDate < today;
+  });
+
+  // 计算累计延期天数
+  const totalDelayedDays = allTasks.reduce((sum, t) => sum + (t.delayedDays || 0), 0);
+
+  // 计算严重延期任务（≥7天）
+  const criticalDelayedTasks = allTasks.filter(t => (t.delayedDays || 0) >= 7).length;
+
+  // 计算延期率
+  const delayRate = allTasks.length > 0 ? (delayedTasks.length / allTasks.length) * 100 : 0;
+
+  return {
+    delayedTasks: delayedTasks.length,
+    totalDelayedDays,
+    delayRate,
+    criticalDelayedTasks
+  };
 });
 
 const initProjectStatusChart = () => {

@@ -21,6 +21,15 @@ export const useProjectStore = defineStore('project', () => {
     try {
       loading.value = true;
       projects.value = await apiService.getProjects();
+      // 调试：打印项目数据，检查延期信息
+      console.log('=== 加载的项目数据 ===');
+      projects.value.forEach(p => {
+        console.log(`项目: ${p.name}`, {
+          isDelayed: p.isDelayed,
+          delayedTasks: p.delayedTasks,
+          totalDelayedDays: p.totalDelayedDays
+        });
+      });
       loaded.value = true;
     } catch (error) {
       // API 调用失败时使用 mock 数据（开发阶段）

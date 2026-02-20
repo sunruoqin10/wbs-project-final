@@ -22,6 +22,21 @@
         </Button>
       </div>
 
+      <!-- 延期筛选器 -->
+      <div class="flex items-center gap-4 rounded-lg bg-secondary-50 p-4">
+        <span class="text-sm font-medium text-secondary-700">延期筛选：</span>
+        <label class="flex items-center gap-2 cursor-pointer">
+          <input type="checkbox" v-model="showDelayedOnly" class="rounded border-secondary-300 text-primary-600 focus:ring-primary-500" />
+          <span class="text-sm text-secondary-600">仅显示延期任务</span>
+        </label>
+        <Select v-model="delayFilter" class="w-40">
+          <option value="all">全部</option>
+          <option value="delayed">已延期</option>
+          <option value="critical">严重延期（≥7天）</option>
+          <option value="warning">中度延期（3-6天）</option>
+        </Select>
+      </div>
+
       <!-- Task Board -->
       <div class="grid grid-cols-1 gap-6 md:grid-cols-3">
         <!-- Todo Column -->
@@ -204,6 +219,7 @@ import SubtaskPanel from '@/components/task/SubtaskPanel.vue';
 import Drawer from '@/components/common/Drawer.vue';
 import Button from '@/components/common/Button.vue';
 import Badge from '@/components/common/Badge.vue';
+import Select from '@/components/common/Select.vue';
 import { useProjectStore } from '@/stores/project';
 import { useTaskStore } from '@/stores/task';
 import type { Task } from '@/types';
@@ -226,6 +242,10 @@ const currentParentTaskId = ref<string | null>(null); // 当前父任务ID（创
 // 展开状态管理
 const expandedTasks = ref<Set<string>>(new Set());
 
+// 延期筛选
+const showDelayedOnly = ref(false);
+const delayFilter = ref('all');
+
 onMounted(async () => {
   // 加载当前项目
   const project = projectStore.projectById(projectId);
@@ -240,9 +260,30 @@ onMounted(async () => {
 const project = computed(() => projectStore.projectById(projectId));
 const projectTasks = computed(() => taskStore.tasksByProject(projectId));
 
+// 应用延期筛选
+const filteredTasks = computed(() => {
+  let tasks = projectTasks.value;
+
+  if (showDelayedOnly.value || delayFilter.value !== 'all') {
+    tasks = tasks.filter(task => {
+      const isDelayed = task.isDelayed || (task.delayedDays || 0) > 0;
+      if (!isDelayed) return false;
+
+      const days = task.delayedDays || 0;
+      switch (delayFilter.value) {
+        case 'critical': return days >= 7;
+        case 'warning': return days >= 3 && days < 7;
+        default: return true;
+      }
+    });
+  }
+
+  return tasks;
+});
+
 // 只获取顶级任务（没有父任务的任务）
 const topLevelTasks = computed(() => {
-  return projectTasks.value.filter(t => t && !t.parentTaskId);
+  return filteredTasks.value.filter(t => t && !t.parentTaskId);
 });
 
 // Draggable lists

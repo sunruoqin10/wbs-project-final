@@ -19,11 +19,18 @@
         <result column="progress" property="progress"/>
         <result column="created_at" property="createdAt"/>
         <result column="updated_at" property="updatedAt"/>
+        <result column="original_end_date" property="originalEndDate"/>
+        <result column="delayed_days" property="delayedDays"/>
+        <result column="delay_reason" property="delayReason"/>
+        <result column="delay_count" property="delayCount"/>
+        <result column="last_delay_date" property="lastDelayDate"/>
+        <result column="is_delayed" property="isDelayed"/>
     </resultMap>
 
     <sql id="Base_Column_List">
         id, project_id, parent_task_id, title, description, status, priority, assignee_id, start_date, end_date,
-        estimated_hours, actual_hours, progress, created_at, updated_at
+        estimated_hours, actual_hours, progress, created_at, updated_at,
+        original_end_date, delayed_days, delay_reason, delay_count, last_delay_date, is_delayed
     </sql>
 
     <select id="selectAll" resultMap="BaseResultMap">
@@ -68,9 +75,11 @@
 
     <insert id="insert" parameterType="com.wbs.project.entity.Task">
         INSERT INTO sys_task (id, project_id, parent_task_id, title, description, status, priority, assignee_id,
-                             start_date, end_date, estimated_hours, actual_hours, progress, created_at, updated_at)
+                             start_date, end_date, estimated_hours, actual_hours, progress, created_at, updated_at,
+                             original_end_date, delayed_days, delay_reason, delay_count, last_delay_date, is_delayed)
         VALUES (#{id}, #{projectId}, #{parentTaskId}, #{title}, #{description}, #{status}, #{priority}, #{assigneeId},
-                #{startDate}, #{endDate}, #{estimatedHours}, #{actualHours}, #{progress}, #{createdAt}, #{updatedAt})
+                #{startDate}, #{endDate}, #{estimatedHours}, #{actualHours}, #{progress}, #{createdAt}, #{updatedAt},
+                #{originalEndDate}, #{delayedDays}, #{delayReason}, #{delayCount}, #{lastDelayDate}, #{isDelayed})
     </insert>
 
     <update id="update" parameterType="com.wbs.project.entity.Task">
@@ -88,6 +97,12 @@
             <if test="estimatedHours != null">estimated_hours = #{estimatedHours},</if>
             <if test="actualHours != null">actual_hours = #{actualHours},</if>
             <if test="progress != null">progress = #{progress},</if>
+            <if test="originalEndDate != null">original_end_date = #{originalEndDate},</if>
+            <if test="delayedDays != null">delayed_days = #{delayedDays},</if>
+            <if test="delayReason != null">delay_reason = #{delayReason},</if>
+            <if test="delayCount != null">delay_count = #{delayCount},</if>
+            <if test="lastDelayDate != null">last_delay_date = #{lastDelayDate},</if>
+            <if test="isDelayed != null">is_delayed = #{isDelayed},</if>
             updated_at = #{updatedAt}
         </set>
         WHERE id = #{id}

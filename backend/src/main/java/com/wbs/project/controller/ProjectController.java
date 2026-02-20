@@ -25,6 +25,7 @@ public class ProjectController {
     @GetMapping
     public Result<List<Project>> getAllProjects() {
         List<Project> projects = projectService.getAllProjects();
+        projectService.updateProjectsDelayedStatus(projects); // 计算延期状态
         return Result.success(projects);
     }
 
@@ -38,6 +39,7 @@ public class ProjectController {
         if (project == null) {
             return Result.error("项目不存在");
         }
+        projectService.updateProjectDelayedStatus(project); // 计算延期状态
         return Result.success(project);
     }
 
@@ -48,6 +50,7 @@ public class ProjectController {
     @GetMapping("/status/{status}")
     public Result<List<Project>> getProjectsByStatus(@PathVariable String status) {
         List<Project> projects = projectService.getProjectsByStatus(status);
+        projectService.updateProjectsDelayedStatus(projects); // 计算延期状态
         return Result.success(projects);
     }
 
@@ -58,6 +61,7 @@ public class ProjectController {
     @GetMapping("/owner/{ownerId}")
     public Result<List<Project>> getProjectsByOwner(@PathVariable String ownerId) {
         List<Project> projects = projectService.getProjectsByOwner(ownerId);
+        projectService.updateProjectsDelayedStatus(projects); // 计算延期状态
         return Result.success(projects);
     }
 
@@ -68,6 +72,7 @@ public class ProjectController {
     @GetMapping("/member/{userId}")
     public Result<List<Project>> getProjectsByMember(@PathVariable String userId) {
         List<Project> projects = projectService.getProjectsByMember(userId);
+        projectService.updateProjectsDelayedStatus(projects); // 计算延期状态
         return Result.success(projects);
     }
 
@@ -93,6 +98,7 @@ public class ProjectController {
     public Result<Project> updateProject(@PathVariable String id, @RequestBody Project project) {
         try {
             Project updatedProject = projectService.updateProject(id, project);
+            projectService.updateProjectDelayedStatus(updatedProject); // 计算延期状态
             return Result.success("项目更新成功", updatedProject);
         } catch (Exception e) {
             return Result.error(e.getMessage());
