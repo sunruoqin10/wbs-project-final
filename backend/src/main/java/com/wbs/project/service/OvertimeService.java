@@ -254,6 +254,10 @@ public class OvertimeService {
                 .map(OvertimeRecord::getHours)
                 .reduce(BigDecimal.ZERO, BigDecimal::add));
 
+        // 获取项目加班统计
+        List<OvertimeDTO.ProjectOvertimeStats> projectStats = getProjectStats(userId, startDate, endDate);
+        stats.setByProject(projectStats);
+
         return stats;
     }
 
@@ -281,6 +285,14 @@ public class OvertimeService {
             stats.setProjectId((String) map.get("projectId"));
             stats.setProjectName((String) map.get("projectName"));
             stats.setTotalHours((BigDecimal) map.get("totalHours"));
+            Object countObj = map.get("recordCount");
+            if (countObj != null) {
+                if (countObj instanceof Integer) {
+                    stats.setRecordCount((Integer) countObj);
+                } else if (countObj instanceof Long) {
+                    stats.setRecordCount(((Long) countObj).intValue());
+                }
+            }
             return stats;
         }).collect(Collectors.toList());
     }

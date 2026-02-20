@@ -413,15 +413,15 @@ class ApiService {
 
   async approveOvertimeRecord(id: string | number, approverId: string): Promise<OvertimeRecord> {
     return request<OvertimeRecord>(`/overtime/${id}/approve`, {
-      method: 'POST',
-      body: JSON.stringify({ approverId }),
+      method: 'PUT',
+      body: JSON.stringify({ approverId, approved: true }),
     });
   }
 
   async rejectOvertimeRecord(id: string | number, approverId: string, rejectReason: string): Promise<OvertimeRecord> {
-    return request<OvertimeRecord>(`/overtime/${id}/reject`, {
-      method: 'POST',
-      body: JSON.stringify({ approverId, rejectReason }),
+    return request<OvertimeRecord>(`/overtime/${id}/approve`, {
+      method: 'PUT',
+      body: JSON.stringify({ approverId, approved: false, rejectReason }),
     });
   }
 

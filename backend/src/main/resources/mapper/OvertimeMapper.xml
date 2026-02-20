@@ -242,7 +242,7 @@
     </select>
 
     <select id="sumHoursGroupByProject" resultType="java.util.Map">
-        SELECT o.project_id as projectId, p.name as projectName, SUM(o.hours) as totalHours
+        SELECT o.project_id as projectId, p.name as projectName, SUM(o.hours) as totalHours, COUNT(*) as recordCount
         FROM t_overtime_record o
         LEFT JOIN sys_project p ON o.project_id = p.id
         WHERE o.status = 'approved'

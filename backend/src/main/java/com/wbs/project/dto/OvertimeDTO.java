@@ -4,6 +4,7 @@ import lombok.Data;
 import java.math.BigDecimal;
 import java.time.LocalDate;
 import java.time.LocalTime;
+import java.util.List;
 
 /**
  * 加班记录DTO
@@ -138,6 +139,7 @@ public class OvertimeDTO {
         private BigDecimal totalHours;
         private BigDecimal pendingHours;
         private BigDecimal approvedHours;
+        private List<ProjectOvertimeStats> byProject;
     }
 
     /**

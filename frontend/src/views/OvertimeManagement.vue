@@ -522,9 +522,26 @@ const initDistributionChart = () => {
 
   const chart = echarts.init(distributionChartRef.value);
 
-  const projectData = stats.value.byProject
+  const projectData = (stats.value.byProject || [])
+    .map(item => ({
+      ...item,
+      hours: item.totalHours || item.hours || 0,
+      count: item.recordCount || item.count || 0
+    }))
     .sort((a, b) => b.hours - a.hours)
     .slice(0, 10);
+
+  if (projectData.length === 0) {
+    chart.setOption({
+      title: {
+        text: '暂无数据',
+        left: 'center',
+        top: 'center',
+        textStyle: { color: '#999', fontSize: 14 }
+      }
+    });
+    return;
+  }
 
   const option = {
     tooltip: {
