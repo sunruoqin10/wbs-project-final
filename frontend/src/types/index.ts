@@ -114,3 +114,43 @@ export interface DelayStats {
   totalDelayedDays: number;
   criticalDelayedTasks: number;
 }
+
+export interface OvertimeRecord {
+  id: string;
+  userId: string;
+  projectId: string;
+  taskId?: string;
+  overtimeDate: string;
+  startTime: string;
+  endTime: string;
+  hours: number;
+  overtimeType: 'weekday' | 'weekend' | 'holiday';
+  reason: string;
+  status: 'pending' | 'approved' | 'rejected';
+  approverId?: string;
+  approvedAt?: string;
+  rejectReason?: string;
+  compensationType?: 'pay' | 'timeoff';
+  createdAt: string;
+  updatedAt: string;
+}
+
+export interface OvertimeStats {
+  totalRecords: number;
+  totalHours: number;
+  totalPeople: number;
+  pendingApprovals: number;
+  thisMonthHours: number;
+  thisMonthPeople: number;
+  byType: {
+    weekday: number;
+    weekend: number;
+    holiday: number;
+  };
+  byProject: {
+    projectId: string;
+    projectName: string;
+    hours: number;
+    count: number;
+  }[];
+}

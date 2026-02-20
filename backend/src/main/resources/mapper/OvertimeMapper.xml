@@ -1,0 +1,307 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+        "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.wbs.project.mapper.OvertimeMapper">
+
+    <resultMap id="BaseResultMap" type="com.wbs.project.entity.OvertimeRecord">
+        <id column="id" property="id"/>
+        <result column="user_id" property="userId"/>
+        <result column="project_id" property="projectId"/>
+        <result column="task_id" property="taskId"/>
+        <result column="overtime_date" property="overtimeDate"/>
+        <result column="start_time" property="startTime"/>
+        <result column="end_time" property="endTime"/>
+        <result column="hours" property="hours"/>
+        <result column="overtime_type" property="overtimeType"/>
+        <result column="reason" property="reason"/>
+        <result column="status" property="status"/>
+        <result column="approver_id" property="approverId"/>
+        <result column="approved_at" property="approvedAt"/>
+        <result column="reject_reason" property="rejectReason"/>
+        <result column="compensation_type" property="compensationType"/>
+        <result column="created_at" property="createdAt"/>
+        <result column="updated_at" property="updatedAt"/>
+        <!-- 扩展字段 -->
+        <result column="user_name" property="userName"/>
+        <result column="project_name" property="projectName"/>
+        <result column="task_name" property="taskName"/>
+        <result column="approver_name" property="approverName"/>
+    </resultMap>
+
+    <sql id="Base_Column_List">
+        o.id, o.user_id, o.project_id, o.task_id, o.overtime_date, o.start_time, o.end_time, 
+        o.hours, o.overtime_type, o.reason, o.status, o.approver_id, o.approved_at, 
+        o.reject_reason, o.compensation_type, o.created_at, o.updated_at
+    </sql>
+
+    <sql id="Join_Column_List">
+        o.id, o.user_id, o.project_id, o.task_id, o.overtime_date, o.start_time, o.end_time, 
+        o.hours, o.overtime_type, o.reason, o.status, o.approver_id, o.approved_at, 
+        o.reject_reason, o.compensation_type, o.created_at, o.updated_at,
+        u.name as user_name,
+        p.name as project_name,
+        t.title as task_name,
+        a.name as approver_name
+    </sql>
+
+    <select id="selectAll" resultMap="BaseResultMap">
+        SELECT <include refid="Join_Column_List"/>
+        FROM t_overtime_record o
+        LEFT JOIN sys_user u ON o.user_id = u.id
+        LEFT JOIN sys_project p ON o.project_id = p.id
+        LEFT JOIN sys_task t ON o.task_id = t.id
+        LEFT JOIN sys_user a ON o.approver_id = a.id
+        ORDER BY o.created_at DESC
+    </select>
+
+    <select id="selectById" resultMap="BaseResultMap">
+        SELECT <include refid="Join_Column_List"/>
+        FROM t_overtime_record o
+        LEFT JOIN sys_user u ON o.user_id = u.id
+        LEFT JOIN sys_project p ON o.project_id = p.id
+        LEFT JOIN sys_task t ON o.task_id = t.id
+        LEFT JOIN sys_user a ON o.approver_id = a.id
+        WHERE o.id = #{id}
+    </select>
+
+    <select id="selectByUserId" resultMap="BaseResultMap">
+        SELECT <include refid="Join_Column_List"/>
+        FROM t_overtime_record o
+        LEFT JOIN sys_user u ON o.user_id = u.id
+        LEFT JOIN sys_project p ON o.project_id = p.id
+        LEFT JOIN sys_task t ON o.task_id = t.id
+        LEFT JOIN sys_user a ON o.approver_id = a.id
+        WHERE o.user_id = #{userId}
+        ORDER BY o.overtime_date DESC, o.created_at DESC
+    </select>
+
+    <select id="selectByProjectId" resultMap="BaseResultMap">
+        SELECT <include refid="Join_Column_List"/>
+        FROM t_overtime_record o
+        LEFT JOIN sys_user u ON o.user_id = u.id
+        LEFT JOIN sys_project p ON o.project_id = p.id
+        LEFT JOIN sys_task t ON o.task_id = t.id
+        LEFT JOIN sys_user a ON o.approver_id = a.id
+        WHERE o.project_id = #{projectId}
+        ORDER BY o.overtime_date DESC, o.created_at DESC
+    </select>
+
+    <select id="selectByStatus" resultMap="BaseResultMap">
+        SELECT <include refid="Join_Column_List"/>
+        FROM t_overtime_record o
+        LEFT JOIN sys_user u ON o.user_id = u.id
+        LEFT JOIN sys_project p ON o.project_id = p.id
+        LEFT JOIN sys_task t ON o.task_id = t.id
+        LEFT JOIN sys_user a ON o.approver_id = a.id
+        WHERE o.status = #{status}
+        ORDER BY o.overtime_date DESC, o.created_at DESC
+    </select>
+
+    <select id="selectByDateRange" resultMap="BaseResultMap">
+        SELECT <include refid="Join_Column_List"/>
+        FROM t_overtime_record o
+        LEFT JOIN sys_user u ON o.user_id = u.id
+        LEFT JOIN sys_project p ON o.project_id = p.id
+        LEFT JOIN sys_task t ON o.task_id = t.id
+        LEFT JOIN sys_user a ON o.approver_id = a.id
+        WHERE o.overtime_date BETWEEN #{startDate} AND #{endDate}
+        ORDER BY o.overtime_date DESC, o.created_at DESC
+    </select>
+
+    <select id="selectByUserIdAndDateRange" resultMap="BaseResultMap">
+        SELECT <include refid="Join_Column_List"/>
+        FROM t_overtime_record o
+        LEFT JOIN sys_user u ON o.user_id = u.id
+        LEFT JOIN sys_project p ON o.project_id = p.id
+        LEFT JOIN sys_task t ON o.task_id = t.id
+        LEFT JOIN sys_user a ON o.approver_id = a.id
+        WHERE o.user_id = #{userId}
+        AND o.overtime_date BETWEEN #{startDate} AND #{endDate}
+        ORDER BY o.overtime_date DESC, o.created_at DESC
+    </select>
+
+    <select id="selectByProjectIdAndDateRange" resultMap="BaseResultMap">
+        SELECT <include refid="Join_Column_List"/>
+        FROM t_overtime_record o
+        LEFT JOIN sys_user u ON o.user_id = u.id
+        LEFT JOIN sys_project p ON o.project_id = p.id
+        LEFT JOIN sys_task t ON o.task_id = t.id
+        LEFT JOIN sys_user a ON o.approver_id = a.id
+        WHERE o.project_id = #{projectId}
+        AND o.overtime_date BETWEEN #{startDate} AND #{endDate}
+        ORDER BY o.overtime_date DESC, o.created_at DESC
+    </select>
+
+    <select id="selectByCondition" resultMap="BaseResultMap">
+        SELECT <include refid="Join_Column_List"/>
+        FROM t_overtime_record o
+        LEFT JOIN sys_user u ON o.user_id = u.id
+        LEFT JOIN sys_project p ON o.project_id = p.id
+        LEFT JOIN sys_task t ON o.task_id = t.id
+        LEFT JOIN sys_user a ON o.approver_id = a.id
+        <where>
+            <if test="userId != null and userId != ''">
+                AND o.user_id = #{userId}
+            </if>
+            <if test="projectId != null and projectId != ''">
+                AND o.project_id = #{projectId}
+            </if>
+            <if test="status != null and status != ''">
+                AND o.status = #{status}
+            </if>
+            <if test="startDate != null">
+                AND o.overtime_date &gt;= #{startDate}
+            </if>
+            <if test="endDate != null">
+                AND o.overtime_date &lt;= #{endDate}
+            </if>
+            <if test="overtimeType != null and overtimeType != ''">
+                AND o.overtime_type = #{overtimeType}
+            </if>
+        </where>
+        ORDER BY o.overtime_date DESC, o.created_at DESC
+    </select>
+
+    <insert id="insert" parameterType="com.wbs.project.entity.OvertimeRecord">
+        INSERT INTO t_overtime_record (id, user_id, project_id, task_id, overtime_date, start_time, end_time, 
+                                       hours, overtime_type, reason, status, approver_id, approved_at, 
+                                       reject_reason, compensation_type, created_at, updated_at)
+        VALUES (#{id}, #{userId}, #{projectId}, #{taskId}, #{overtimeDate}, #{startTime}, #{endTime}, 
+                #{hours}, #{overtimeType}, #{reason}, #{status}, #{approverId}, #{approvedAt}, 
+                #{rejectReason}, #{compensationType}, #{createdAt}, #{updatedAt})
+    </insert>
+
+    <update id="update" parameterType="com.wbs.project.entity.OvertimeRecord">
+        UPDATE t_overtime_record
+        <set>
+            <if test="userId != null">user_id = #{userId},</if>
+            <if test="projectId != null">project_id = #{projectId},</if>
+            <if test="taskId != null">task_id = #{taskId},</if>
+            <if test="overtimeDate != null">overtime_date = #{overtimeDate},</if>
+            <if test="startTime != null">start_time = #{startTime},</if>
+            <if test="endTime != null">end_time = #{endTime},</if>
+            <if test="hours != null">hours = #{hours},</if>
+            <if test="overtimeType != null">overtime_type = #{overtimeType},</if>
+            <if test="reason != null">reason = #{reason},</if>
+            <if test="status != null">status = #{status},</if>
+            <if test="approverId != null">approver_id = #{approverId},</if>
+            <if test="approvedAt != null">approved_at = #{approvedAt},</if>
+            <if test="rejectReason != null">reject_reason = #{rejectReason},</if>
+            <if test="compensationType != null">compensation_type = #{compensationType},</if>
+            updated_at = #{updatedAt}
+        </set>
+        WHERE id = #{id}
+    </update>
+
+    <delete id="deleteById">
+        DELETE FROM t_overtime_record WHERE id = #{id}
+    </delete>
+
+    <select id="countTotal" resultType="int">
+        SELECT COUNT(*) FROM t_overtime_record
+    </select>
+
+    <select id="countByUserId" resultType="int">
+        SELECT COUNT(*) FROM t_overtime_record WHERE user_id = #{userId}
+    </select>
+
+    <select id="countByProjectId" resultType="int">
+        SELECT COUNT(*) FROM t_overtime_record WHERE project_id = #{projectId}
+    </select>
+
+    <select id="countByStatus" resultType="int">
+        SELECT COUNT(*) FROM t_overtime_record WHERE status = #{status}
+    </select>
+
+    <select id="sumHoursByUserId" resultType="java.math.BigDecimal">
+        SELECT COALESCE(SUM(hours), 0) FROM t_overtime_record 
+        WHERE user_id = #{userId} AND status = 'approved'
+    </select>
+
+    <select id="sumHoursByProjectId" resultType="java.math.BigDecimal">
+        SELECT COALESCE(SUM(hours), 0) FROM t_overtime_record 
+        WHERE project_id = #{projectId} AND status = 'approved'
+    </select>
+
+    <select id="sumHoursGroupByUser" resultType="java.util.Map">
+        SELECT o.user_id as userId, u.name as userName, SUM(o.hours) as totalHours
+        FROM t_overtime_record o
+        LEFT JOIN sys_user u ON o.user_id = u.id
+        WHERE o.status = 'approved'
+        <if test="projectId != null and projectId != ''">
+            AND o.project_id = #{projectId}
+        </if>
+        <if test="startDate != null">
+            AND o.overtime_date &gt;= #{startDate}
+        </if>
+        <if test="endDate != null">
+            AND o.overtime_date &lt;= #{endDate}
+        </if>
+        GROUP BY o.user_id, u.name
+        ORDER BY totalHours DESC
+    </select>
+
+    <select id="sumHoursGroupByProject" resultType="java.util.Map">
+        SELECT o.project_id as projectId, p.name as projectName, SUM(o.hours) as totalHours
+        FROM t_overtime_record o
+        LEFT JOIN sys_project p ON o.project_id = p.id
+        WHERE o.status = 'approved'
+        <if test="userId != null and userId != ''">
+            AND o.user_id = #{userId}
+        </if>
+        <if test="startDate != null">
+            AND o.overtime_date &gt;= #{startDate}
+        </if>
+        <if test="endDate != null">
+            AND o.overtime_date &lt;= #{endDate}
+        </if>
+        GROUP BY o.project_id, p.name
+        ORDER BY totalHours DESC
+    </select>
+
+    <select id="sumHoursGroupByDate" resultType="java.util.Map">
+        SELECT o.overtime_date as overtimeDate, SUM(o.hours) as totalHours
+        FROM t_overtime_record o
+        WHERE o.status = 'approved'
+        <if test="userId != null and userId != ''">
+            AND o.user_id = #{userId}
+        </if>
+        <if test="projectId != null and projectId != ''">
+            AND o.project_id = #{projectId}
+        </if>
+        <if test="startDate != null">
+            AND o.overtime_date &gt;= #{startDate}
+        </if>
+        <if test="endDate != null">
+            AND o.overtime_date &lt;= #{endDate}
+        </if>
+        GROUP BY o.overtime_date
+        ORDER BY o.overtime_date ASC
+    </select>
+
+    <select id="sumHoursGroupByType" resultType="java.util.Map">
+        SELECT o.overtime_type as overtimeType, SUM(o.hours) as totalHours
+        FROM t_overtime_record o
+        WHERE o.status = 'approved'
+        <if test="userId != null and userId != ''">
+            AND o.user_id = #{userId}
+        </if>
+        <if test="projectId != null and projectId != ''">
+            AND o.project_id = #{projectId}
+        </if>
+        <if test="startDate != null">
+            AND o.overtime_date &gt;= #{startDate}
+        </if>
+        <if test="endDate != null">
+            AND o.overtime_date &lt;= #{endDate}
+        </if>
+        GROUP BY o.overtime_type
+        ORDER BY totalHours DESC
+    </select>
+
+    <select id="countPendingByProjectId" resultType="int">
+        SELECT COUNT(*) FROM t_overtime_record 
+        WHERE project_id = #{projectId} AND status = 'pending'
+    </select>
+
+</mapper>

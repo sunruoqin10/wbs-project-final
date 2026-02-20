@@ -69,6 +69,12 @@ const routes: RouteRecordRaw[] = [
     meta: { title: '项目延期统计' }
   },
   {
+    path: '/overtime',
+    name: 'OvertimeManagement',
+    component: () => import('@/views/OvertimeManagement.vue'),
+    meta: { title: '项目加班管理' }
+  },
+  {
     path: '/team',
     name: 'Team',
     component: () => import('@/views/Team.vue'),

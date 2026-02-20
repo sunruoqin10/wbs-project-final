@@ -1,6 +1,6 @@
 // API Service Layer - Connects to Spring Boot backend
 
-import type { Project, Task, User, DelayStats } from '@/types';
+import type { Project, Task, User, DelayStats, OvertimeRecord, OvertimeStats } from '@/types';
 import { useUserStore } from '@/stores/user';
 
 const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || '/api';
@@ -366,6 +366,68 @@ class ApiService {
       ...taskStats,
       totalMembers: userCount,
     };
+  }
+
+  // Overtime API
+  async getOvertimeRecords(params?: {
+    userId?: string;
+    projectId?: string;
+    status?: string;
+    startDate?: string;
+    endDate?: string;
+  }): Promise<OvertimeRecord[]> {
+    const searchParams = new URLSearchParams();
+    if (params?.userId) searchParams.append('userId', params.userId);
+    if (params?.projectId) searchParams.append('projectId', params.projectId);
+    if (params?.status) searchParams.append('status', params.status);
+    if (params?.startDate) searchParams.append('startDate', params.startDate);
+    if (params?.endDate) searchParams.append('endDate', params.endDate);
+
+    const queryString = searchParams.toString();
+    return request<OvertimeRecord[]>(`/overtime${queryString ? `?${queryString}` : ''}`);
+  }
+
+  async getOvertimeRecord(id: string | number): Promise<OvertimeRecord> {
+    return request<OvertimeRecord>(`/overtime/${id}`);
+  }
+
+  async createOvertimeRecord(data: Partial<OvertimeRecord>): Promise<OvertimeRecord> {
+    return request<OvertimeRecord>('/overtime', {
+      method: 'POST',
+      body: JSON.stringify(data),
+    });
+  }
+
+  async updateOvertimeRecord(id: string | number, data: Partial<OvertimeRecord>): Promise<OvertimeRecord> {
+    return request<OvertimeRecord>(`/overtime/${id}`, {
+      method: 'PUT',
+      body: JSON.stringify(data),
+    });
+  }
+
+  async deleteOvertimeRecord(id: string | number): Promise<void> {
+    return request<void>(`/overtime/${id}`, {
+      method: 'DELETE',
+    });
+  }
+
+  async approveOvertimeRecord(id: string | number, approverId: string): Promise<OvertimeRecord> {
+    return request<OvertimeRecord>(`/overtime/${id}/approve`, {
+      method: 'POST',
+      body: JSON.stringify({ approverId }),
+    });
+  }
+
+  async rejectOvertimeRecord(id: string | number, approverId: string, rejectReason: string): Promise<OvertimeRecord> {
+    return request<OvertimeRecord>(`/overtime/${id}/reject`, {
+      method: 'POST',
+      body: JSON.stringify({ approverId, rejectReason }),
+    });
+  }
+
+  async getOvertimeStats(projectId?: string): Promise<OvertimeStats> {
+    const params = projectId ? `?projectId=${projectId}` : '';
+    return request<OvertimeStats>(`/overtime/stats${params}`);
   }
 }
 
