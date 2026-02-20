@@ -63,6 +63,12 @@ const routes: RouteRecordRaw[] = [
     meta: { titleKey: 'routes.ganttView' }
   },
   {
+    path: '/delay-stats',
+    name: 'DelayStats',
+    component: () => import('@/views/DelayStats.vue'),
+    meta: { title: '项目延期统计' }
+  },
+  {
     path: '/team',
     name: 'Team',
     component: () => import('@/views/Team.vue'),
