@@ -242,11 +242,22 @@ public class TaskService {
             if (task.getOriginalEndDate() != null) {
                 long days = ChronoUnit.DAYS.between(task.getOriginalEndDate(), today);
                 task.setDelayedDays((int) days);
+                System.out.println("  [延期计算] " + task.getTitle() +
+                    ": 原始结束日期=" + task.getOriginalEndDate() +
+                    ", 今天=" + today +
+                    ", 延期天数=" + days);
             } else {
                 // 否则使用当前结束日期计算
                 long days = ChronoUnit.DAYS.between(task.getEndDate(), today);
                 task.setDelayedDays((int) days);
+                System.out.println("  [延期计算] " + task.getTitle() +
+                    ": 结束日期=" + task.getEndDate() +
+                    ", 今天=" + today +
+                    ", 延期天数=" + days);
             }
+        } else {
+            // 如果任务不再延期，清零 delayedDays
+            task.setDelayedDays(0);
         }
     }
 
@@ -273,12 +284,12 @@ public class TaskService {
             updateTaskDelayedStatus(descendant, today);
         }
 
-        // 统计所有子孙任务的延期（只统计叶子任务）
+        // 统计所有叶子任务的延期（不统计中间父任务）
         int delayedCount = 0;
         int totalDelayedDays = 0;
 
         for (Task descendant : allDescendants) {
-            // 只统计叶子任务
+            // 只统计叶子任务（没有子任务的任务）
             if (isLeafTask(descendant.getId())) {
                 if (descendant.getIsDelayed() != null && descendant.getIsDelayed()) {
                     delayedCount++;
@@ -287,6 +298,21 @@ public class TaskService {
                     }
                 }
             }
+        }
+
+        // 调试输出
+        if (totalDelayedDays > 0) {
+            System.out.println("=== 父任务 [" + task.getTitle() + "] 的子任务延期累计 ===");
+            System.out.println("子孙任务总数: " + allDescendants.size());
+            for (Task descendant : allDescendants) {
+                boolean isLeaf = isLeafTask(descendant.getId());
+                System.out.println("  - " + descendant.getTitle() +
+                    " (叶子:" + isLeaf +
+                    ", 延期:" + descendant.getIsDelayed() +
+                    ", 天数:" + descendant.getDelayedDays() + ")");
+            }
+            System.out.println("延期叶子任务数: " + delayedCount);
+            System.out.println("累计延期天数: " + totalDelayedDays);
         }
 
         task.setChildrenDelayedCount(delayedCount);

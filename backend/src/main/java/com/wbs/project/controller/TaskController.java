@@ -196,6 +196,36 @@ public class TaskController {
     }
 
     /**
+     * 调试任务延期计算
+     * GET /api/tasks/{id}/debug-delay
+     */
+    @GetMapping("/{id}/debug-delay")
+    public Result<String> debugTaskDelay(@PathVariable String id) {
+        Task task = taskService.getTaskById(id);
+        if (task == null) {
+            return Result.error("任务不存在");
+        }
+
+        StringBuilder debugInfo = new StringBuilder();
+        debugInfo.append("任务: ").append(task.getTitle()).append("\n");
+        debugInfo.append("自身延期: ").append(task.getDelayedDays()).append(" 天\n");
+        debugInfo.append("子任务延期数: ").append(task.getChildrenDelayedCount()).append("\n");
+        debugInfo.append("子任务累计延期: ").append(task.getChildrenTotalDelayedDays()).append(" 天\n");
+
+        // 获取子任务列表
+        List<Task> subtasks = taskService.getSubTasks(id);
+        debugInfo.append("\n直接子任务列表:\n");
+        for (Task subtask : subtasks) {
+            debugInfo.append("  - ").append(subtask.getTitle())
+                    .append(": 延期=").append(subtask.getDelayedDays())
+                    .append(", 子任务累计=").append(subtask.getChildrenTotalDelayedDays())
+                    .append("\n");
+        }
+
+        return Result.success(debugInfo.toString());
+    }
+
+    /**
      * 记录任务延期
      * POST /api/tasks/{id}/delay
      */

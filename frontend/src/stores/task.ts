@@ -296,7 +296,9 @@ export const useTaskStore = defineStore('task', () => {
     try {
       const newTask = await apiService.createTask(data);
       if (newTask) {
-        tasks.value.unshift(newTask);
+        // 重新加载任务列表以获取最新的延期信息
+        // 延期信息（childrenDelayedCount, childrenTotalDelayedDays）是在后端计算的
+        await loadTasks(newTask.projectId);
 
         // 如果新任务有父任务，更新父任务的进度、状态、日期和工时
         if (newTask.parentTaskId) {
@@ -321,33 +323,38 @@ export const useTaskStore = defineStore('task', () => {
 
   const updateTask = async (id: string, data: Partial<Task>) => {
     try {
-      // 先获取旧任务数据，用于后续判断是否需要更新父任务
+      // 先获取旧任务数据
       const oldTask = getTaskById(id);
       const oldParentTaskId = oldTask?.parentTaskId;
-      const oldEstimatedHours = oldTask?.estimatedHours;
-      const oldActualHours = oldTask?.actualHours;
+      const projectId = oldTask?.projectId;
 
       const updatedTask = await apiService.updateTask(id, data);
       if (updatedTask) {
-        const index = tasks.value.findIndex(t => t && t.id === id);
-        if (index !== -1) {
-          tasks.value[index] = updatedTask;
-        }
-        if (currentTask.value?.id === id) {
-          currentTask.value = updatedTask;
-        }
+        // 重新加载任务列表以获取最新的延期信息
+        // 特别是当修改了任务的日期、状态等影响延期计算的字段时
+        if (projectId && (data.startDate || data.endDate || data.status !== undefined)) {
+          await loadTasks(projectId);
+        } else {
+          // 如果没有修改影响延期的字段，只更新本地状态
+          const index = tasks.value.findIndex(t => t && t.id === id);
+          if (index !== -1) {
+            tasks.value[index] = updatedTask;
+          }
+          if (currentTask.value?.id === id) {
+            currentTask.value = updatedTask;
+          }
 
-        // 如果更新的任务有父任务，需要更新父任务的进度、状态、日期和工时
-        const parentTaskId = updatedTask.parentTaskId || oldParentTaskId;
-        if (parentTaskId) {
-          // 无论是状态、进度还是其他字段变化，都需要更新父任务
-          await updateParentTaskProgress(parentTaskId);
-          await updateParentTaskStatus(parentTaskId);
-          await updateParentTaskDates(parentTaskId);
+          // 如果更新的任务有父任务，需要更新父任务的进度、状态、日期和工时
+          const parentTaskId = updatedTask.parentTaskId || oldParentTaskId;
+          if (parentTaskId) {
+            await updateParentTaskProgress(parentTaskId);
+            await updateParentTaskStatus(parentTaskId);
+            await updateParentTaskDates(parentTaskId);
 
-          // 如果工时发生了变化，需要更新父任务的工时
-          if (data.estimatedHours !== undefined || data.actualHours !== undefined) {
-            await updateParentTaskHours(parentTaskId);
+            // 如果工时发生了变化，需要更新父任务的工时
+            if (data.estimatedHours !== undefined || data.actualHours !== undefined) {
+              await updateParentTaskHours(parentTaskId);
+            }
           }
         }
       }
@@ -364,41 +371,25 @@ export const useTaskStore = defineStore('task', () => {
       console.log('删除任务 ID:', id);
       console.log('删除前的任务列表:', tasks.value.map(t => t ? `${t.id}: ${t.title}` : 'null'));
 
-      // 先获取要删除的任务，以便稍后更新父任务进度
+      // 先获取要删除的任务，以便稍后重新加载
       const index = tasks.value.findIndex(t => t && t.id === id);
       const taskToDelete = index !== -1 ? tasks.value[index] : null;
-      const parentTaskId = taskToDelete?.parentTaskId;
+      const projectId = taskToDelete?.projectId;
 
       await apiService.deleteTask(id);
 
       console.log('API 删除成功');
 
-      if (index !== -1) {
-        const deletedTask = tasks.value[index];
-        tasks.value.splice(index, 1);
-        console.log('从列表中移除任务:', deletedTask);
-      } else {
-        console.warn('任务在列表中未找到');
+      // 重新加载任务列表以获取最新的延期信息
+      if (projectId) {
+        await loadTasks(projectId);
       }
 
       if (currentTask.value?.id === id) {
         currentTask.value = null;
       }
 
-      console.log('删除后的任务列表:', tasks.value.map(t => t ? `${t.id}: ${t.title}` : 'null'));
       console.log('===== 删除任务完成 =====');
-
-      // 如果删除的任务有父任务，更新父任务的进度、状态、日期和工时
-      if (parentTaskId) {
-        await updateParentTaskProgress(parentTaskId);
-        await updateParentTaskStatus(parentTaskId);
-        await updateParentTaskDates(parentTaskId);
-
-        // 如果删除的任务有工时，需要更新父任务的工时
-        if (taskToDelete?.estimatedHours || taskToDelete?.actualHours) {
-          await updateParentTaskHours(parentTaskId);
-        }
-      }
     } catch (error) {
       console.error('Failed to delete task:', error);
       throw error;
