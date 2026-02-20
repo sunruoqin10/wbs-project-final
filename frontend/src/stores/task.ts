@@ -15,6 +15,18 @@ export const useTaskStore = defineStore('task', () => {
     try {
       loading.value = true;
       const loadedTasks = await apiService.getTasks(projectId);
+      // 调试：打印任务数据
+      console.log('=== 加载的任务数据 ===');
+      loadedTasks.forEach(t => {
+        if (t.title.includes('HESS') || t.title.includes('后端API')) { // 只打印相关任务
+          console.log(`任务: ${t.title}`, {
+            isDelayed: t.isDelayed,
+            delayedDays: t.delayedDays,
+            childrenDelayedCount: t.childrenDelayedCount,
+            childrenTotalDelayedDays: t.childrenTotalDelayedDays
+          });
+        }
+      });
       // 过滤掉可能的 null 值
       tasks.value = loadedTasks.filter(t => t !== null && t !== undefined);
       // 强制将所有待办状态的任务进度设置为 0

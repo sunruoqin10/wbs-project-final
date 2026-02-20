@@ -178,7 +178,7 @@ public class ProjectService {
     // ==================== 延期管理方法 ====================
 
     /**
-     * 更新项目的延期状态（基于项目中的任务）
+     * 更新项目的延期状态（只统计叶子任务的延期）
      */
     public void updateProjectDelayedStatus(Project project) {
         if (project == null) {
@@ -186,24 +186,28 @@ public class ProjectService {
         }
 
         // 获取项目的所有任务
-        List<Task> tasks = taskService.getTasksByProjectId(project.getId());
-        if (tasks == null || tasks.isEmpty()) {
+        List<Task> allTasks = taskService.getTasksByProjectId(project.getId());
+        if (allTasks == null || allTasks.isEmpty()) {
             // 如果没有任务，检查项目日期是否延期
             updateProjectDelayedStatusByDate(project);
             return;
         }
 
-        // 计算任务的延期统计
-        taskService.updateDelayedStatus(tasks);
+        // 计算所有任务的延期状态
+        taskService.updateDelayedStatus(allTasks);
 
+        // 只统计叶子任务的延期
         int delayedTasks = 0;
         int totalDelayedDays = 0;
 
-        for (Task task : tasks) {
-            if (task.getIsDelayed() != null && task.getIsDelayed()) {
-                delayedTasks++;
-                if (task.getDelayedDays() != null) {
-                    totalDelayedDays += task.getDelayedDays();
+        for (Task task : allTasks) {
+            // 只统计叶子任务（没有子任务的任务）
+            if (taskService.isLeafTask(task.getId())) {
+                if (task.getIsDelayed() != null && task.getIsDelayed()) {
+                    delayedTasks++;
+                    if (task.getDelayedDays() != null) {
+                        totalDelayedDays += task.getDelayedDays();
+                    }
                 }
             }
         }

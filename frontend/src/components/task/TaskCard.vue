@@ -107,11 +107,22 @@
       {{ formattedStartDate }} ~ {{ formattedEndDate }}
     </div>
 
-    <!-- 延期标识 -->
-    <div v-if="task.isDelayed || (task.delayedDays || 0) > 0" class="mt-2 flex items-center gap-2">
+    <!-- 延期标识（仅无子任务的任务显示） -->
+    <div v-if="!hasSubtasks && (task.isDelayed || (task.delayedDays || 0) > 0)" class="mt-2 flex items-center gap-2">
       <Badge :variant="delaySeverity" size="sm">{{ delayLabel }}</Badge>
       <span v-if="task.delayedDays && task.delayedDays > 0" class="text-xs" :class="delayTextClass">
         延期 {{ task.delayedDays }} 天
+      </span>
+    </div>
+
+    <!-- 子任务延期累计（仅父任务显示） -->
+    <div v-if="hasSubtasks && (task.childrenDelayedCount || 0) > 0" class="mt-2 flex items-center gap-2 text-xs">
+      <span class="text-secondary-600">子任务延期：</span>
+      <span :class="childrenDelayClass">
+        {{ task.childrenDelayedCount }} 个任务
+      </span>
+      <span v-if="task.childrenTotalDelayedDays && task.childrenTotalDelayedDays > 0" :class="childrenDelayClass">
+        累计 +{{ task.childrenTotalDelayedDays }} 天
       </span>
     </div>
 
@@ -178,7 +189,16 @@ const directSubtasks = computed(() => {
 // 判断是否有子任务
 const hasSubtasks = computed(() => {
   if (props.summary) {
-    return props.summary.total > 0;
+    const result = props.summary.total > 0;
+    // 调试输出
+    if (result) {
+      console.log(`任务 [${props.task.title}] 子任务延期信息:`, {
+        childrenDelayedCount: props.task.childrenDelayedCount,
+        childrenTotalDelayedDays: props.task.childrenTotalDelayedDays,
+        hasSubtasks: result
+      });
+    }
+    return result;
   }
   // 如果没有 summary，直接查询（向后兼容）
   return directSubtasks.value.length > 0;
@@ -259,6 +279,16 @@ const delayTextClass = computed(() => {
   const days = props.task.delayedDays || 0;
   if (days >= 7) return 'text-danger-600';
   if (days >= 3) return 'text-warning-600';
+  return 'text-info-600';
+});
+
+// 子任务延期样式
+const childrenDelayClass = computed(() => {
+  const days = props.task.childrenTotalDelayedDays || 0;
+  const count = props.task.childrenDelayedCount || 0;
+
+  if (days >= 7 || count >= 3) return 'text-danger-600 font-medium';
+  if (days >= 3 || count >= 1) return 'text-warning-600 font-medium';
   return 'text-info-600';
 });
 

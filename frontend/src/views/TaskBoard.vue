@@ -266,10 +266,17 @@ const filteredTasks = computed(() => {
 
   if (showDelayedOnly.value || delayFilter.value !== 'all') {
     tasks = tasks.filter(task => {
-      const isDelayed = task.isDelayed || (task.delayedDays || 0) > 0;
+      // 检查任务自身延期或子任务累计延期
+      const selfDelayed = task.isDelayed || (task.delayedDays || 0) > 0;
+      const childrenDelayed = (task.childrenTotalDelayedDays || 0) > 0;
+      const isDelayed = selfDelayed || childrenDelayed;
       if (!isDelayed) return false;
 
-      const days = task.delayedDays || 0;
+      // 使用任务自身延期天数和子任务累计延期天数中的较大值
+      const selfDays = task.delayedDays || 0;
+      const childrenDays = task.childrenTotalDelayedDays || 0;
+      const days = Math.max(selfDays, childrenDays);
+
       switch (delayFilter.value) {
         case 'critical': return days >= 7;
         case 'warning': return days >= 3 && days < 7;

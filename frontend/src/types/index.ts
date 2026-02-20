@@ -70,6 +70,9 @@ export interface Task {
   delayCount?: number;           // 延期次数
   lastDelayDate?: string;        // 最后延期日期
   isDelayed?: boolean;           // 是否已延期
+  // 子任务延期累计（运行时计算）
+  childrenDelayedCount?: number;      // 子任务中延期的数量
+  childrenTotalDelayedDays?: number;  // 子任务累计延期天数
 }
 
 export interface Project {

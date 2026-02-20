@@ -35,4 +35,8 @@ public class Task {
     private Integer delayCount;         // 延期次数
     private LocalDate lastDelayDate;    // 最后延期日期
     private Boolean isDelayed;          // 是否已延期（运行时计算）
+
+    // 子任务延期累计（运行时计算）
+    private Integer childrenDelayedCount;      // 子任务中延期的数量
+    private Integer childrenTotalDelayedDays;  // 子任务累计延期天数
 }

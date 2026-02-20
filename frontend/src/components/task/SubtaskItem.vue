@@ -59,7 +59,11 @@
         <Badge v-if="task.isDelayed || (task.delayedDays || 0) > 0" :variant="delaySeverity" size="sm">
           {{ delayLabel }}
         </Badge>
-        <span v-if="task.delayedDays && task.delayedDays > 0" class="meta-item" :class="delayTextClass">
+        <!-- 如果有子任务，显示子任务累计延期；否则显示任务自身延期 -->
+        <span v-if="hasChildren && (task.childrenTotalDelayedDays || 0) > 0" class="meta-item" :class="delayTextClass">
+          +{{ task.childrenTotalDelayedDays }}天
+        </span>
+        <span v-else-if="task.delayedDays && task.delayedDays > 0" class="meta-item" :class="delayTextClass">
           +{{ task.delayedDays }}天
         </span>
         <span v-if="hasChildren" class="meta-item child-count">
@@ -224,21 +228,30 @@ const dueDateClass = computed(() => {
 
 // 延期相关计算属性
 const delaySeverity = computed(() => {
-  const days = props.task.delayedDays || 0;
+  // 如果有子任务，使用子任务累计延期天数；否则使用任务自身延期天数
+  const days = hasChildren.value
+    ? (props.task.childrenTotalDelayedDays || 0)
+    : (props.task.delayedDays || 0);
   if (days >= 7) return 'danger';
   if (days >= 3) return 'warning';
   return 'info';
 });
 
 const delayLabel = computed(() => {
-  const days = props.task.delayedDays || 0;
+  // 如果有子任务，使用子任务累计延期天数；否则使用任务自身延期天数
+  const days = hasChildren.value
+    ? (props.task.childrenTotalDelayedDays || 0)
+    : (props.task.delayedDays || 0);
   if (days >= 7) return '严重延期';
   if (days >= 3) return '已延期';
   return '延期';
 });
 
 const delayTextClass = computed(() => {
-  const days = props.task.delayedDays || 0;
+  // 如果有子任务，使用子任务累计延期天数；否则使用任务自身延期天数
+  const days = hasChildren.value
+    ? (props.task.childrenTotalDelayedDays || 0)
+    : (props.task.delayedDays || 0);
   if (days >= 7) return 'text-danger-600';
   if (days >= 3) return 'text-warning-600';
   return 'text-info-600';

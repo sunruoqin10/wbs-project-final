@@ -201,15 +201,18 @@ public class TaskService {
         return taskMapper.countByStatus(status);
     }
 
-    // ==================== 延期管理方法 ====================
-
     /**
      * 更新任务延期状态（运行时计算）
      */
     public void updateDelayedStatus(List<Task> tasks) {
         LocalDate today = LocalDate.now();
+        // 第一步：更新所有任务自身的延期状态
         for (Task task : tasks) {
             updateTaskDelayedStatus(task, today);
+        }
+        // 第二步：为所有任务计算子任务延期累计
+        for (Task task : tasks) {
+            updateChildrenDelaySummary(task);
         }
     }
 
@@ -218,6 +221,7 @@ public class TaskService {
      */
     public void updateTaskDelayedStatus(Task task) {
         updateTaskDelayedStatus(task, LocalDate.now());
+        updateChildrenDelaySummary(task);
     }
 
     /**
@@ -243,6 +247,158 @@ public class TaskService {
                 long days = ChronoUnit.DAYS.between(task.getEndDate(), today);
                 task.setDelayedDays((int) days);
             }
+        }
+    }
+
+    /**
+     * 更新任务的子任务延期累计
+     */
+    private void updateChildrenDelaySummary(Task task) {
+        if (task == null) {
+            return;
+        }
+
+        // 获取所有子孙任务
+        List<Task> allDescendants = getAllDescendantTasks(task.getId());
+        if (allDescendants.isEmpty()) {
+            // 没有子任务，子任务延期累计为0
+            task.setChildrenDelayedCount(0);
+            task.setChildrenTotalDelayedDays(0);
+            return;
+        }
+
+        // 只更新子孙任务自身的延期状态（不递归调用 updateDelayedStatus）
+        LocalDate today = LocalDate.now();
+        for (Task descendant : allDescendants) {
+            updateTaskDelayedStatus(descendant, today);
+        }
+
+        // 统计所有子孙任务的延期（只统计叶子任务）
+        int delayedCount = 0;
+        int totalDelayedDays = 0;
+
+        for (Task descendant : allDescendants) {
+            // 只统计叶子任务
+            if (isLeafTask(descendant.getId())) {
+                if (descendant.getIsDelayed() != null && descendant.getIsDelayed()) {
+                    delayedCount++;
+                    if (descendant.getDelayedDays() != null) {
+                        totalDelayedDays += descendant.getDelayedDays();
+                    }
+                }
+            }
+        }
+
+        task.setChildrenDelayedCount(delayedCount);
+        task.setChildrenTotalDelayedDays(totalDelayedDays);
+    }
+
+    /**
+     * 判断任务是否为叶子任务（没有子任务）
+     */
+    public boolean isLeafTask(String taskId) {
+        List<Task> subtasks = getSubTasks(taskId);
+        return subtasks == null || subtasks.isEmpty();
+    }
+
+    /**
+     * 递归获取任务的所有子孙任务
+     */
+    public List<Task> getAllDescendantTasks(String taskId) {
+        List<Task> allDescendants = new java.util.ArrayList<>();
+        collectDescendants(taskId, allDescendants);
+        return allDescendants;
+    }
+
+    /**
+     * 递归收集子孙任务
+     */
+    private void collectDescendants(String taskId, List<Task> descendants) {
+        List<Task> directChildren = getSubTasks(taskId);
+        if (directChildren != null && !directChildren.isEmpty()) {
+            for (Task child : directChildren) {
+                descendants.add(child);
+                collectDescendants(child.getId(), descendants);
+            }
+        }
+    }
+
+    /**
+     * 获取任务的子任务延期累计（只统计直接子任务）
+     */
+    public DelaySummary getChildrenDelaySummary(String taskId) {
+        List<Task> children = getSubTasks(taskId);
+        if (children == null || children.isEmpty()) {
+            return new DelaySummary(0, 0);
+        }
+
+        // 先更新子任务的延期状态
+        updateDelayedStatus(children);
+
+        int delayedCount = 0;
+        int totalDelayedDays = 0;
+
+        for (Task child : children) {
+            if (child.getIsDelayed() != null && child.getIsDelayed()) {
+                delayedCount++;
+                if (child.getDelayedDays() != null) {
+                    totalDelayedDays += child.getDelayedDays();
+                }
+            }
+        }
+
+        return new DelaySummary(delayedCount, totalDelayedDays);
+    }
+
+    /**
+     * 获取任务的所有子孙任务延期累计（递归统计所有叶子任务）
+     */
+    public DelaySummary getAllDescendantsDelaySummary(String taskId) {
+        List<Task> allDescendants = getAllDescendantTasks(taskId);
+        if (allDescendants.isEmpty()) {
+            return new DelaySummary(0, 0);
+        }
+
+        // 先更新所有子孙任务的延期状态
+        updateDelayedStatus(allDescendants);
+
+        // 只统计叶子任务的延期
+        int delayedCount = 0;
+        int totalDelayedDays = 0;
+
+        for (Task descendant : allDescendants) {
+            // 只统计叶子任务
+            if (isLeafTask(descendant.getId())) {
+                if (descendant.getIsDelayed() != null && descendant.getIsDelayed()) {
+                    delayedCount++;
+                    if (descendant.getDelayedDays() != null) {
+                        totalDelayedDays += descendant.getDelayedDays();
+                    }
+                }
+            }
+        }
+
+        return new DelaySummary(delayedCount, totalDelayedDays);
+    }
+
+    /**
+     * 延期摘要类
+     */
+    public static class DelaySummary {
+        private int delayedCount;
+        private int totalDelayedDays;
+
+        public DelaySummary(int delayedCount, int totalDelayedDays) {
+            this.delayedCount = delayedCount;
+            this.totalDelayedDays = totalDelayedDays;
+        }
+
+        public int getDelayedCount() {
+            return delayedCount;
+        }
+
+        public int getTotalDelayedDays() {
+            return totalDelayedDays;
         }
     }
 
