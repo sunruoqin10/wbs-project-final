@@ -128,6 +128,59 @@
       </div>
     </div>
 
+    <!-- Delay Information -->
+    <div v-if="task.isDelayed || (task.delayedDays && task.delayedDays > 0) || task.delayReason || (task.childrenDelayedCount && task.childrenDelayedCount > 0)">
+      <h4 class="mb-2 text-sm font-medium text-secondary-700">延期信息</h4>
+
+      <!-- Self Delay Status Badge -->
+      <div v-if="task.isDelayed || (task.delayedDays && task.delayedDays > 0)" class="mb-3">
+        <Badge :variant="delaySeverity" class="mb-2">
+          {{ delayLabel }}
+        </Badge>
+        <span v-if="task.delayedDays && task.delayedDays > 0" class="ml-2 text-sm" :class="delayTextClass">
+          延期 {{ task.delayedDays }} 天
+        </span>
+      </div>
+
+      <!-- Children Delay Summary (for parent tasks) -->
+      <div v-if="task.childrenDelayedCount && task.childrenDelayedCount > 0" class="mb-3 rounded-md bg-blue-50 border border-blue-200 p-3">
+        <div class="mb-1 flex items-center gap-2 text-sm font-medium text-blue-800">
+          <svg class="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z" />
+          </svg>
+          子任务延期累计
+        </div>
+        <div class="text-sm text-blue-900">
+          <span>{{ task.childrenDelayedCount }} 个子任务延期</span>
+          <span v-if="task.childrenTotalDelayedDays && task.childrenTotalDelayedDays > 0" class="ml-2 font-medium">
+            累计 +{{ task.childrenTotalDelayedDays }} 天
+          </span>
+        </div>
+      </div>
+
+      <!-- Delay Reason -->
+      <div
+        v-if="task.delayReason"
+        class="rounded-md bg-orange-50 border border-orange-200 p-3"
+      >
+        <div class="mb-1 flex items-center gap-2 text-sm font-medium text-orange-800">
+          <svg class="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+          </svg>
+          延期原因
+        </div>
+        <p class="text-sm text-orange-900">{{ task.delayReason }}</p>
+      </div>
+
+      <!-- Delay Count -->
+      <div v-if="task.delayCount && task.delayCount > 0" class="mt-2 text-xs text-secondary-500">
+        累计延期次数：{{ task.delayCount }} 次
+        <span v-if="task.lastDelayDate" class="ml-2">
+          最后延期：{{ formattedLastDelayDate }}
+        </span>
+      </div>
+    </div>
+
     <!-- Hours -->
     <div v-if="task.estimatedHours || task.actualHours" class="grid grid-cols-2 gap-4">
       <div v-if="task.estimatedHours">
@@ -306,6 +359,12 @@ const { t } = useI18n();
 const userStore = useUserStore();
 const taskStore = useTaskStore();
 
+// 调试：打印任务数据以检查delayReason
+console.log('TaskDetail - 任务数据:', props.task);
+console.log('TaskDetail - delayReason:', props.task.delayReason);
+console.log('TaskDetail - delayedDays:', props.task.delayedDays);
+console.log('TaskDetail - isDelayed:', props.task.isDelayed);
+
 // 计算显示的进度（待办状态强制为0，已完成状态强制为100）
 const displayProgress = computed(() => {
   if (props.task.status === 'todo') {
@@ -414,6 +473,33 @@ const dueDateClass = computed(() => {
   if (diff < 0) return 'text-danger-600 font-medium';
   if (diff <= 2) return 'text-warning-600 font-medium';
   return 'text-secondary-600';
+});
+
+// 延期相关计算属性
+const delaySeverity = computed(() => {
+  const days = props.task.delayedDays || 0;
+  if (days >= 7) return 'danger';
+  if (days >= 3) return 'warning';
+  return 'info';
+});
+
+const delayLabel = computed(() => {
+  const days = props.task.delayedDays || 0;
+  if (days >= 7) return '严重延期';
+  if (days >= 3) return '已延期';
+  return '延期';
+});
+
+const delayTextClass = computed(() => {
+  const days = props.task.delayedDays || 0;
+  if (days >= 7) return 'text-danger-600';
+  if (days >= 3) return 'text-warning-600';
+  return 'text-info-600';
+});
+
+const formattedLastDelayDate = computed(() => {
+  if (!props.task.lastDelayDate) return '';
+  return dayjs(props.task.lastDelayDate).format('YYYY年MM月DD日');
 });
 
 const commentUser = (comment: { userId: string }) => {
