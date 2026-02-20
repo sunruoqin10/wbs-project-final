@@ -433,39 +433,44 @@ const handleDeleteTask = async (task: Task) => {
 
 // Handle save task
 const handleSaveTask = async (taskData: Partial<Task>) => {
-  if (editingTask.value) {
-    // Update existing task
-    await taskStore.updateTask(editingTask.value.id, {
-      ...taskData,
-      status: taskData.status || editingTask.value.status
-    });
-  } else {
-    // Check if creating a subtask
-    const parentTaskId = (window as any).__creatingSubtaskParentId;
-    if (parentTaskId) {
-      // Creating a subtask
-      const newTask = await taskStore.createTask({
+  try {
+    if (editingTask.value) {
+      // Update existing task
+      await taskStore.updateTask(editingTask.value.id, {
         ...taskData,
-        projectId: taskData.projectId || projectId,
-        status: defaultStatus.value || taskData.status || 'todo',
-        parentTaskId: parentTaskId
+        status: taskData.status || editingTask.value.status
       });
-      console.log('Created subtask:', newTask);
-      // Clear the temporary variable
-      delete (window as any).__creatingSubtaskParentId;
     } else {
-      // Create new task - ensure projectId is set
-      const newTask = await taskStore.createTask({
-        ...taskData,
-        projectId: taskData.projectId || projectId,
-        status: defaultStatus.value || taskData.status || 'todo'
-      });
-      console.log('Created task:', newTask);
+      // Check if creating a subtask
+      const parentTaskId = (window as any).__creatingSubtaskParentId;
+      if (parentTaskId) {
+        // Creating a subtask
+        const newTask = await taskStore.createTask({
+          ...taskData,
+          projectId: taskData.projectId || projectId,
+          status: defaultStatus.value || taskData.status || 'todo',
+          parentTaskId: parentTaskId
+        });
+        console.log('Created subtask:', newTask);
+        // Clear the temporary variable
+        delete (window as any).__creatingSubtaskParentId;
+      } else {
+        // Create new task - ensure projectId is set
+        const newTask = await taskStore.createTask({
+          ...taskData,
+          projectId: taskData.projectId || projectId,
+          status: defaultStatus.value || taskData.status || 'todo'
+        });
+        console.log('Created task:', newTask);
+      }
     }
+  } catch (error) {
+    console.error('Failed to save task:', error);
+    // 即使保存失败也关闭 modal，让用户看到错误
+  } finally {
+    // Close modal after saving (无论成功或失败)
+    closeModal();
   }
-
-  // Close modal after saving
-  closeModal();
 };
 
 const goBack = () => {

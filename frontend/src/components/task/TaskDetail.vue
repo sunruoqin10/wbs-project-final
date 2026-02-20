@@ -132,11 +132,11 @@
     <div v-if="task.estimatedHours || task.actualHours" class="grid grid-cols-2 gap-4">
       <div v-if="task.estimatedHours">
         <h4 class="mb-2 text-sm font-medium text-secondary-700">{{ t('taskDetail.estimatedHours') }}</h4>
-        <p class="text-lg font-semibold text-secondary-900">{{ task.estimatedHours }}h</p>
+        <p class="text-lg font-semibold text-secondary-900">{{ formatHoursToDays(task.estimatedHours) }}</p>
       </div>
       <div v-if="task.actualHours">
         <h4 class="mb-2 text-sm font-medium text-secondary-700">{{ t('taskDetail.actualHours') }}</h4>
-        <p class="text-lg font-semibold text-secondary-900">{{ task.actualHours }}h</p>
+        <p class="text-lg font-semibold text-secondary-900">{{ formatHoursToDays(task.actualHours) }}</p>
       </div>
     </div>
 
@@ -430,6 +430,21 @@ const formatFileSize = (bytes: number) => {
   const sizes = ['Bytes', 'KB', 'MB', 'GB'];
   const i = Math.floor(Math.log(bytes) / Math.log(k));
   return Math.round(bytes / Math.pow(k, i) * 100) / 100 + ' ' + sizes[i];
+};
+
+// 将小时转换为天的显示格式（1天=8小时）
+const formatHoursToDays = (hours: number): string => {
+  if (hours <= 0) return '0 天';
+  const days = hours / 8;
+  if (days < 1) {
+    return `${hours} 小时`;
+  }
+  const fullDays = Math.floor(days);
+  const remainingHours = hours % 8;
+  if (remainingHours > 0) {
+    return `${fullDays} 天 ${remainingHours} 小时`;
+  }
+  return `${fullDays} 天`;
 };
 
 const handleEdit = () => {

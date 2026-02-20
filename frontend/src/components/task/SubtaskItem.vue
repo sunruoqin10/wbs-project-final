@@ -37,8 +37,8 @@
           <svg class="w-3 h-3 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
           </svg>
-          {{ hasChildren ? '总' : '' }}{{ totalEstimatedHours }}h
-          <span v-if="totalActualHours > 0" class="text-secondary-500">/ {{ totalActualHours }}h</span>
+          {{ hasChildren ? '总' : '' }}{{ formatHoursToDays(totalEstimatedHours) }}
+          <span v-if="totalActualHours > 0" class="text-secondary-500">/ {{ formatHoursToDays(totalActualHours) }}</span>
         </span>
         <div v-if="task.assigneeId" class="meta-item assignee-info">
           <img
@@ -212,6 +212,21 @@ const totalEstimatedHours = computed(() => {
 const totalActualHours = computed(() => {
   return props.task.actualHours || 0;
 });
+
+// 将小时转换为天的显示格式（1天=8小时）
+const formatHoursToDays = (hours: number): string => {
+  if (hours <= 0) return '0 天';
+  const days = hours / 8;
+  if (days < 1) {
+    return `${hours} 小时`;
+  }
+  const fullDays = Math.floor(days);
+  const remainingHours = hours % 8;
+  if (remainingHours > 0) {
+    return `${fullDays} 天 ${remainingHours} 小时`;
+  }
+  return `${fullDays} 天`;
+};
 
 // 日期样式（根据到期时间显示颜色）
 const dueDateClass = computed(() => {

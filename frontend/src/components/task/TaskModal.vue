@@ -159,7 +159,7 @@
         <!-- Estimated Hours (只读，自动计算) -->
         <div>
           <label class="mb-1 block text-sm font-medium text-secondary-700">
-            预估工时: {{ formData.estimatedHours || 0 }} 小时
+            预估工时: {{ formatHoursToDays(formData.estimatedHours || 0) }}
             <span class="text-xs text-secondary-500 font-normal ml-2">(根据工作日自动计算)</span>
           </label>
           <input
@@ -413,7 +413,19 @@ const loadTaskData = () => {
     originalEndDate.value = props.task.endDate; // 记录原始结束日期
     formData.assigneeId = props.task.assigneeId || '';
     formData.parentTaskId = props.task.parentTaskId || '';
-    formData.estimatedHours = props.task.estimatedHours || calculateEstimatedHours();
+    // 对于有子任务的任务，工时由子任务总和决定，不应该手动计算
+    // 如果已有工时值，使用它；否则根据日期计算（新建时）或设为0（有子任务时）
+    if (props.task.estimatedHours) {
+      formData.estimatedHours = props.task.estimatedHours;
+    } else {
+      // 检查是否有子任务
+      const hasChildren = taskStore.getSubtasks(props.task.id).length > 0;
+      if (hasChildren) {
+        formData.estimatedHours = 0; // 有子任务的任务，工时由子任务决定
+      } else {
+        formData.estimatedHours = calculateEstimatedHours(); // 无子任务的任务，根据日期计算
+      }
+    }
     formData.progress = props.task.progress;
     // 确保 tags 是数组，避免 undefined 错误
     formData.tags = props.task.tags && Array.isArray(props.task.tags) ? [...props.task.tags] : [];
@@ -428,6 +440,8 @@ const loadTaskData = () => {
     formData.endDate = '';
     formData.assigneeId = '';
     formData.parentTaskId = props.parentTaskId || ''; // 如果有父任务ID，使用它
+    // 新建任务时，如果是子任务，根据日期计算工时；如果是顶级任务，先设为0
+    // 工时会在有子任务后自动更新
     formData.estimatedHours = 0;
     formData.progress = 0;
     formData.tags = [];
@@ -476,6 +490,21 @@ const calculateEstimatedHours = (): number => {
 
   // 每个工作日按8小时计算
   return workDays * 8;
+};
+
+// 将小时转换为天的显示格式（1天=8小时）
+const formatHoursToDays = (hours: number): string => {
+  if (hours <= 0) return '0 天';
+  const days = hours / 8;
+  if (days < 1) {
+    return `${hours} 小时`;
+  }
+  const fullDays = Math.floor(days);
+  const remainingHours = hours % 8;
+  if (remainingHours > 0) {
+    return `${fullDays} 天 ${remainingHours} 小时`;
+  }
+  return `${fullDays} 天`;
 };
 
 // Validate form

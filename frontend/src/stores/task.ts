@@ -66,10 +66,11 @@ export const useTaskStore = defineStore('task', () => {
       }
     });
 
-    // 对每个父任务重新计算状态和进度
+    // 对每个父任务重新计算状态、进度和工时
     for (const parentTaskId of parentTaskIds) {
       await updateParentTaskProgress(parentTaskId);
       await updateParentTaskStatus(parentTaskId);
+      await updateParentTaskHours(parentTaskId, false); // 不保存到API，只更新本地状态
     }
   };
 
@@ -152,7 +153,7 @@ export const useTaskStore = defineStore('task', () => {
   };
 
   // 更新父任务的工时（基于子任务工时之和）
-  const updateParentTaskHours = async (parentTaskId: string) => {
+  const updateParentTaskHours = async (parentTaskId: string, saveToApi = true) => {
     const subtasks = getSubtasks(parentTaskId);
 
     if (subtasks.length === 0) {
@@ -188,15 +189,17 @@ export const useTaskStore = defineStore('task', () => {
         currentTask.value = updatedTask;
       }
 
-      // 调用 API 保存
-      await apiService.updateTask(parentTaskId, {
-        estimatedHours: totalEstimatedHours,
-        actualHours: totalActualHours
-      });
+      // 调用 API 保存（如果需要）
+      if (saveToApi) {
+        await apiService.updateTask(parentTaskId, {
+          estimatedHours: totalEstimatedHours,
+          actualHours: totalActualHours
+        });
+      }
 
       // 递归更新上级父任务
       if (parentTask.parentTaskId) {
-        await updateParentTaskHours(parentTask.parentTaskId);
+        await updateParentTaskHours(parentTask.parentTaskId, saveToApi);
       }
     } catch (error) {
       console.error('Failed to update parent task hours:', error);

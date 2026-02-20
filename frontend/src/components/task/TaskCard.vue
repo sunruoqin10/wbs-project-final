@@ -94,8 +94,8 @@
         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
       </svg>
       <span>
-        {{ hasSubtasks ? '总预估工时' : '预估工时' }}: {{ totalEstimatedHours }} 小时
-        <span v-if="totalActualHours > 0" class="text-secondary-500">/ 已用 {{ totalActualHours }} 小时</span>
+        {{ hasSubtasks ? '总预估工时' : '预估工时' }}: {{ formatHoursToDays(totalEstimatedHours) }}
+        <span v-if="totalActualHours > 0" class="text-secondary-500">/ 已用 {{ formatHoursToDays(totalActualHours) }}</span>
       </span>
     </div>
 
@@ -300,6 +300,21 @@ const totalEstimatedHours = computed(() => {
 const totalActualHours = computed(() => {
   return props.task.actualHours || 0;
 });
+
+// 将小时转换为天的显示格式（1天=8小时）
+const formatHoursToDays = (hours: number): string => {
+  if (hours <= 0) return '0 天';
+  const days = hours / 8;
+  if (days < 1) {
+    return `${hours} 小时`;
+  }
+  const fullDays = Math.floor(days);
+  const remainingHours = hours % 8;
+  if (remainingHours > 0) {
+    return `${fullDays} 天 ${remainingHours} 小时`;
+  }
+  return `${fullDays} 天`;
+};
 
 const handleClick = () => {
   emit('click', props.task);
