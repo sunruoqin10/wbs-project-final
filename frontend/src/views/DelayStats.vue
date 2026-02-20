@@ -114,15 +114,32 @@
         <!-- 延期任务列表 -->
         <Card class="lg:col-span-2">
           <template #header>
-            <div class="flex items-center justify-between">
-              <h3 class="text-lg font-semibold text-secondary-900">延期任务详情</h3>
+            <div class="flex flex-wrap items-center gap-4">
               <div class="flex items-center gap-2">
-                <label class="text-sm text-secondary-600">筛选：</label>
+                <label class="text-sm text-secondary-600">严重程度：</label>
                 <select v-model="delayFilter" class="rounded border border-secondary-300 px-3 py-1 text-sm">
                   <option value="all">全部延期</option>
                   <option value="critical">严重延期（≥7天）</option>
                   <option value="warning">中度延期（3-6天）</option>
                   <option value="minor">轻微延期（<3天）</option>
+                </select>
+              </div>
+              <div class="flex items-center gap-2">
+                <label class="text-sm text-secondary-600">所属项目：</label>
+                <select v-model="projectFilter" class="rounded border border-secondary-300 px-3 py-1 text-sm">
+                  <option value="all">全部项目</option>
+                  <option v-for="project in projectStore.projects" :key="project.id" :value="project.id">
+                    {{ project.name }}
+                  </option>
+                </select>
+              </div>
+              <div class="flex items-center gap-2">
+                <label class="text-sm text-secondary-600">负责人：</label>
+                <select v-model="assigneeFilter" class="rounded border border-secondary-300 px-3 py-1 text-sm">
+                  <option value="all">全部负责人</option>
+                  <option v-for="user in userStore.users" :key="user.id" :value="user.id">
+                    {{ user.name }}
+                  </option>
                 </select>
               </div>
             </div>
@@ -186,6 +203,8 @@ const userStore = useUserStore();
 const delayDistributionChartRef = ref<HTMLElement>();
 const projectDelayRankingChartRef = ref<HTMLElement>();
 const delayFilter = ref<'all' | 'critical' | 'warning' | 'minor'>('all');
+const projectFilter = ref<string>('all');
+const assigneeFilter = ref<string>('all');
 
 // 延期统计 - 只统计叶子任务（没有子任务的任务）
 const delayStats = computed(() => {
@@ -254,24 +273,38 @@ const delayedLeafTasks = computed(() => {
 
 // 根据筛选条件过滤延期任务
 const filteredDelayedTasks = computed(() => {
-  const tasks = delayedLeafTasks.value;
+  let tasks = delayedLeafTasks.value;
 
+  // 按严重程度筛选
   switch (delayFilter.value) {
     case 'critical':
-      return tasks.filter(t => (t.delayedDays || 0) >= 7);
+      tasks = tasks.filter(t => (t.delayedDays || 0) >= 7);
+      break;
     case 'warning':
-      return tasks.filter(t => {
+      tasks = tasks.filter(t => {
         const days = t.delayedDays || 0;
         return days >= 3 && days < 7;
       });
+      break;
     case 'minor':
-      return tasks.filter(t => {
+      tasks = tasks.filter(t => {
         const days = t.delayedDays || 0;
         return days > 0 && days < 3;
       });
-    default:
-      return tasks;
+      break;
   }
+
+  // 按项目筛选
+  if (projectFilter.value !== 'all') {
+    tasks = tasks.filter(t => t.projectId === projectFilter.value);
+  }
+
+  // 按负责人筛选
+  if (assigneeFilter.value !== 'all') {
+    tasks = tasks.filter(t => t.assigneeId === assigneeFilter.value);
+  }
+
+  return tasks;
 });
 
 // 获取项目名称
@@ -395,14 +428,31 @@ const initProjectDelayRankingChart = () => {
         return `${data.name}<br/>累计延期天数: ${data.value}<br/>延期任务数: ${data.count}`;
       }
     },
+    grid: {
+      left: '20%',
+      right: '15%',
+      top: '10%',
+      bottom: '10%'
+    },
     xAxis: {
       type: 'value',
-      name: '累计延期天数'
+      name: '累计延期天数',
+      nameLocation: 'middle',
+      nameGap: 30,
+      axisLabel: {
+        fontSize: 11
+      }
     },
     yAxis: {
       type: 'category',
       data: projectDelayData.map(item => item.name),
-      inverse: true  // 让排名高的在上面
+      inverse: true,
+      axisLabel: {
+        width: 100,
+        overflow: 'truncate',
+        ellipsis: '...',
+        fontSize: 12
+      }
     },
     series: [
       {
