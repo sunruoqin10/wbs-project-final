@@ -664,11 +664,22 @@ const handleAddOvertime = () => {
 };
 
 const handleEdit = (record: OvertimeRecord) => {
+  // 已审批通过的记录不能编辑
+  if (record.status === 'approved') {
+    alert('已审批通过的加班记录不能编辑');
+    return;
+  }
   currentRecord.value = record;
   showOvertimeModal.value = true;
 };
 
 const handleDelete = async (record: OvertimeRecord) => {
+  // 已审批通过的记录不能删除
+  if (record.status === 'approved') {
+    alert('已审批通过的加班记录不能删除');
+    return;
+  }
+  
   if (!confirm('确定要删除这条加班记录吗？')) return;
 
   try {
