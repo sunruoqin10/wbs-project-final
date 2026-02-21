@@ -349,6 +349,47 @@ public class OvertimeService {
         return overtimeMapper.countByStatus("pending");
     }
 
+    // ==================== 任务加班查询 ====================
+
+    /**
+     * 根据任务ID查询加班记录
+     */
+    public List<OvertimeRecord> getRecordsByTaskId(String taskId) {
+        return overtimeMapper.selectByTaskId(taskId);
+    }
+
+    /**
+     * 获取任务总加班时长
+     */
+    public BigDecimal getTotalHoursByTask(String taskId) {
+        BigDecimal hours = overtimeMapper.sumHoursByTaskId(taskId);
+        return hours != null ? hours : BigDecimal.ZERO;
+    }
+
+    /**
+     * 获取项目中各任务的加班统计
+     */
+    public List<OvertimeDTO.TaskOvertimeStats> getTaskStats(String projectId, LocalDate startDate, LocalDate endDate) {
+        List<Map<String, Object>> results = overtimeMapper.sumHoursGroupByTask(projectId, startDate, endDate);
+        return results.stream().map(map -> {
+            OvertimeDTO.TaskOvertimeStats stats = new OvertimeDTO.TaskOvertimeStats();
+            stats.setTaskId((String) map.get("taskId"));
+            stats.setTaskName((String) map.get("taskName"));
+            stats.setAssigneeId((String) map.get("assigneeId"));
+            stats.setAssigneeName((String) map.get("assigneeName"));
+            stats.setTotalHours((BigDecimal) map.get("totalHours"));
+            Object countObj = map.get("recordCount");
+            if (countObj != null) {
+                if (countObj instanceof Integer) {
+                    stats.setRecordCount((Integer) countObj);
+                } else if (countObj instanceof Long) {
+                    stats.setRecordCount(((Long) countObj).intValue());
+                }
+            }
+            return stats;
+        }).collect(Collectors.toList());
+    }
+
     // ==================== 辅助方法 ====================
 
     /**

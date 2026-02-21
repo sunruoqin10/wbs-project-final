@@ -174,6 +174,8 @@
               <tr>
                 <th class="px-4 py-3 text-left text-xs font-medium uppercase text-secondary-500">人员</th>
                 <th class="px-4 py-3 text-left text-xs font-medium uppercase text-secondary-500">项目</th>
+                <th class="px-4 py-3 text-left text-xs font-medium uppercase text-secondary-500">项目负责人</th>
+                <th class="px-4 py-3 text-left text-xs font-medium uppercase text-secondary-500">关联任务</th>
                 <th class="px-4 py-3 text-left text-xs font-medium uppercase text-secondary-500">日期</th>
                 <th class="px-4 py-3 text-left text-xs font-medium uppercase text-secondary-500">时间段</th>
                 <th class="px-4 py-3 text-left text-xs font-medium uppercase text-secondary-500">时长</th>
@@ -185,7 +187,7 @@
             </thead>
             <tbody class="divide-y divide-secondary-200 bg-white">
               <tr v-if="filteredRecords.length === 0">
-                <td colspan="9" class="px-4 py-8 text-center text-sm text-secondary-500">
+                <td colspan="11" class="px-4 py-8 text-center text-sm text-secondary-500">
                   暂无加班记录
                 </td>
               </tr>
@@ -202,6 +204,12 @@
                 </td>
                 <td class="whitespace-nowrap px-4 py-3 text-sm text-secondary-600">
                   {{ getProjectName(record.projectId) }}
+                </td>
+                <td class="whitespace-nowrap px-4 py-3 text-sm text-secondary-600">
+                  {{ getProjectOwner(record.projectId) }}
+                </td>
+                <td class="px-4 py-3 text-sm text-secondary-600">
+                  {{ getTaskName(record.taskId) }}
                 </td>
                 <td class="whitespace-nowrap px-4 py-3 text-sm text-secondary-600">
                   {{ formatDate(record.overtimeDate) }}
@@ -289,11 +297,13 @@ import ApprovalModal from '@/components/overtime/ApprovalModal.vue';
 import { useOvertimeStore } from '@/stores/overtime';
 import { useProjectStore } from '@/stores/project';
 import { useUserStore } from '@/stores/user';
+import { useTaskStore } from '@/stores/task';
 import type { OvertimeRecord } from '@/types';
 
 const overtimeStore = useOvertimeStore();
 const projectStore = useProjectStore();
 const userStore = useUserStore();
+const taskStore = useTaskStore();
 
 // Chart refs
 const trendChartRef = ref<HTMLElement>();
@@ -385,6 +395,19 @@ const getUserAvatar = (userId: string) => {
 const getProjectName = (projectId: string) => {
   const project = projectStore.projectById(projectId);
   return project?.name || '未知项目';
+};
+
+const getProjectOwner = (projectId: string) => {
+  const project = projectStore.projectById(projectId);
+  if (!project?.ownerId) return '未设置';
+  const owner = userStore.userById(project.ownerId);
+  return owner?.name || '未知';
+};
+
+const getTaskName = (taskId?: string) => {
+  if (!taskId) return '-';
+  const task = taskStore.getTaskById(taskId);
+  return task?.title || '未知任务';
 };
 
 const formatDate = (dateStr: string) => {
@@ -695,6 +718,7 @@ onMounted(async () => {
   await Promise.all([
     projectStore.loadProjects(),
     userStore.loadUsers(),
+    taskStore.loadTasks(),
     overtimeStore.loadOvertimeRecords(),
     overtimeStore.loadStats()
   ]);

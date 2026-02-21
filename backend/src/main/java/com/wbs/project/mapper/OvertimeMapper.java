@@ -144,4 +144,21 @@ public interface OvertimeMapper {
      * 统计待审批的加班记录数
      */
     int countPendingByProjectId(@Param("projectId") String projectId);
+
+    /**
+     * 根据任务ID查询加班记录
+     */
+    List<OvertimeRecord> selectByTaskId(@Param("taskId") String taskId);
+
+    /**
+     * 统计指定任务的总加班时长
+     */
+    BigDecimal sumHoursByTaskId(@Param("taskId") String taskId);
+
+    /**
+     * 按任务统计加班时长（用于项目中按叶子任务分组统计）
+     */
+    List<Map<String, Object>> sumHoursGroupByTask(@Param("projectId") String projectId,
+                                                   @Param("startDate") LocalDate startDate,
+                                                   @Param("endDate") LocalDate endDate);
 }

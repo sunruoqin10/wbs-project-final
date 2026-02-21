@@ -181,4 +181,17 @@ public class OvertimeDTO {
         private String overtimeType;
         private BigDecimal totalHours;
     }
+
+    /**
+     * 任务加班统计
+     */
+    @Data
+    public static class TaskOvertimeStats {
+        private String taskId;
+        private String taskName;
+        private String assigneeId;
+        private String assigneeName;
+        private Integer recordCount;
+        private BigDecimal totalHours;
+    }
 }

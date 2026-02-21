@@ -429,6 +429,24 @@ class ApiService {
     const params = projectId ? `?projectId=${projectId}` : '';
     return request<OvertimeStats>(`/overtime/stats${params}`);
   }
+
+  async getOvertimeRecordsByTaskId(taskId: string | number): Promise<OvertimeRecord[]> {
+    return request<OvertimeRecord[]>(`/overtime/task/${taskId}`);
+  }
+
+  async getTaskOvertimeHours(taskId: string | number): Promise<number> {
+    return request<number>(`/overtime/total-hours/task/${taskId}`);
+  }
+
+  async getTaskOvertimeStats(projectId?: string, startDate?: string, endDate?: string): Promise<TaskOvertimeStats[]> {
+    const searchParams = new URLSearchParams();
+    if (projectId) searchParams.append('projectId', projectId);
+    if (startDate) searchParams.append('startDate', startDate);
+    if (endDate) searchParams.append('endDate', endDate);
+
+    const queryString = searchParams.toString();
+    return request<TaskOvertimeStats[]>(`/overtime/stats/tasks${queryString ? `?${queryString}` : ''}`);
+  }
 }
 
 // Export singleton instance

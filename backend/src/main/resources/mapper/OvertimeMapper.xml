@@ -300,8 +300,44 @@
     </select>
 
     <select id="countPendingByProjectId" resultType="int">
-        SELECT COUNT(*) FROM t_overtime_record 
+        SELECT COUNT(*) FROM t_overtime_record
         WHERE project_id = #{projectId} AND status = 'pending'
+    </select>
+
+    <select id="selectByTaskId" resultMap="BaseResultMap">
+        SELECT <include refid="Join_Column_List"/>
+        FROM t_overtime_record o
+        LEFT JOIN sys_user u ON o.user_id = u.id
+        LEFT JOIN sys_project p ON o.project_id = p.id
+        LEFT JOIN sys_task t ON o.task_id = t.id
+        LEFT JOIN sys_user a ON o.approver_id = a.id
+        WHERE o.task_id = #{taskId}
+        ORDER BY o.overtime_date DESC, o.created_at DESC
+    </select>
+
+    <select id="sumHoursByTaskId" resultType="java.math.BigDecimal">
+        SELECT COALESCE(SUM(hours), 0) FROM t_overtime_record
+        WHERE task_id = #{taskId} AND status = 'approved'
+    </select>
+
+    <select id="sumHoursGroupByTask" resultType="java.util.Map">
+        SELECT o.task_id as taskId, t.title as taskName, t.assignee_id as assigneeId,
+               u.name as assigneeName, SUM(o.hours) as totalHours, COUNT(*) as recordCount
+        FROM t_overtime_record o
+        LEFT JOIN sys_task t ON o.task_id = t.id
+        LEFT JOIN sys_user u ON t.assignee_id = u.id
+        WHERE o.status = 'approved' AND o.task_id IS NOT NULL
+        <if test="projectId != null and projectId != ''">
+            AND o.project_id = #{projectId}
+        </if>
+        <if test="startDate != null">
+            AND o.overtime_date &gt;= #{startDate}
+        </if>
+        <if test="endDate != null">
+            AND o.overtime_date &lt;= #{endDate}
+        </if>
+        GROUP BY o.task_id, t.title, t.assignee_id, u.name
+        ORDER BY totalHours DESC
     </select>
 
 </mapper>

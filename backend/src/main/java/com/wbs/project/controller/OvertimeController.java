@@ -247,4 +247,39 @@ public class OvertimeController {
                 null, projectId, "pending", null, null, null);
         return Result.success(records);
     }
+
+    // ==================== 任务加班查询 API ====================
+
+    /**
+     * 获取任务的加班记录
+     * GET /api/overtime/task/{taskId}
+     */
+    @GetMapping("/task/{taskId}")
+    public Result<List<OvertimeRecord>> getTaskRecords(@PathVariable String taskId) {
+        List<OvertimeRecord> records = overtimeService.getRecordsByTaskId(taskId);
+        return Result.success(records);
+    }
+
+    /**
+     * 获取任务总加班时长
+     * GET /api/overtime/total-hours/task/{taskId}
+     */
+    @GetMapping("/total-hours/task/{taskId}")
+    public Result<BigDecimal> getTotalHoursByTask(@PathVariable String taskId) {
+        BigDecimal hours = overtimeService.getTotalHoursByTask(taskId);
+        return Result.success(hours);
+    }
+
+    /**
+     * 获取项目中各任务的加班统计
+     * GET /api/overtime/stats/tasks
+     */
+    @GetMapping("/stats/tasks")
+    public Result<List<OvertimeDTO.TaskOvertimeStats>> getTaskStats(
+            @RequestParam(required = false) String projectId,
+            @RequestParam(required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate startDate,
+            @RequestParam(required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate endDate) {
+        List<OvertimeDTO.TaskOvertimeStats> stats = overtimeService.getTaskStats(projectId, startDate, endDate);
+        return Result.success(stats);
+    }
 }

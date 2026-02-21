@@ -20,16 +20,25 @@
       </Select>
 
       <!-- 关联任务 -->
-      <Select
-        v-model="formData.taskId"
-        label="关联任务"
-        :error="errors.taskId"
-      >
-        <option value="">无关联任务</option>
-        <option v-for="task in projectTasks" :key="task.id" :value="task.id">
-          {{ task.title }}
-        </option>
-      </Select>
+      <div>
+        <Select
+          v-model="formData.taskId"
+          label="关联任务"
+          :error="errors.taskId"
+          :disabled="!formData.projectId"
+        >
+          <option value="">无关联任务</option>
+          <option v-for="task in projectTasks" :key="task.id" :value="task.id">
+            {{ task.title }}
+          </option>
+        </Select>
+        <p v-if="formData.projectId && projectTasks.length === 0" class="mt-1 text-xs text-secondary-500">
+          该项目暂无可关联的叶子任务（已完成或无子任务的任务）
+        </p>
+        <p v-else-if="formData.projectId" class="mt-1 text-xs text-secondary-500">
+          仅显示未完成的叶子任务（无子任务的任务）
+        </p>
+      </div>
 
       <!-- 加班人员 -->
       <Select
@@ -221,10 +230,23 @@ const errors = reactive({
   reason: ''
 });
 
-// 获取选中项目的任务列表
+// 获取选中项目的叶子任务列表（没有子任务的任务，且未完成）
 const projectTasks = computed(() => {
   if (!formData.projectId) return [];
-  return taskStore.tasksByProject(formData.projectId);
+
+  const allProjectTasks = taskStore.tasksByProject(formData.projectId);
+
+  // 获取所有有子任务的任务ID（即父任务）
+  const parentTaskIds = new Set(
+    allProjectTasks
+      .filter(task => task.parentTaskId)
+      .map(task => task.parentTaskId)
+  );
+
+  // 返回没有子任务的任务（叶子任务）且状态不是"已完成"的任务
+  return allProjectTasks.filter(task =>
+    !parentTaskIds.has(task.id) && task.status !== 'done'
+  );
 });
 
 // 获取可选用户列表（项目成员）
@@ -401,6 +423,17 @@ const handleClose = () => {
 // 监听时间变化，自动计算时长
 watch([() => formData.startTime, () => formData.endTime], () => {
   calculateHours();
+});
+
+// 监听项目变化，清空不在新项目中的任务选择
+watch(() => formData.projectId, (newProjectId, oldProjectId) => {
+  if (oldProjectId && newProjectId !== oldProjectId && formData.taskId) {
+    // 检查当前选择的任务是否还在新项目的叶子任务列表中
+    const taskExists = projectTasks.value.some(task => task.id === formData.taskId);
+    if (!taskExists) {
+      formData.taskId = '';
+    }
+  }
 });
 
 // 监听弹窗打开

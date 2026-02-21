@@ -154,3 +154,12 @@ export interface OvertimeStats {
     count: number;
   }[];
 }
+
+export interface TaskOvertimeStats {
+  taskId: string;
+  taskName: string;
+  assigneeId: string;
+  assigneeName: string;
+  recordCount: number;
+  totalHours: number;
+}
