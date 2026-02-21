@@ -30,22 +30,32 @@ const isInitialized = ref(false);
 const ganttContainer = ref<HTMLElement>();
 
 const convertToGanttTasks = (): GanttTask[] => {
-  return props.tasks.map(task => ({
-    id: task.id,
-    text: task.title,
-    start_date: task.startDate,
-    duration: calculateDuration(task.startDate, task.endDate),
-    progress: task.progress / 100,
-    parent: task.parentTaskId || 0,
-    priority: task.priority,
-    assigneeId: task.assigneeId,
-    color: getTaskColor(task),
-    // 新增字段
-    description: task.description,
-    status: task.status,
-    estimatedHours: task.estimatedHours,
-    actualHours: task.actualHours
-  }));
+  return props.tasks.map(task => {
+    const hasSubtasks = props.tasks.some(t => t.parentTaskId === task.id);
+    return {
+      id: task.id,
+      text: task.title,
+      start_date: task.startDate,
+      duration: calculateDuration(task.startDate, task.endDate),
+      progress: task.progress / 100,
+      parent: task.parentTaskId || 0,
+      priority: task.priority,
+      assigneeId: task.assigneeId,
+      color: getTaskColor(task, hasSubtasks),
+      // 新增字段
+      description: task.description,
+      status: task.status,
+      estimatedHours: task.estimatedHours,
+      actualHours: task.actualHours,
+      // 延期字段
+      delayedDays: task.delayedDays,
+      isDelayed: task.isDelayed,
+      // 子任务延期字段
+      hasSubtasks,
+      childrenDelayedCount: task.childrenDelayedCount,
+      childrenTotalDelayedDays: task.childrenTotalDelayedDays
+    };
+  });
 };
 
 const calculateDuration = (start: string, end: string): number => {
@@ -56,8 +66,19 @@ const calculateDuration = (start: string, end: string): number => {
   return diffDays || 1;
 };
 
-const getTaskColor = (task: Task): string => {
-  // 优先显示延期状态
+const getTaskColor = (task: Task, hasSubtasks: boolean = false): string => {
+  // 父任务：优先显示子任务延期状态
+  if (hasSubtasks) {
+    const childrenDelayedCount = task.childrenDelayedCount || 0;
+    const childrenTotalDelayedDays = task.childrenTotalDelayedDays || 0;
+    if (childrenDelayedCount > 0) {
+      if (childrenTotalDelayedDays >= 7) return '#ef4444';    // 红色
+      if (childrenTotalDelayedDays >= 3) return '#f59e0b';    // 橙色
+      return '#3b82f6';                                       // 蓝色
+    }
+  }
+  
+  // 无子任务的任务：显示自己的延期状态
   if (task.isDelayed || (task.delayedDays || 0) > 0) {
     const days = task.delayedDays || 0;
     if (days >= 7) return '#ef4444';    // 红色
@@ -306,6 +327,46 @@ const initGantt = () => {
         tooltip += `<span style="margin-left: 10px; color: #95a5a6;">${t('gantt.tooltip.actual')}：${ganttTask.actualHours}h</span>`;
       }
       tooltip += `</div>`;
+    }
+
+    // 延期信息（如果有）- 匹配任务看板逻辑
+    const hasSubtasks = ganttTask.hasSubtasks;
+    const delayedDays = ganttTask.delayedDays || 0;
+    const childrenDelayedCount = ganttTask.childrenDelayedCount || 0;
+    const childrenTotalDelayedDays = ganttTask.childrenTotalDelayedDays || 0;
+    
+    // 父任务：显示子任务延期信息
+    if (hasSubtasks && childrenDelayedCount > 0) {
+      let delayColor = '#3b82f6';
+      if (childrenTotalDelayedDays >= 7) delayColor = '#ef4444';
+      else if (childrenTotalDelayedDays >= 3) delayColor = '#f59e0b';
+      
+      let delayLabel = '延期';
+      if (childrenTotalDelayedDays >= 7) delayLabel = '严重延期';
+      else if (childrenTotalDelayedDays >= 3) delayLabel = '已延期';
+      
+      tooltip += `
+        <div style="margin-top: 6px; padding-top: 6px; border-top: 1px dashed #bdc3c7;">
+          <span style="color: ${delayColor}; font-weight: bold;">⚠ 子任务延期：${childrenDelayedCount} 个任务</span>
+          <span style="color: ${delayColor}; font-weight: bold; margin-left: 8px;">累计 +${childrenTotalDelayedDays} 天</span>
+        </div>
+      `;
+    }
+    // 无子任务的任务：显示自己的延期信息
+    else if (ganttTask.isDelayed || delayedDays > 0) {
+      let delayColor = '#3b82f6';
+      if (delayedDays >= 7) delayColor = '#ef4444';
+      else if (delayedDays >= 3) delayColor = '#f59e0b';
+      
+      let delayLabel = '延期';
+      if (delayedDays >= 7) delayLabel = '严重延期';
+      else if (delayedDays >= 3) delayLabel = '已延期';
+      
+      tooltip += `
+        <div style="margin-top: 6px; padding-top: 6px; border-top: 1px dashed #bdc3c7;">
+          <span style="color: ${delayColor}; font-weight: bold;">⚠ ${delayLabel} ${delayedDays} 天</span>
+        </div>
+      `;
     }
 
     // 负责人信息（如果有）

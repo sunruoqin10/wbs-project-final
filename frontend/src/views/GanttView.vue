@@ -40,9 +40,9 @@
 
       <!-- Legend -->
       <Card>
-        <div class="flex items-center justify-between">
+        <div class="flex flex-wrap items-center justify-between gap-4">
           <h3 class="font-semibold text-secondary-900">{{ t('gantt.status') }}</h3>
-          <div class="flex items-center gap-6">
+          <div class="flex flex-wrap items-center gap-6">
             <div class="flex items-center gap-2">
               <div class="h-3 w-3 rounded" style="background-color: #95a5a6;"></div>
               <span class="text-sm text-secondary-600">{{ t('gantt.statusTodo') }}</span>
@@ -54,6 +54,19 @@
             <div class="flex items-center gap-2">
               <div class="h-3 w-3 rounded" style="background-color: #27ae60;"></div>
               <span class="text-sm text-secondary-600">{{ t('gantt.statusDone') }}</span>
+            </div>
+            <div class="h-4 w-px bg-secondary-300"></div>
+            <div class="flex items-center gap-2">
+              <div class="h-3 w-3 rounded" style="background-color: #3b82f6;"></div>
+              <span class="text-sm text-secondary-600">延期 &lt;3天</span>
+            </div>
+            <div class="flex items-center gap-2">
+              <div class="h-3 w-3 rounded" style="background-color: #f59e0b;"></div>
+              <span class="text-sm text-secondary-600">延期 3-7天</span>
+            </div>
+            <div class="flex items-center gap-2">
+              <div class="h-3 w-3 rounded" style="background-color: #ef4444;"></div>
+              <span class="text-sm text-secondary-600">延期 &gt;7天</span>
             </div>
           </div>
         </div>
