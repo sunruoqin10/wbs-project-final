@@ -148,7 +148,7 @@
 
     <!-- Add/Edit Member Modal -->
     <Modal
-      v-model="showAddMemberModal"
+      :open="showAddMemberModal"
       :title="isEditMode ? $t('team.editMember') : $t('team.addNewMember')"
       size="lg"
       @close="closeModal"
@@ -216,7 +216,7 @@
       <template #footer>
         <div class="flex justify-end gap-3">
           <Button variant="secondary" @click="closeModal">{{ $t('common.cancel') }}</Button>
-          <Button variant="primary" @click="handleSaveMember">
+          <Button variant="primary" @click="submitForm">
             {{ isEditMode ? $t('team.buttons.saveChanges') : $t('team.buttons.addMember') }}
           </Button>
         </div>
@@ -292,8 +292,15 @@ const openEditModal = (user: User) => {
 };
 
 const handleSaveMember = async () => {
+  // 验证必填字段
   if (!newMember.name || !newMember.email || !newMember.department) {
     alert(t('team.messages.requiredFields'));
+    return;
+  }
+
+  // 验证角色已选择
+  if (!newMember.role) {
+    alert('请选择角色');
     return;
   }
 
@@ -337,6 +344,11 @@ const handleSaveMember = async () => {
     console.error('Failed to save member:', error);
     alert(t('team.messages.operationFailed'));
   }
+};
+
+// 提交表单方法（通过按钮点击触发）
+const submitForm = () => {
+  handleSaveMember();
 };
 
 const handleDeleteMember = async (userId: string) => {
