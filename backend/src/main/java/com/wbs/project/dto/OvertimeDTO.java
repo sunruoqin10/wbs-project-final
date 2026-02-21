@@ -139,7 +139,19 @@ public class OvertimeDTO {
         private BigDecimal totalHours;
         private BigDecimal pendingHours;
         private BigDecimal approvedHours;
+        private Integer totalPeople;
+        private Integer pendingApprovals;
+        private BigDecimal thisMonthHours;
+        private Integer thisMonthPeople;
+        private ByTypeStats byType;
         private List<ProjectOvertimeStats> byProject;
+    }
+
+    @Data
+    public static class ByTypeStats {
+        private Integer weekday;
+        private Integer weekend;
+        private Integer holiday;
     }
 
     /**

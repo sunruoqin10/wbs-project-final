@@ -254,6 +254,35 @@ public class OvertimeService {
                 .map(OvertimeRecord::getHours)
                 .reduce(BigDecimal.ZERO, BigDecimal::add));
 
+        // 加班总人数（去重）
+        stats.setTotalPeople((int) records.stream().map(OvertimeRecord::getUserId).distinct().count());
+
+        // 待审批数量
+        stats.setPendingApprovals((int) records.stream().filter(r -> "pending".equals(r.getStatus())).count());
+
+        // 本月统计
+        LocalDate now = LocalDate.now();
+        LocalDate monthStart = now.withDayOfMonth(1);
+        List<OvertimeRecord> monthRecords = records.stream()
+                .filter(r -> {
+                    LocalDate recordDate = r.getOvertimeDate();
+                    return recordDate != null && !recordDate.isBefore(monthStart) && !recordDate.isAfter(now);
+                })
+                .collect(Collectors.toList());
+
+        stats.setThisMonthHours(monthRecords.stream()
+                .map(OvertimeRecord::getHours)
+                .reduce(BigDecimal.ZERO, BigDecimal::add));
+
+        stats.setThisMonthPeople((int) monthRecords.stream().map(OvertimeRecord::getUserId).distinct().count());
+
+        // 按类型统计
+        OvertimeDTO.ByTypeStats byType = new OvertimeDTO.ByTypeStats();
+        byType.setWeekday((int) records.stream().filter(r -> "weekday".equals(r.getOvertimeType())).count());
+        byType.setWeekend((int) records.stream().filter(r -> "weekend".equals(r.getOvertimeType())).count());
+        byType.setHoliday((int) records.stream().filter(r -> "holiday".equals(r.getOvertimeType())).count());
+        stats.setByType(byType);
+
         // 获取项目加班统计
         List<OvertimeDTO.ProjectOvertimeStats> projectStats = getProjectStats(userId, startDate, endDate);
         stats.setByProject(projectStats);
