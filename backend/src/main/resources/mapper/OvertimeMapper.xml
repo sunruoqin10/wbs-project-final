@@ -245,7 +245,7 @@
         SELECT o.project_id as projectId, p.name as projectName, SUM(o.hours) as totalHours, COUNT(*) as recordCount
         FROM t_overtime_record o
         LEFT JOIN sys_project p ON o.project_id = p.id
-        WHERE o.status = 'approved'
+        WHERE 1=1
         <if test="userId != null and userId != ''">
             AND o.user_id = #{userId}
         </if>

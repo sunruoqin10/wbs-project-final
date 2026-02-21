@@ -152,7 +152,15 @@ export interface OvertimeStats {
     projectName: string;
     hours: number;
     count: number;
+    totalHours?: number | string;
+    recordCount?: number;
   }[];
+  // 后端实际返回的字段
+  approvedRecords?: number;
+  approvedHours?: number | string;
+  pendingRecords?: number;
+  pendingHours?: number | string;
+  rejectedRecords?: number;
 }
 
 export interface TaskOvertimeStats {

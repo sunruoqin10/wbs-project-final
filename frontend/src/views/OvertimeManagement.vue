@@ -286,7 +286,7 @@
 </template>
 
 <script setup lang="ts">
-import { ref, computed, onMounted, watch } from 'vue';
+import { ref, computed, onMounted, onUnmounted, watch } from 'vue';
 import * as echarts from 'echarts';
 import dayjs from 'dayjs';
 import MainLayout from '@/components/layout/MainLayout.vue';
@@ -308,6 +308,9 @@ const taskStore = useTaskStore();
 // Chart refs
 const trendChartRef = ref<HTMLElement>();
 const distributionChartRef = ref<HTMLElement>();
+// Chart instances
+let trendChartInstance: echarts.ECharts | null = null;
+let distributionChartInstance: echarts.ECharts | null = null;
 
 // Modal state
 const showOvertimeModal = ref(false);
@@ -471,7 +474,16 @@ const canApprove = (projectId: string) => {
 const initTrendChart = () => {
   if (!trendChartRef.value) return;
 
-  const chart = echarts.init(trendChartRef.value);
+  console.log('=== 初始化加班趋势图 ===');
+  console.log('加班记录数量:', overtimeStore.overtimeRecords.length);
+
+  // 销毁旧实例
+  if (trendChartInstance) {
+    trendChartInstance.dispose();
+  }
+
+  // 创建新实例
+  trendChartInstance = echarts.init(trendChartRef.value);
 
   // 生成最近30天的日期
   const dates: string[] = [];
@@ -479,14 +491,17 @@ const initTrendChart = () => {
   for (let i = 29; i >= 0; i--) {
     const date = dayjs().subtract(i, 'day');
     dates.push(date.format('MM-DD'));
-    
-    // 计算该日期的加班时长
+
+    // 计算该日期的加班时长（包含所有状态）
     const dateStr = date.format('YYYY-MM-DD');
     const dayHours = overtimeStore.overtimeRecords
-      .filter(r => r.overtimeDate === dateStr && r.status === 'approved')
+      .filter(r => r.overtimeDate === dateStr)
       .reduce((sum, r) => sum + r.hours, 0);
     hours.push(dayHours);
   }
+
+  console.log('趋势图数据 - 日期:', dates);
+  console.log('趋势图数据 - 时长:', hours);
 
   const option = {
     tooltip: {
@@ -537,25 +552,44 @@ const initTrendChart = () => {
     ]
   };
 
-  chart.setOption(option);
+  trendChartInstance.setOption(option);
 };
 
 const initDistributionChart = () => {
   if (!distributionChartRef.value) return;
 
-  const chart = echarts.init(distributionChartRef.value);
+  console.log('=== 初始化项目加班分布图 ===');
+  console.log('统计数据:', stats.value);
+  console.log('项目分布数据:', stats.value.byProject);
 
+  // 销毁旧实例
+  if (distributionChartInstance) {
+    distributionChartInstance.dispose();
+  }
+
+  // 创建新实例
+  distributionChartInstance = echarts.init(distributionChartRef.value);
+
+  // 处理项目数据，确保字段名称正确
   const projectData = (stats.value.byProject || [])
-    .map(item => ({
-      ...item,
-      hours: item.totalHours || item.hours || 0,
-      count: item.recordCount || item.count || 0
-    }))
-    .sort((a, b) => b.hours - a.hours)
+    .map((item: any) => {
+      // 处理 BigDecimal 类型的 totalHours，可能是字符串或数字
+      const hours = Number(item.totalHours || item.hours || 0);
+      return {
+        projectId: item.projectId,
+        projectName: item.projectName,
+        hours: hours,
+        count: Number(item.recordCount || item.count || 0)
+      };
+    })
+    .filter((item: any) => item.hours > 0) // 只显示有加班时长的项目
+    .sort((a: any, b: any) => b.hours - a.hours)
     .slice(0, 10);
 
+  console.log('处理后的项目数据:', projectData);
+
   if (projectData.length === 0) {
-    chart.setOption({
+    distributionChartInstance.setOption({
       title: {
         text: '暂无数据',
         left: 'center',
@@ -620,7 +654,7 @@ const initDistributionChart = () => {
     ]
   };
 
-  chart.setOption(option);
+  distributionChartInstance.setOption(option);
 };
 
 // Event handlers
@@ -636,9 +670,19 @@ const handleEdit = (record: OvertimeRecord) => {
 
 const handleDelete = async (record: OvertimeRecord) => {
   if (!confirm('确定要删除这条加班记录吗？')) return;
-  
+
   try {
     await overtimeStore.deleteOvertimeRecord(record.id);
+    // 重新加载统计数据和记录
+    await Promise.all([
+      overtimeStore.loadOvertimeRecords(),
+      overtimeStore.loadStats()
+    ]);
+    // 手动刷新图表
+    setTimeout(() => {
+      initTrendChart();
+      initDistributionChart();
+    }, 100);
   } catch (error) {
     console.error('Failed to delete overtime record:', error);
     alert('删除失败，请重试');
@@ -664,8 +708,16 @@ const handleOvertimeSave = async (data: Partial<OvertimeRecord>) => {
     }
     showOvertimeModal.value = false;
     currentRecord.value = null;
-    // 重新加载统计数据
-    await overtimeStore.loadStats();
+    // 重新加载统计数据和记录
+    await Promise.all([
+      overtimeStore.loadOvertimeRecords(),
+      overtimeStore.loadStats()
+    ]);
+    // 手动刷新图表
+    setTimeout(() => {
+      initTrendChart();
+      initDistributionChart();
+    }, 100);
   } catch (error) {
     console.error('Failed to save overtime record:', error);
     alert('保存失败，请重试');
@@ -687,8 +739,16 @@ const handleApprovalSubmit = async (recordId: string) => {
     await overtimeStore.approveOvertimeRecord(recordId, approverId);
     showApprovalModal.value = false;
     currentRecord.value = null;
-    // 重新加载统计数据
-    await overtimeStore.loadStats();
+    // 重新加载统计数据和记录
+    await Promise.all([
+      overtimeStore.loadOvertimeRecords(),
+      overtimeStore.loadStats()
+    ]);
+    // 手动刷新图表
+    setTimeout(() => {
+      initTrendChart();
+      initDistributionChart();
+    }, 100);
   } catch (error) {
     console.error('Failed to approve overtime record:', error);
     alert('审批失败，请重试');
@@ -705,8 +765,16 @@ const handleRejectSubmit = async (recordId: string, rejectReason: string) => {
     await overtimeStore.rejectOvertimeRecord(recordId, approverId, rejectReason);
     showApprovalModal.value = false;
     currentRecord.value = null;
-    // 重新加载统计数据
-    await overtimeStore.loadStats();
+    // 重新加载统计数据和记录
+    await Promise.all([
+      overtimeStore.loadOvertimeRecords(),
+      overtimeStore.loadStats()
+    ]);
+    // 手动刷新图表
+    setTimeout(() => {
+      initTrendChart();
+      initDistributionChart();
+    }, 100);
   } catch (error) {
     console.error('Failed to reject overtime record:', error);
     alert('拒绝失败，请重试');
@@ -715,6 +783,7 @@ const handleRejectSubmit = async (recordId: string, rejectReason: string) => {
 
 // Load data on mount
 onMounted(async () => {
+  console.log('=== 开始加载数据 ===');
   await Promise.all([
     projectStore.loadProjects(),
     userStore.loadUsers(),
@@ -723,8 +792,13 @@ onMounted(async () => {
     overtimeStore.loadStats()
   ]);
 
+  console.log('=== 数据加载完成 ===');
+  console.log('加班记录:', overtimeStore.overtimeRecords);
+  console.log('统计数据:', overtimeStore.stats);
+
   // Initialize charts after data is loaded
   setTimeout(() => {
+    console.log('=== 初始化图表 ===');
     initTrendChart();
     initDistributionChart();
   }, 100);
@@ -732,9 +806,30 @@ onMounted(async () => {
 
 // Watch for data changes to update charts
 watch(() => overtimeStore.overtimeRecords, () => {
+  console.log('=== overtimeRecords 变化，刷新图表 ===');
   setTimeout(() => {
     initTrendChart();
     initDistributionChart();
   }, 100);
 }, { deep: true });
+
+// Watch for stats changes to update distribution chart
+watch(() => overtimeStore.stats, () => {
+  console.log('=== stats 变化，刷新分布图 ===');
+  setTimeout(() => {
+    initDistributionChart();
+  }, 100);
+}, { deep: true });
+
+// Cleanup on unmount
+onUnmounted(() => {
+  if (trendChartInstance) {
+    trendChartInstance.dispose();
+    trendChartInstance = null;
+  }
+  if (distributionChartInstance) {
+    distributionChartInstance.dispose();
+    distributionChartInstance = null;
+  }
+});
 </script>
