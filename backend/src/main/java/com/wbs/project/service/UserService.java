@@ -78,12 +78,14 @@ public class UserService {
         }
 
         // 如果修改邮箱，验证新邮箱的唯一性
+        /* 
         if (!existingUser.getEmail().equals(user.getEmail())) {
             User emailUser = userMapper.selectByEmail(user.getEmail());
             if (emailUser != null) {
                 throw new RuntimeException("邮箱已被使用");
             }
         }
+        */
 
         user.setId(id);
         user.setUpdatedAt(LocalDateTime.now());

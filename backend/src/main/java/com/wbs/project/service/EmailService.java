@@ -2,6 +2,8 @@ package com.wbs.project.service;
 
 import freemarker.template.Configuration;
 import freemarker.template.Template;
+import freemarker.template.TemplateExceptionHandler;
+import jakarta.annotation.PostConstruct;
 import jakarta.mail.MessagingException;
 import jakarta.mail.internet.MimeMessage;
 import lombok.RequiredArgsConstructor;
@@ -12,6 +14,7 @@ import org.springframework.mail.javamail.MimeMessageHelper;
 import org.springframework.stereotype.Service;
 import org.springframework.ui.freemarker.FreeMarkerTemplateUtils;
 
+import java.util.Locale;
 import java.util.Map;
 
 @Slf4j
@@ -20,13 +23,27 @@ import java.util.Map;
 public class EmailService {
 
     private final JavaMailSender mailSender;
-    private final Configuration freemarkerConfig;
+    private Configuration freemarkerConfig;
 
     @Value("${spring.mail.username:noreply@wbs-system.com}")
     private String fromEmail;
 
     @Value("${spring.mail.display-name:WBS项目管理系统}")
     private String displayName;
+
+    @PostConstruct
+    public void init() {
+        freemarkerConfig = new Configuration(Configuration.VERSION_2_3_31);
+        freemarkerConfig.setClassLoaderForTemplateLoading(
+            getClass().getClassLoader(), "templates/email"
+        );
+        freemarkerConfig.setDefaultEncoding("UTF-8");
+        freemarkerConfig.setLocale(Locale.CHINA);
+        freemarkerConfig.setTemplateExceptionHandler(TemplateExceptionHandler.RETHROW_HANDLER);
+        freemarkerConfig.setLogTemplateExceptions(false);
+        freemarkerConfig.setWrapUncheckedExceptions(true);
+        freemarkerConfig.setFallbackOnNullLoopVariable(false);
+    }
 
     public void sendEmail(String to, String subject, String templateName, Map<String, Object> variables) {
         try {
