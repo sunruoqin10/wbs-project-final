@@ -91,8 +91,13 @@
               class="flex items-center gap-3 rounded-lg border border-secondary-200 p-3"
             >
               <img :src="member.avatar" :alt="member.name" class="h-10 w-10 rounded-full" />
-              <div>
-                <p class="font-medium text-secondary-900">{{ member.name }}</p>
+              <div class="flex-1">
+                <div class="flex items-center gap-2">
+                  <p class="font-medium text-secondary-900">{{ member.name }}</p>
+                  <Badge v-if="member.id === project?.ownerId" variant="primary">
+                    {{ $t('projectDetail.projectOwner') }}
+                  </Badge>
+                </div>
                 <p class="text-sm text-secondary-600">{{ getRoleLabel(member.role) }}</p>
               </div>
             </div>
@@ -222,6 +227,7 @@ import MainLayout from '@/components/layout/MainLayout.vue';
 import Card from '@/components/common/Card.vue';
 import Button from '@/components/common/Button.vue';
 import ProgressBar from '@/components/common/ProgressBar.vue';
+import Badge from '@/components/common/Badge.vue';
 import ProjectModal from '@/components/project/ProjectModal.vue';
 import { useProjectStore } from '@/stores/project';
 import { useTaskStore } from '@/stores/task';
