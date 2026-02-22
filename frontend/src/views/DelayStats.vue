@@ -210,7 +210,7 @@ const assigneeFilter = ref<string>('all');
 
 // 获取用户有权限访问的项目
 const accessibleProjects = computed(() => {
-  if (permissionStore.currentRole === 'admin') {
+  if (permissionStore.currentRole === 'admin' || permissionStore.currentRole === 'project-manager') {
     return projectStore.projects;
   }
   

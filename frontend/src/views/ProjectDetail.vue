@@ -288,7 +288,7 @@ const members = computed(() => {
 // 检查用户是否有权限访问当前项目
 const hasAccessToProject = computed(() => {
   if (!project.value) return false;
-  if (permissionStore.currentRole === 'admin') return true;
+  if (permissionStore.currentRole === 'admin' || permissionStore.currentRole === 'project-manager') return true;
   
   const currentUserId = userStore.currentUserId;
   if (!currentUserId) return false;

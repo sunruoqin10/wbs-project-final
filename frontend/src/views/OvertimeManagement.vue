@@ -451,7 +451,7 @@ const filteredRecords = computed(() => {
 
 // 获取用户有权限访问的项目ID列表
 const getAccessibleProjectIds = (): string[] => {
-  if (permissionStore.currentRole === 'admin') {
+  if (permissionStore.currentRole === 'admin' || permissionStore.currentRole === 'project-manager') {
     return projectStore.projects.map(p => p.id);
   }
   
@@ -471,7 +471,7 @@ const getAccessibleProjectIds = (): string[] => {
 
 // 获取用户有权限访问的项目列表
 const accessibleProjects = computed(() => {
-  if (permissionStore.currentRole === 'admin') {
+  if (permissionStore.currentRole === 'admin' || permissionStore.currentRole === 'project-manager') {
     return projectStore.projects;
   }
   

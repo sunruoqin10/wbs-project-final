@@ -14,7 +14,7 @@
         required
       >
         <option value="">请选择项目</option>
-        <option v-for="project in projectStore.projects" :key="project.id" :value="project.id">
+        <option v-for="project in accessibleProjects" :key="project.id" :value="project.id">
           {{ project.name }}
         </option>
       </Select>
@@ -180,6 +180,7 @@ import Select from '@/components/common/Select.vue';
 import { useProjectStore } from '@/stores/project';
 import { useUserStore } from '@/stores/user';
 import { useTaskStore } from '@/stores/task';
+import { usePermissionStore } from '@/stores/permission';
 import type { OvertimeRecord } from '@/types';
 
 interface Props {
@@ -199,6 +200,39 @@ const emit = defineEmits<{
 const projectStore = useProjectStore();
 const userStore = useUserStore();
 const taskStore = useTaskStore();
+const permissionStore = usePermissionStore();
+
+// 用户有权限访问的项目列表
+const accessibleProjects = computed(() => {
+  let result;
+  if (permissionStore.currentRole === 'admin') {
+    result = projectStore.projects;
+  } else {
+    const currentUserId = userStore.currentUserId;
+    if (!currentUserId) {
+      result = [];
+    } else {
+      result = projectStore.projects.filter(project => {
+        const isOwner = project.ownerId === currentUserId;
+        const isMember = project.memberIds?.includes(currentUserId) || false;
+        return isOwner || isMember;
+      });
+    }
+  }
+  
+  // 在编辑模式下，如果原来的项目不在列表中，也要添加进去
+  if (props.record) {
+    const existingProject = result.find(p => p.id === props.record!.projectId);
+    if (!existingProject) {
+      const recordProject = projectStore.projectById(props.record!.projectId);
+      if (recordProject) {
+        return [...result, recordProject];
+      }
+    }
+  }
+  
+  return result;
+});
 
 const isEditing = computed(() => !!props.record);
 const saving = ref(false);
