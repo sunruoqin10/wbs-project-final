@@ -148,7 +148,7 @@
               </div>
               <div>
                 <p class="font-medium text-secondary-900">{{ $t('projectDetail.viewTasks') }}</p>
-                <p class="text-sm text-secondary-600">{{ projectTasks.length }} {{ $t('projectDetail.tasksCount') }}</p>
+                <p class="text-sm text-secondary-600">{{ leafTaskCount }} {{ $t('projectDetail.tasksCount') }}</p>
               </div>
             </button>
 
@@ -269,6 +269,18 @@ const project = computed(() => projectStore.projectById(projectId.value));
 const projectTasks = computed(() => taskStore.tasksByProject(projectId.value));
 const members = computed(() => {
   return project.value ? userStore.getUsersByIds(project.value.memberIds) : [];
+});
+
+// 计算叶子任务数量（没有子任务的任务）
+const leafTaskCount = computed(() => {
+  const tasks = projectTasks.value;
+  if (tasks.length === 0) return 0;
+  
+  const leafTasks = tasks.filter(task => {
+    return !tasks.some(otherTask => otherTask.parentTaskId === task.id);
+  });
+  
+  return leafTasks.length;
 });
 
 // 计算并显示预估工时（基于所有没有父任务的任务的预估工时之和）
