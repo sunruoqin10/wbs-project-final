@@ -10,6 +10,7 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.time.LocalDateTime;
+import java.util.ArrayList;
 import java.util.List;
 import java.util.UUID;
 
@@ -97,14 +98,24 @@ public class ProjectService {
         // 先插入项目基本信息
         projectMapper.insert(project);
 
-        // 然后处理项目成员关系
-        if (project.getMemberIds() != null && !project.getMemberIds().isEmpty()) {
-            updateProjectMembers(project.getId(), project.getMemberIds());
+        // 确保项目负责人在成员列表中
+        List<String> finalMemberIds = new ArrayList<>();
+        if (project.getMemberIds() != null) {
+            finalMemberIds.addAll(project.getMemberIds());
+        }
+        if (project.getOwnerId() != null && !finalMemberIds.contains(project.getOwnerId())) {
+            finalMemberIds.add(project.getOwnerId());
+        }
+
+        // 处理项目成员关系
+        if (!finalMemberIds.isEmpty()) {
+            updateProjectMembers(project.getId(), finalMemberIds);
+            project.setMemberIds(finalMemberIds);
         }
 
         // 发送邮件通知
-        if (project.getMemberIds() != null && !project.getMemberIds().isEmpty()) {
-            emailNotificationService.notifyProjectCreated(project, project.getMemberIds());
+        if (!finalMemberIds.isEmpty()) {
+            emailNotificationService.notifyProjectCreated(project, finalMemberIds);
         }
 
         return project;
@@ -122,7 +133,7 @@ public class ProjectService {
 
         // 获取旧的成员列表和状态
         List<String> oldMemberIds = existingProject.getMemberIds() != null ? 
-            new java.util.ArrayList<>(existingProject.getMemberIds()) : new java.util.ArrayList<>();
+            new ArrayList<>(existingProject.getMemberIds()) : new ArrayList<>();
         String oldStatus = existingProject.getStatus();
 
         project.setId(id);
@@ -131,13 +142,32 @@ public class ProjectService {
         // 更新项目基本信息
         projectMapper.update(project);
 
-        // 处理项目成员关系（如果提供了成员列表）
+        // 处理项目成员关系
+        List<String> finalMemberIds = null;
         if (project.getMemberIds() != null) {
-            updateProjectMembers(id, project.getMemberIds());
+            // 确保项目负责人在成员列表中
+            finalMemberIds = new ArrayList<>(project.getMemberIds());
+            String ownerId = project.getOwnerId() != null ? project.getOwnerId() : existingProject.getOwnerId();
+            if (ownerId != null && !finalMemberIds.contains(ownerId)) {
+                finalMemberIds.add(ownerId);
+            }
+            
+            updateProjectMembers(id, finalMemberIds);
             
             // 发送成员变更通知
             Project updatedProject = getProjectById(id);
-            sendMemberChangeNotifications(existingProject, oldMemberIds, updatedProject.getMemberIds());
+            sendMemberChangeNotifications(existingProject, oldMemberIds, finalMemberIds);
+        } else if (project.getOwnerId() != null && !project.getOwnerId().equals(existingProject.getOwnerId())) {
+            // 如果只更新了负责人，确保新负责人在成员列表中
+            finalMemberIds = existingProject.getMemberIds() != null ? 
+                new ArrayList<>(existingProject.getMemberIds()) : new ArrayList<>();
+            if (!finalMemberIds.contains(project.getOwnerId())) {
+                finalMemberIds.add(project.getOwnerId());
+                updateProjectMembers(id, finalMemberIds);
+                
+                // 发送成员变更通知
+                sendMemberChangeNotifications(existingProject, oldMemberIds, finalMemberIds);
+            }
         }
 
         // 检查状态变更并发送通知

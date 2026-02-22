@@ -32,7 +32,7 @@ public class EmailNotificationService {
                 emailService.sendEmail(
                     user.getEmail(),
                     "【WBS系统】您已加入新项目：" + project.getName(),
-                    "email/project-created",
+                    "project-created",
                     variables
                 );
             }
@@ -49,7 +49,7 @@ public class EmailNotificationService {
             emailService.sendEmail(
                 user.getEmail(),
                 "【WBS系统】您已加入项目：" + project.getName(),
-                "email/member-added",
+                "member-added",
                 variables
             );
         }
@@ -65,7 +65,7 @@ public class EmailNotificationService {
             emailService.sendEmail(
                 user.getEmail(),
                 "【WBS系统】您已从项目移除：" + project.getName(),
-                "email/member-removed",
+                "member-removed",
                 variables
             );
         }
@@ -84,7 +84,7 @@ public class EmailNotificationService {
                 emailService.sendEmail(
                     user.getEmail(),
                     "【WBS系统】项目状态变更：" + project.getName(),
-                    "email/project-status-changed",
+                    "project-status-changed",
                     variables
                 );
             }
@@ -102,7 +102,7 @@ public class EmailNotificationService {
             emailService.sendEmail(
                 assignee.getEmail(),
                 "【WBS系统】您有新任务：" + task.getTitle(),
-                "email/task-assigned",
+                "task-assigned",
                 variables
             );
         }
@@ -118,7 +118,7 @@ public class EmailNotificationService {
             emailService.sendEmail(
                 oldAssignee.getEmail(),
                 "【WBS系统】任务已重新分配：" + task.getTitle(),
-                "email/task-unassigned",
+                "task-unassigned",
                 oldVariables
             );
         }
@@ -131,7 +131,7 @@ public class EmailNotificationService {
             emailService.sendEmail(
                 newAssignee.getEmail(),
                 "【WBS系统】您有新任务：" + task.getTitle(),
-                "email/task-assigned",
+                "task-assigned",
                 newVariables
             );
         }
@@ -148,7 +148,7 @@ public class EmailNotificationService {
             emailService.sendEmail(
                 assignee.getEmail(),
                 "【WBS系统】任务状态变更：" + task.getTitle(),
-                "email/task-status-changed",
+                "task-status-changed",
                 variables
             );
         }
@@ -163,7 +163,7 @@ public class EmailNotificationService {
             emailService.sendEmail(
                 projectOwner.getEmail(),
                 "【WBS系统】任务状态变更：" + task.getTitle(),
-                "email/task-status-changed-owner",
+                "task-status-changed-owner",
                 ownerVariables
             );
         }
@@ -179,7 +179,7 @@ public class EmailNotificationService {
             emailService.sendEmail(
                 assignee.getEmail(),
                 "【WBS系统】任务延期预警：" + task.getTitle(),
-                "email/task-delayed",
+                "task-delayed",
                 variables
             );
         }
@@ -193,7 +193,7 @@ public class EmailNotificationService {
             emailService.sendEmail(
                 projectOwner.getEmail(),
                 "【WBS系统】任务延期预警：" + task.getTitle(),
-                "email/task-delayed-owner",
+                "task-delayed-owner",
                 ownerVariables
             );
         }
@@ -208,7 +208,7 @@ public class EmailNotificationService {
             emailService.sendEmail(
                 assignee.getEmail(),
                 "【WBS系统】任务已完成：" + task.getTitle(),
-                "email/task-completed",
+                "task-completed",
                 variables
             );
         }
@@ -221,7 +221,7 @@ public class EmailNotificationService {
             emailService.sendEmail(
                 projectOwner.getEmail(),
                 "【WBS系统】任务已完成：" + task.getTitle(),
-                "email/task-completed-owner",
+                "task-completed-owner",
                 ownerVariables
             );
         }
@@ -239,7 +239,7 @@ public class EmailNotificationService {
             emailService.sendEmail(
                 projectOwner.getEmail(),
                 "【WBS系统】新加班申请待审批",
-                "email/overtime-submitted",
+                "overtime-submitted",
                 variables
             );
         }
@@ -255,7 +255,7 @@ public class EmailNotificationService {
             emailService.sendEmail(
                 applicant.getEmail(),
                 "【WBS系统】加班申请已通过",
-                "email/overtime-approved",
+                "overtime-approved",
                 variables
             );
         }
@@ -272,7 +272,7 @@ public class EmailNotificationService {
             emailService.sendEmail(
                 applicant.getEmail(),
                 "【WBS系统】加班申请已拒绝",
-                "email/overtime-rejected",
+                "overtime-rejected",
                 variables
             );
         }

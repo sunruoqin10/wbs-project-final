@@ -71,8 +71,14 @@ public class ProjectController {
     public Result<Project> updateProject(
             @PathVariable String id, 
             @RequestBody Project project,
-            @RequestHeader(value = "X-User-Id", required = false) String userId) {
+            @RequestHeader(value = "X-User-Id", required = false) String userId,
+            @RequestHeader(value = "X-User-Role", required = false) String userRole) {
         try {
+            if ("admin".equals(userRole)) {
+                Project updatedProject = projectService.updateProject(id, project);
+                projectService.updateProjectDelayedStatus(updatedProject);
+                return Result.success("项目更新成功", updatedProject);
+            }
             if (userId != null && !permissionService.isProjectOwner(userId, id)) {
                 return Result.error("无权限编辑此项目");
             }
