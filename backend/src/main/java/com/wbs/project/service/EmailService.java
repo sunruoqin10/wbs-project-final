@@ -46,12 +46,19 @@ public class EmailService {
     }
 
     public void sendEmail(String to, String subject, String templateName, Map<String, Object> variables) {
+        sendEmail(to, null, subject, templateName, variables);
+    }
+
+    public void sendEmail(String to, String cc, String subject, String templateName, Map<String, Object> variables) {
         try {
             MimeMessage message = mailSender.createMimeMessage();
             MimeMessageHelper helper = new MimeMessageHelper(message, true, "UTF-8");
 
             helper.setFrom(fromEmail, displayName);
             helper.setTo(to);
+            if (cc != null && !cc.isEmpty()) {
+                helper.setCc(cc);
+            }
             helper.setSubject(subject);
 
             Template template = freemarkerConfig.getTemplate(templateName + ".ftl");
@@ -59,7 +66,7 @@ public class EmailService {
             helper.setText(htmlContent, true);
 
             mailSender.send(message);
-            log.info("Email sent successfully to: {}, subject: {}", to, subject);
+            log.info("Email sent successfully to: {}, cc: {}, subject: {}", to, cc, subject);
         } catch (MessagingException e) {
             log.error("Failed to send email to: {}", to, e);
             throw new RuntimeException("邮件发送失败", e);

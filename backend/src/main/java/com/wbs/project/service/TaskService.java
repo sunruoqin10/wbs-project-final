@@ -86,11 +86,20 @@ public class TaskService {
 
         taskMapper.insert(task);
         
+        // 获取项目负责人
+        User projectOwner = null;
+        if (task.getProjectId() != null) {
+            Project project = projectMapper.selectById(task.getProjectId());
+            if (project != null && project.getOwnerId() != null) {
+                projectOwner = userService.getUserById(project.getOwnerId());
+            }
+        }
+        
         // 发送任务分配通知
         if (task.getAssigneeId() != null) {
             User assignee = userService.getUserById(task.getAssigneeId());
             if (assignee != null) {
-                emailNotificationService.notifyTaskAssigned(task, assignee);
+                emailNotificationService.notifyTaskAssigned(task, assignee, projectOwner);
             }
         }
         
@@ -130,7 +139,7 @@ public class TaskService {
         if (task.getAssigneeId() != null && !task.getAssigneeId().equals(oldAssigneeId)) {
             User oldAssignee = oldAssigneeId != null ? userService.getUserById(oldAssigneeId) : null;
             User newAssignee = task.getAssigneeId() != null ? userService.getUserById(task.getAssigneeId()) : null;
-            emailNotificationService.notifyTaskReassigned(updatedTask, oldAssignee, newAssignee);
+            emailNotificationService.notifyTaskReassigned(updatedTask, oldAssignee, newAssignee, projectOwner);
         }
         
         // 处理状态变更

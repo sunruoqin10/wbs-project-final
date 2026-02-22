@@ -91,7 +91,7 @@ public class EmailNotificationService {
         }
     }
 
-    public void notifyTaskAssigned(Task task, User assignee) {
+    public void notifyTaskAssigned(Task task, User assignee, User projectOwner) {
         log.info("Notifying task assigned: {}", task.getTitle());
         if (assignee != null && assignee.getEmail() != null) {
             Map<String, Object> variables = new HashMap<>();
@@ -99,8 +99,11 @@ public class EmailNotificationService {
             variables.put("taskDescription", task.getDescription());
             variables.put("userName", assignee.getName());
             variables.put("dueDate", task.getEndDate() != null ? task.getEndDate().toString() : "未设置");
+            String ccEmail = (projectOwner != null && projectOwner.getEmail() != null && 
+                              !projectOwner.getId().equals(assignee.getId())) ? projectOwner.getEmail() : null;
             emailService.sendEmail(
                 assignee.getEmail(),
+                ccEmail,
                 "【WBS系统】您有新任务：" + task.getTitle(),
                 "task-assigned",
                 variables
@@ -108,15 +111,19 @@ public class EmailNotificationService {
         }
     }
 
-    public void notifyTaskReassigned(Task task, User oldAssignee, User newAssignee) {
+    public void notifyTaskReassigned(Task task, User oldAssignee, User newAssignee, User projectOwner) {
         log.info("Notifying task reassigned: {}", task.getTitle());
+        String ccEmail = (projectOwner != null && projectOwner.getEmail() != null) ? projectOwner.getEmail() : null;
+        
         if (oldAssignee != null && oldAssignee.getEmail() != null) {
             Map<String, Object> oldVariables = new HashMap<>();
             oldVariables.put("taskTitle", task.getTitle());
             oldVariables.put("userName", oldAssignee.getName());
             oldVariables.put("newAssigneeName", newAssignee != null ? newAssignee.getName() : "未知");
+            String oldCcEmail = (ccEmail != null && !ccEmail.equals(oldAssignee.getEmail())) ? ccEmail : null;
             emailService.sendEmail(
                 oldAssignee.getEmail(),
+                oldCcEmail,
                 "【WBS系统】任务已重新分配：" + task.getTitle(),
                 "task-unassigned",
                 oldVariables
@@ -128,8 +135,10 @@ public class EmailNotificationService {
             newVariables.put("taskDescription", task.getDescription());
             newVariables.put("userName", newAssignee.getName());
             newVariables.put("dueDate", task.getEndDate() != null ? task.getEndDate().toString() : "未设置");
+            String newCcEmail = (ccEmail != null && !ccEmail.equals(newAssignee.getEmail())) ? ccEmail : null;
             emailService.sendEmail(
                 newAssignee.getEmail(),
+                newCcEmail,
                 "【WBS系统】您有新任务：" + task.getTitle(),
                 "task-assigned",
                 newVariables
@@ -139,14 +148,18 @@ public class EmailNotificationService {
 
     public void notifyTaskStatusChanged(Task task, String oldStatus, String newStatus, User assignee, User projectOwner) {
         log.info("Notifying task status changed: {} -> {}", oldStatus, newStatus);
+        String ccEmail = (projectOwner != null && projectOwner.getEmail() != null) ? projectOwner.getEmail() : null;
+        
         if (assignee != null && assignee.getEmail() != null) {
             Map<String, Object> variables = new HashMap<>();
             variables.put("taskTitle", task.getTitle());
             variables.put("oldStatus", getTaskStatusLabel(oldStatus));
             variables.put("newStatus", getTaskStatusLabel(newStatus));
             variables.put("userName", assignee.getName());
+            String assigneeCcEmail = (ccEmail != null && !ccEmail.equals(assignee.getEmail())) ? ccEmail : null;
             emailService.sendEmail(
                 assignee.getEmail(),
+                assigneeCcEmail,
                 "【WBS系统】任务状态变更：" + task.getTitle(),
                 "task-status-changed",
                 variables
@@ -162,6 +175,7 @@ public class EmailNotificationService {
             ownerVariables.put("assigneeName", assignee != null ? assignee.getName() : "未分配");
             emailService.sendEmail(
                 projectOwner.getEmail(),
+                null,
                 "【WBS系统】任务状态变更：" + task.getTitle(),
                 "task-status-changed-owner",
                 ownerVariables
@@ -171,13 +185,17 @@ public class EmailNotificationService {
 
     public void notifyTaskDelayed(Task task, User assignee, User projectOwner) {
         log.info("Notifying task delayed: {}", task.getTitle());
+        String ccEmail = (projectOwner != null && projectOwner.getEmail() != null) ? projectOwner.getEmail() : null;
+        
         if (assignee != null && assignee.getEmail() != null) {
             Map<String, Object> variables = new HashMap<>();
             variables.put("taskTitle", task.getTitle());
             variables.put("delayedDays", task.getDelayedDays() != null ? task.getDelayedDays() : 0);
             variables.put("userName", assignee.getName());
+            String assigneeCcEmail = (ccEmail != null && !ccEmail.equals(assignee.getEmail())) ? ccEmail : null;
             emailService.sendEmail(
                 assignee.getEmail(),
+                assigneeCcEmail,
                 "【WBS系统】任务延期预警：" + task.getTitle(),
                 "task-delayed",
                 variables
@@ -192,6 +210,7 @@ public class EmailNotificationService {
             ownerVariables.put("assigneeName", assignee != null ? assignee.getName() : "未分配");
             emailService.sendEmail(
                 projectOwner.getEmail(),
+                null,
                 "【WBS系统】任务延期预警：" + task.getTitle(),
                 "task-delayed-owner",
                 ownerVariables
@@ -201,12 +220,16 @@ public class EmailNotificationService {
 
     public void notifyTaskCompleted(Task task, User assignee, User projectOwner) {
         log.info("Notifying task completed: {}", task.getTitle());
+        String ccEmail = (projectOwner != null && projectOwner.getEmail() != null) ? projectOwner.getEmail() : null;
+        
         if (assignee != null && assignee.getEmail() != null) {
             Map<String, Object> variables = new HashMap<>();
             variables.put("taskTitle", task.getTitle());
             variables.put("userName", assignee.getName());
+            String assigneeCcEmail = (ccEmail != null && !ccEmail.equals(assignee.getEmail())) ? ccEmail : null;
             emailService.sendEmail(
                 assignee.getEmail(),
+                assigneeCcEmail,
                 "【WBS系统】任务已完成：" + task.getTitle(),
                 "task-completed",
                 variables
@@ -220,6 +243,7 @@ public class EmailNotificationService {
             ownerVariables.put("assigneeName", assignee != null ? assignee.getName() : "未分配");
             emailService.sendEmail(
                 projectOwner.getEmail(),
+                null,
                 "【WBS系统】任务已完成：" + task.getTitle(),
                 "task-completed-owner",
                 ownerVariables
