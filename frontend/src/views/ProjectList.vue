@@ -177,8 +177,8 @@ const statusOptions = computed(() => [
 const filteredProjects = computed(() => {
   let result = projectStore.projects;
 
-  // 权限控制：管理员可以看到所有项目，其他角色只能看到自己参与或负责的项目
-  if (permissionStore.currentRole !== 'admin') {
+  // 权限控制：管理员和项目经理可以看到所有项目，其他角色只能看到自己参与或负责的项目
+  if (permissionStore.currentRole !== 'admin' && permissionStore.currentRole !== 'project-manager') {
     const currentUserId = userStore.currentUserId;
     if (currentUserId) {
       result = result.filter(project => {
