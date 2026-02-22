@@ -120,7 +120,7 @@
               <label class="text-sm text-secondary-600">项目：</label>
               <select v-model="filters.projectId" class="rounded border border-secondary-300 px-3 py-1 text-sm">
                 <option value="">全部项目</option>
-                <option v-for="project in projectStore.projects" :key="project.id" :value="project.id">
+                <option v-for="project in accessibleProjects" :key="project.id" :value="project.id">
                   {{ project.name }}
                 </option>
               </select>
@@ -298,12 +298,14 @@ import { useOvertimeStore } from '@/stores/overtime';
 import { useProjectStore } from '@/stores/project';
 import { useUserStore } from '@/stores/user';
 import { useTaskStore } from '@/stores/task';
+import { usePermissionStore } from '@/stores/permission';
 import type { OvertimeRecord } from '@/types';
 
 const overtimeStore = useOvertimeStore();
 const projectStore = useProjectStore();
 const userStore = useUserStore();
 const taskStore = useTaskStore();
+const permissionStore = usePermissionStore();
 
 // Chart refs
 const trendChartRef = ref<HTMLElement>();
@@ -327,35 +329,98 @@ const filters = ref({
   endDate: ''
 });
 
-// Statistics
-const stats = computed(() => overtimeStore.stats || {
-  totalRecords: 0,
-  totalHours: 0,
-  totalPeople: 0,
-  pendingApprovals: 0,
-  thisMonthHours: 0,
-  thisMonthPeople: 0,
-  byType: { weekday: 0, weekend: 0, holiday: 0 },
-  byProject: []
+
+
+// 用户有权限访问的所有加班记录
+const accessibleRecords = computed(() => {
+  const accessibleProjectIds = getAccessibleProjectIds();
+  return overtimeStore.overtimeRecords.filter(r => accessibleProjectIds.includes(r.projectId));
+});
+
+// 用户有权限访问的已审批加班记录
+const accessibleApprovedRecords = computed(() => {
+  return accessibleRecords.value.filter(r => r.status === 'approved');
 });
 
 // 计算调休累计（补偿方式为调休的已审批加班时长）
 const totalCompTimeoff = computed(() => {
-  return overtimeStore.approvedRecords
+  return accessibleApprovedRecords.value
     .filter(r => r.compensationType === 'timeoff')
     .reduce((sum, r) => sum + r.hours, 0);
 });
 
 // 计算加班费累计（补偿方式为加班费的已审批加班时长）
 const totalPayHours = computed(() => {
-  return overtimeStore.approvedRecords
+  return accessibleApprovedRecords.value
     .filter(r => r.compensationType === 'pay')
     .reduce((sum, r) => sum + r.hours, 0);
 });
 
+// 重新计算统计数据，基于用户有权限访问的项目
+const stats = computed(() => {
+  const records = accessibleRecords.value;
+  const now = dayjs();
+  const thisMonth = now.format('YYYY-MM');
+  
+  const thisMonthRecords = records.filter(r => r.overtimeDate.startsWith(thisMonth));
+  const pendingRecords = records.filter(r => r.status === 'pending');
+  const peopleSet = new Set(thisMonthRecords.map(r => r.userId));
+  
+  const byType = {
+    weekday: records.filter(r => r.overtimeType === 'weekday').reduce((sum, r) => sum + r.hours, 0),
+    weekend: records.filter(r => r.overtimeType === 'weekend').reduce((sum, r) => sum + r.hours, 0),
+    holiday: records.filter(r => r.overtimeType === 'holiday').reduce((sum, r) => sum + r.hours, 0)
+  };
+  
+  const byProject: any[] = [];
+  const projectMap = new Map<string, { projectId: string; projectName: string; hours: number; count: number }>();
+  
+  records.forEach(record => {
+    const project = projectStore.projectById(record.projectId);
+    if (!project) return;
+    
+    if (!projectMap.has(project.id)) {
+      projectMap.set(project.id, {
+        projectId: project.id,
+        projectName: project.name,
+        hours: 0,
+        count: 0
+      });
+    }
+    
+    const projectData = projectMap.get(project.id)!;
+    projectData.hours += record.hours;
+    projectData.count += 1;
+  });
+  
+  projectMap.forEach(value => {
+    byProject.push({
+      projectId: value.projectId,
+      projectName: value.projectName,
+      totalHours: value.hours,
+      hours: value.hours,
+      recordCount: value.count,
+      count: value.count
+    });
+  });
+  
+  return {
+    totalRecords: records.length,
+    totalHours: records.reduce((sum, r) => sum + r.hours, 0),
+    totalPeople: new Set(records.map(r => r.userId)).size,
+    pendingApprovals: pendingRecords.length,
+    thisMonthHours: thisMonthRecords.reduce((sum, r) => sum + r.hours, 0),
+    thisMonthPeople: peopleSet.size,
+    byType,
+    byProject
+  };
+});
+
 // Filtered records
 const filteredRecords = computed(() => {
-  let result = overtimeStore.overtimeRecords;
+  // 只显示用户有权限访问的项目中的加班记录
+  const accessibleProjectIds = getAccessibleProjectIds();
+  let result = overtimeStore.overtimeRecords.filter(r => accessibleProjectIds.includes(r.projectId));
 
   if (filters.value.projectId) {
     result = result.filter(r => r.projectId === filters.value.projectId);
@@ -382,6 +447,44 @@ const filteredRecords = computed(() => {
   }
 
   return result;
+});
+
+// 获取用户有权限访问的项目ID列表
+const getAccessibleProjectIds = (): string[] => {
+  if (permissionStore.currentRole === 'admin') {
+    return projectStore.projects.map(p => p.id);
+  }
+  
+  const currentUserId = userStore.currentUserId;
+  if (!currentUserId) {
+    return [];
+  }
+  
+  return projectStore.projects
+    .filter(project => {
+      const isOwner = project.ownerId === currentUserId;
+      const isMember = project.memberIds?.includes(currentUserId) || false;
+      return isOwner || isMember;
+    })
+    .map(p => p.id);
+};
+
+// 获取用户有权限访问的项目列表
+const accessibleProjects = computed(() => {
+  if (permissionStore.currentRole === 'admin') {
+    return projectStore.projects;
+  }
+  
+  const currentUserId = userStore.currentUserId;
+  if (!currentUserId) {
+    return [];
+  }
+  
+  return projectStore.projects.filter(project => {
+    const isOwner = project.ownerId === currentUserId;
+    const isMember = project.memberIds?.includes(currentUserId) || false;
+    return isOwner || isMember;
+  });
 });
 
 // Helper functions
@@ -475,7 +578,7 @@ const initTrendChart = () => {
   if (!trendChartRef.value) return;
 
   console.log('=== 初始化加班趋势图 ===');
-  console.log('加班记录数量:', overtimeStore.overtimeRecords.length);
+  console.log('加班记录数量:', accessibleRecords.value.length);
 
   // 销毁旧实例
   if (trendChartInstance) {
@@ -492,9 +595,9 @@ const initTrendChart = () => {
     const date = dayjs().subtract(i, 'day');
     dates.push(date.format('MM-DD'));
 
-    // 计算该日期的加班时长（包含所有状态）
+    // 计算该日期的加班时长（只统计用户有权限访问的项目）
     const dateStr = date.format('YYYY-MM-DD');
-    const dayHours = overtimeStore.overtimeRecords
+    const dayHours = accessibleRecords.value
       .filter(r => r.overtimeDate === dateStr)
       .reduce((sum, r) => sum + r.hours, 0);
     hours.push(dayHours);
