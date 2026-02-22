@@ -113,12 +113,14 @@ import Button from '@/components/common/Button.vue';
 import Input from '@/components/common/Input.vue';
 import { useProjectStore } from '@/stores/project';
 import { usePermissionStore } from '@/stores/permission';
+import { useUserStore } from '@/stores/user';
 import type { Project } from '@/types';
 
 const router = useRouter();
 const { t } = useI18n();
 const projectStore = useProjectStore();
 const permissionStore = usePermissionStore();
+const userStore = useUserStore();
 
 const searchQuery = ref('');
 const selectedStatuses = ref<string[]>([]);
@@ -175,6 +177,20 @@ const statusOptions = computed(() => [
 const filteredProjects = computed(() => {
   let result = projectStore.projects;
 
+  // 权限控制：管理员可以看到所有项目，其他角色只能看到自己参与或负责的项目
+  if (permissionStore.currentRole !== 'admin') {
+    const currentUserId = userStore.currentUserId;
+    if (currentUserId) {
+      result = result.filter(project => {
+        // 检查是否是项目负责人
+        const isOwner = project.ownerId === currentUserId;
+        // 检查是否是项目成员
+        const isMember = project.memberIds?.includes(currentUserId) || false;
+        return isOwner || isMember;
+      });
+    }
+  }
+
   if (selectedStatuses.value.length > 0) {
     result = result.filter(p => selectedStatuses.value.includes(p.status));
   }
@@ -184,7 +200,7 @@ const filteredProjects = computed(() => {
     result = result.filter(p =>
       p.name.toLowerCase().includes(search) ||
       p.description.toLowerCase().includes(search) ||
-      p.tags.some(tag => tag.toLowerCase().includes(search))
+      (p.tags && p.tags.some(tag => tag.toLowerCase().includes(search)))
     );
   }
 

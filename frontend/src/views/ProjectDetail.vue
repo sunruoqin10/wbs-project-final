@@ -1,8 +1,20 @@
 <template>
   <MainLayout>
     <div class="space-y-6">
+      <!-- No Access State -->
+      <Card v-if="project && !hasAccessToProject" class="p-12">
+        <div class="text-center">
+          <svg class="mx-auto h-24 w-24 text-secondary-300" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" />
+          </svg>
+          <h3 class="mt-4 text-lg font-medium text-secondary-900">无权访问此项目</h3>
+          <p class="mt-2 text-sm text-secondary-600">您没有权限查看此项目详情</p>
+          <Button variant="primary" class="mt-4" @click="goBack">返回项目列表</Button>
+        </div>
+      </Card>
+
       <!-- Page Header -->
-      <div v-if="project" class="flex items-center justify-between">
+      <div v-else-if="project" class="flex items-center justify-between">
         <div class="flex items-center gap-4">
           <button @click="goBack" class="rounded-lg p-2 hover:bg-secondary-100">
             <svg class="h-5 w-5 text-secondary-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -271,6 +283,20 @@ const project = computed(() => projectStore.projectById(projectId.value));
 const projectTasks = computed(() => taskStore.tasksByProject(projectId.value));
 const members = computed(() => {
   return project.value ? userStore.getUsersByIds(project.value.memberIds) : [];
+});
+
+// 检查用户是否有权限访问当前项目
+const hasAccessToProject = computed(() => {
+  if (!project.value) return false;
+  if (permissionStore.currentRole === 'admin') return true;
+  
+  const currentUserId = userStore.currentUserId;
+  if (!currentUserId) return false;
+  
+  const isOwner = project.value.ownerId === currentUserId;
+  const isMember = project.value.memberIds?.includes(currentUserId) || false;
+  
+  return isOwner || isMember;
 });
 
 // 计算叶子任务数量（没有子任务的任务）
