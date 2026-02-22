@@ -1,6 +1,6 @@
 // API Service Layer - Connects to Spring Boot backend
 
-import type { Project, Task, User, DelayStats, OvertimeRecord, OvertimeStats } from '@/types';
+import type { Project, Task, User, DelayStats, OvertimeRecord, OvertimeStats, Permission, TaskOvertimeStats } from '@/types';
 import { useUserStore } from '@/stores/user';
 
 const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || '/api';
@@ -446,6 +446,31 @@ class ApiService {
 
     const queryString = searchParams.toString();
     return request<TaskOvertimeStats[]>(`/overtime/stats/tasks${queryString ? `?${queryString}` : ''}`);
+  }
+
+  // Permission APIs
+  async getPermissions(): Promise<Permission[]> {
+    return request<Permission[]>('/permission');
+  }
+
+  async getPermissionsByRole(role: string): Promise<Permission[]> {
+    return request<Permission[]>(`/permission/role/${role}`);
+  }
+
+  async checkPermission(role: string, permission: string): Promise<{ hasPermission: boolean }> {
+    return request<{ hasPermission: boolean }>(`/permission/check?role=${role}&permission=${permission}`);
+  }
+
+  async checkProjectPermission(userId: string, projectId: string, permission: string): Promise<{ hasPermission: boolean }> {
+    return request<{ hasPermission: boolean }>(`/permission/check-project?userId=${userId}&projectId=${projectId}&permission=${permission}`);
+  }
+
+  async checkIsOwner(userId: string, projectId: string): Promise<{ isOwner: boolean }> {
+    return request<{ isOwner: boolean }>(`/permission/is-owner?userId=${userId}&projectId=${projectId}`);
+  }
+
+  async checkIsMember(userId: string, projectId: string): Promise<{ isMember: boolean }> {
+    return request<{ isMember: boolean }>(`/permission/is-member?userId=${userId}&projectId=${projectId}`);
   }
 }
 

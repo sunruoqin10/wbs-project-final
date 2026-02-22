@@ -1,6 +1,7 @@
 import { createRouter, createWebHistory } from 'vue-router';
 import type { RouteRecordRaw } from 'vue-router';
 import { useUserStore } from '@/stores/user';
+import { usePermissionStore } from '@/stores/permission';
 import i18n from '@/i18n';
 
 const routes: RouteRecordRaw[] = [
@@ -36,19 +37,19 @@ const routes: RouteRecordRaw[] = [
     path: '/projects',
     name: 'ProjectList',
     component: () => import('@/views/ProjectList.vue'),
-    meta: { titleKey: 'routes.projectList' }
+    meta: { titleKey: 'routes.projectList', permission: 'project:view' }
   },
   {
     path: '/projects/new',
     name: 'ProjectNew',
     component: () => import('@/views/ProjectDetail.vue'),
-    meta: { titleKey: 'routes.projectNew' }
+    meta: { titleKey: 'routes.projectNew', permission: 'project:create' }
   },
   {
     path: '/projects/:id',
     name: 'ProjectDetail',
     component: () => import('@/views/ProjectDetail.vue'),
-    meta: { titleKey: 'routes.projectDetail' }
+    meta: { titleKey: 'routes.projectDetail', permission: 'project:view' }
   },
   {
     path: '/projects/:id/tasks',
@@ -72,13 +73,13 @@ const routes: RouteRecordRaw[] = [
     path: '/overtime',
     name: 'OvertimeManagement',
     component: () => import('@/views/OvertimeManagement.vue'),
-    meta: { title: '项目加班管理' }
+    meta: { title: '项目加班管理', permission: 'overtime:view' }
   },
   {
     path: '/team',
     name: 'Team',
     component: () => import('@/views/Team.vue'),
-    meta: { titleKey: 'routes.team' }
+    meta: { titleKey: 'routes.team', permission: 'user:view' }
   },
   {
     path: '/reports',
@@ -90,7 +91,13 @@ const routes: RouteRecordRaw[] = [
     path: '/settings',
     name: 'Settings',
     component: () => import('@/views/Settings.vue'),
-    meta: { titleKey: 'routes.settings' }
+    meta: { titleKey: 'routes.settings', permission: 'settings:view' }
+  },
+  {
+    path: '/forbidden',
+    name: 'Forbidden',
+    component: () => import('@/views/Forbidden.vue'),
+    meta: { title: '无权限' }
   }
 ];
 
@@ -99,8 +106,7 @@ const router = createRouter({
   routes
 });
 
-// 白名单：不需要认证的路由
-const whiteList = ['/login', '/test'];
+const whiteList = ['/login', '/test', '/forbidden'];
 
 router.beforeEach((to, from, next) => {
   const titleKey = to.meta.titleKey as string;
@@ -108,26 +114,31 @@ router.beforeEach((to, from, next) => {
   document.title = `${title} - WBS`;
 
   const userStore = useUserStore();
+  const permissionStore = usePermissionStore();
 
-  // 检查是否需要认证
   if (whiteList.includes(to.path)) {
-    // 白名单路由直接放行
-    // 如果已登录且访问登录页，重定向到仪表盘
     if (to.path === '/login' && userStore.token) {
       next('/dashboard');
     } else {
       next();
     }
   } else {
-    // 需要认证的路由
     if (userStore.token) {
-      // 已登录，放行
-      next();
+      const requiredPermission = to.meta.permission as string | undefined;
+      
+      if (requiredPermission) {
+        if (permissionStore.hasPermission(requiredPermission)) {
+          next();
+        } else {
+          next('/forbidden');
+        }
+      } else {
+        next();
+      }
     } else {
-      // 未登录，重定向到登录页
       next({
         path: '/login',
-        query: { redirect: to.fullPath } // 保存原始路径以便登录后跳转
+        query: { redirect: to.fullPath }
       });
     }
   }

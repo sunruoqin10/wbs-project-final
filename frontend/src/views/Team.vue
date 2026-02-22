@@ -7,7 +7,7 @@
           <h1 class="text-2xl font-bold text-secondary-900">{{ $t('team.title') }}</h1>
           <p class="mt-1 text-sm text-secondary-600">{{ $t('team.subtitle') }}</p>
         </div>
-        <Button variant="primary" @click="showAddMemberModal = true">
+        <Button v-permission="'user:create'" variant="primary" @click="showAddMemberModal = true">
           <svg class="mr-2 h-5 w-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4" />
           </svg>
@@ -119,17 +119,22 @@
                 </td>
                 <td class="whitespace-nowrap px-6 py-4 text-sm">
                   <button
+                    v-if="permissionStore.canEditUser(user.id)"
                     @click="openEditModal(user)"
                     class="text-primary-600 hover:text-primary-900 mr-3"
                   >
                     {{ $t('team.edit') }}
                   </button>
                   <button
+                    v-if="permissionStore.canDeleteUser()"
                     @click="handleDeleteMember(user.id)"
                     class="text-red-600 hover:text-red-900"
                   >
                     {{ $t('team.delete') }}
                   </button>
+                  <span v-if="!permissionStore.canEditUser(user.id) && !permissionStore.canDeleteUser()" class="text-secondary-400">
+                    -
+                  </span>
                 </td>
               </tr>
             </tbody>
@@ -236,12 +241,14 @@ import Badge from '@/components/common/Badge.vue';
 import Modal from '@/components/common/Modal.vue';
 import { useUserStore } from '@/stores/user';
 import { useTaskStore } from '@/stores/task';
+import { usePermissionStore } from '@/stores/permission';
 import type { User } from '@/types';
 import dayjs from 'dayjs';
 
 const { t } = useI18n();
 const userStore = useUserStore();
 const taskStore = useTaskStore();
+const permissionStore = usePermissionStore();
 
 const users = computed(() => userStore.users);
 const workloadChartRef = ref<HTMLElement>();
@@ -392,7 +399,7 @@ const getRoleBadgeVariant = (role: string) => {
   // 标准化角色名称：处理下划线和连字符的兼容性
   const normalizedRole = role?.replace(/_/g, '-');
 
-  const variants: Record<string, string> = {
+  const variants: Record<string, 'default' | 'primary' | 'danger' | 'success' | 'warning' | 'info'> = {
     admin: 'danger',
     'project-manager': 'warning',
     member: 'primary'

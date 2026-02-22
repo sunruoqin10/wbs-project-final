@@ -171,3 +171,22 @@ export interface TaskOvertimeStats {
   recordCount: number;
   totalHours: number;
 }
+
+export interface Permission {
+  id: string;
+  code: string;
+  name: string;
+  type: 'system' | 'project';
+  description: string;
+}
+
+export type UserRole = 'admin' | 'project-manager' | 'member';
+
+export interface PermissionCheckResult {
+  hasPermission: boolean;
+}
+
+export interface ProjectPermissionCheckResult {
+  isOwner: boolean;
+  isMember: boolean;
+}

@@ -40,4 +40,14 @@ public interface ProjectMemberMapper {
      * 批量插入项目成员
      */
     int batchInsert(@Param("projectId") String projectId, @Param("userIds") List<String> userIds);
+
+    /**
+     * 判断用户是否是项目负责人
+     */
+    boolean isProjectOwner(@Param("projectId") String projectId, @Param("userId") String userId);
+
+    /**
+     * 判断用户是否是项目成员
+     */
+    boolean isProjectMember(@Param("projectId") String projectId, @Param("userId") String userId);
 }

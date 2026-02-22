@@ -1,0 +1,25 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+        "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.wbs.project.mapper.PermissionMapper">
+
+    <select id="selectAll" resultType="com.wbs.project.entity.Permission">
+        SELECT id, code, name, type, description, created_at AS createdAt
+        FROM sys_permission
+    </select>
+
+    <select id="selectByRole" resultType="com.wbs.project.entity.Permission">
+        SELECT p.id, p.code, p.name, p.type, p.description, p.created_at AS createdAt
+        FROM sys_permission p
+        INNER JOIN sys_role_permission rp ON p.id = rp.permission_id
+        WHERE rp.role = #{role}
+    </select>
+
+    <select id="selectPermissionCodesByRole" resultType="java.lang.String">
+        SELECT p.code
+        FROM sys_permission p
+        INNER JOIN sys_role_permission rp ON p.id = rp.permission_id
+        WHERE rp.role = #{role}
+    </select>
+
+</mapper>

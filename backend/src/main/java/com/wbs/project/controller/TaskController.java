@@ -1,99 +1,77 @@
 package com.wbs.project.controller;
 
+import com.wbs.project.annotation.RequirePermission;
 import com.wbs.project.common.Result;
 import com.wbs.project.entity.Task;
+import com.wbs.project.service.PermissionService;
 import com.wbs.project.service.TaskService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
 
-/**
- * 任务Controller
- */
 @RestController
 @RequestMapping("/tasks")
 @RequiredArgsConstructor
 public class TaskController {
 
     private final TaskService taskService;
+    private final PermissionService permissionService;
 
-    /**
-     * 获取所有任务
-     * GET /api/tasks
-     */
     @GetMapping
     public Result<List<Task>> getAllTasks() {
         List<Task> tasks = taskService.getAllTasks();
-        taskService.updateDelayedStatus(tasks); // 计算延期状态
+        taskService.updateDelayedStatus(tasks);
         return Result.success(tasks);
     }
 
-    /**
-     * 根据ID获取任务
-     * GET /api/tasks/{id}
-     */
     @GetMapping("/{id}")
     public Result<Task> getTaskById(@PathVariable String id) {
         Task task = taskService.getTaskById(id);
         if (task == null) {
             return Result.error("任务不存在");
         }
-        taskService.updateTaskDelayedStatus(task); // 计算延期状态
+        taskService.updateTaskDelayedStatus(task);
         return Result.success(task);
     }
 
-    /**
-     * 根据项目ID获取任务列表
-     * GET /api/tasks/project/{projectId}
-     */
     @GetMapping("/project/{projectId}")
     public Result<List<Task>> getTasksByProjectId(@PathVariable String projectId) {
         List<Task> tasks = taskService.getTasksByProjectId(projectId);
-        taskService.updateDelayedStatus(tasks); // 计算延期状态
+        taskService.updateDelayedStatus(tasks);
         return Result.success(tasks);
     }
 
-    /**
-     * 根据父任务ID获取子任务列表
-     * GET /api/tasks/parent/{parentTaskId}
-     */
     @GetMapping("/parent/{parentTaskId}")
     public Result<List<Task>> getSubTasks(@PathVariable String parentTaskId) {
         List<Task> tasks = taskService.getSubTasks(parentTaskId);
-        taskService.updateDelayedStatus(tasks); // 计算延期状态
+        taskService.updateDelayedStatus(tasks);
         return Result.success(tasks);
     }
 
-    /**
-     * 根据状态获取任务列表
-     * GET /api/tasks/status/{status}
-     */
     @GetMapping("/status/{status}")
     public Result<List<Task>> getTasksByStatus(@PathVariable String status) {
         List<Task> tasks = taskService.getTasksByStatus(status);
-        taskService.updateDelayedStatus(tasks); // 计算延期状态
+        taskService.updateDelayedStatus(tasks);
         return Result.success(tasks);
     }
 
-    /**
-     * 根据分配人获取任务列表
-     * GET /api/tasks/assignee/{assigneeId}
-     */
     @GetMapping("/assignee/{assigneeId}")
     public Result<List<Task>> getTasksByAssigneeId(@PathVariable String assigneeId) {
         List<Task> tasks = taskService.getTasksByAssigneeId(assigneeId);
-        taskService.updateDelayedStatus(tasks); // 计算延期状态
+        taskService.updateDelayedStatus(tasks);
         return Result.success(tasks);
     }
 
-    /**
-     * 创建任务
-     * POST /api/tasks
-     */
     @PostMapping
-    public Result<Task> createTask(@RequestBody Task task) {
+    @RequirePermission("task:create")
+    public Result<Task> createTask(
+            @RequestBody Task task,
+            @RequestHeader(value = "X-User-Id", required = false) String userId) {
         try {
+            if (userId != null && !permissionService.isProjectMember(userId, task.getProjectId())) {
+                return Result.error("无权限在此项目中创建任务");
+            }
             Task createdTask = taskService.createTask(task);
             return Result.success("任务创建成功", createdTask);
         } catch (Exception e) {
@@ -101,13 +79,19 @@ public class TaskController {
         }
     }
 
-    /**
-     * 更新任务
-     * PUT /api/tasks/{id}
-     */
     @PutMapping("/{id}")
-    public Result<Task> updateTask(@PathVariable String id, @RequestBody Task task) {
+    public Result<Task> updateTask(
+            @PathVariable String id, 
+            @RequestBody Task task,
+            @RequestHeader(value = "X-User-Id", required = false) String userId) {
         try {
+            Task existingTask = taskService.getTaskById(id);
+            if (existingTask == null) {
+                return Result.error("任务不存在");
+            }
+            if (userId != null && !permissionService.isProjectMember(userId, existingTask.getProjectId())) {
+                return Result.error("无权限编辑此任务");
+            }
             Task updatedTask = taskService.updateTask(id, task);
             return Result.success("任务更新成功", updatedTask);
         } catch (Exception e) {
@@ -115,27 +99,47 @@ public class TaskController {
         }
     }
 
-    /**
-     * 删除任务
-     * DELETE /api/tasks/{id}
-     */
     @DeleteMapping("/{id}")
-    public Result<Void> deleteTask(@PathVariable String id) {
+    public Result<Void> deleteTask(
+            @PathVariable String id,
+            @RequestHeader(value = "X-User-Id", required = false) String userId,
+            @RequestHeader(value = "X-User-Role", required = false) String userRole) {
         try {
-            taskService.deleteTask(id);
-            return Result.success();
+            Task existingTask = taskService.getTaskById(id);
+            if (existingTask == null) {
+                return Result.error("任务不存在");
+            }
+            if ("admin".equals(userRole)) {
+                taskService.deleteTask(id);
+                return Result.success();
+            }
+            if (userId != null && permissionService.isProjectOwner(userId, existingTask.getProjectId())) {
+                taskService.deleteTask(id);
+                return Result.success();
+            }
+            if (userId != null && userId.equals(existingTask.getAssigneeId())) {
+                taskService.deleteTask(id);
+                return Result.success();
+            }
+            return Result.error("无权限删除此任务");
         } catch (Exception e) {
             return Result.error(e.getMessage());
         }
     }
 
-    /**
-     * 更新任务状态
-     * PATCH /api/tasks/{id}/status
-     */
     @PatchMapping("/{id}/status")
-    public Result<Void> updateTaskStatus(@PathVariable String id, @RequestBody StatusRequest request) {
+    public Result<Void> updateTaskStatus(
+            @PathVariable String id, 
+            @RequestBody StatusRequest request,
+            @RequestHeader(value = "X-User-Id", required = false) String userId) {
         try {
+            Task existingTask = taskService.getTaskById(id);
+            if (existingTask == null) {
+                return Result.error("任务不存在");
+            }
+            if (userId != null && !permissionService.isProjectMember(userId, existingTask.getProjectId())) {
+                return Result.error("无权限更新此任务状态");
+            }
             taskService.updateTaskStatus(id, request.getStatus());
             return Result.success();
         } catch (Exception e) {
@@ -143,13 +147,19 @@ public class TaskController {
         }
     }
 
-    /**
-     * 更新任务进度
-     * PATCH /api/tasks/{id}/progress
-     */
     @PatchMapping("/{id}/progress")
-    public Result<Void> updateTaskProgress(@PathVariable String id, @RequestBody ProgressRequest request) {
+    public Result<Void> updateTaskProgress(
+            @PathVariable String id, 
+            @RequestBody ProgressRequest request,
+            @RequestHeader(value = "X-User-Id", required = false) String userId) {
         try {
+            Task existingTask = taskService.getTaskById(id);
+            if (existingTask == null) {
+                return Result.error("任务不存在");
+            }
+            if (userId != null && !permissionService.isProjectMember(userId, existingTask.getProjectId())) {
+                return Result.error("无权限更新此任务进度");
+            }
             taskService.updateTaskProgress(id, request.getProgress());
             return Result.success();
         } catch (Exception e) {
@@ -157,10 +167,6 @@ public class TaskController {
         }
     }
 
-    /**
-     * 获取任务统计信息
-     * GET /api/tasks/stats
-     */
     @GetMapping("/stats")
     public Result<TaskStats> getTaskStats() {
         TaskStats stats = new TaskStats();
@@ -171,12 +177,6 @@ public class TaskController {
         return Result.success(stats);
     }
 
-    // ==================== 延期管理 API ====================
-
-    /**
-     * 获取延期任务列表
-     * GET /api/tasks/delayed?projectId=xxx&includeCompleted=false
-     */
     @GetMapping("/delayed")
     public Result<List<Task>> getDelayedTasks(
         @RequestParam(required = false) String projectId,
@@ -185,20 +185,12 @@ public class TaskController {
         return Result.success(delayedTasks);
     }
 
-    /**
-     * 获取项目延期统计
-     * GET /api/tasks/project/{projectId}/delay-stats
-     */
     @GetMapping("/project/{projectId}/delay-stats")
     public Result<TaskService.DelayStats> getProjectDelayStats(@PathVariable String projectId) {
         TaskService.DelayStats stats = taskService.getProjectDelayStats(projectId);
         return Result.success(stats);
     }
 
-    /**
-     * 调试任务延期计算
-     * GET /api/tasks/{id}/debug-delay
-     */
     @GetMapping("/{id}/debug-delay")
     public Result<String> debugTaskDelay(@PathVariable String id) {
         Task task = taskService.getTaskById(id);
@@ -212,7 +204,6 @@ public class TaskController {
         debugInfo.append("子任务延期数: ").append(task.getChildrenDelayedCount()).append("\n");
         debugInfo.append("子任务累计延期: ").append(task.getChildrenTotalDelayedDays()).append(" 天\n");
 
-        // 获取子任务列表
         List<Task> subtasks = taskService.getSubTasks(id);
         debugInfo.append("\n直接子任务列表:\n");
         for (Task subtask : subtasks) {
@@ -225,15 +216,19 @@ public class TaskController {
         return Result.success(debugInfo.toString());
     }
 
-    /**
-     * 记录任务延期
-     * POST /api/tasks/{id}/delay
-     */
     @PostMapping("/{id}/delay")
     public Result<Task> recordTaskDelay(
         @PathVariable String id,
-        @RequestBody DelayRequest request) {
+        @RequestBody DelayRequest request,
+        @RequestHeader(value = "X-User-Id", required = false) String userId) {
         try {
+            Task existingTask = taskService.getTaskById(id);
+            if (existingTask == null) {
+                return Result.error("任务不存在");
+            }
+            if (userId != null && !permissionService.isProjectMember(userId, existingTask.getProjectId())) {
+                return Result.error("无权限记录此任务延期");
+            }
             Task updatedTask = taskService.recordTaskDelay(id, request.getNewEndDate(), request.getDelayReason());
             return Result.success("延期记录成功", updatedTask);
         } catch (Exception e) {
@@ -241,9 +236,6 @@ public class TaskController {
         }
     }
 
-    /**
-     * 状态请求类
-     */
     public static class StatusRequest {
         private String status;
 
@@ -256,9 +248,6 @@ public class TaskController {
         }
     }
 
-    /**
-     * 进度请求类
-     */
     public static class ProgressRequest {
         private Integer progress;
 
@@ -271,9 +260,6 @@ public class TaskController {
         }
     }
 
-    /**
-     * 任务统计信息类
-     */
     public static class TaskStats {
         private Integer totalTasks;
         private Integer todoTasks;
@@ -313,9 +299,6 @@ public class TaskController {
         }
     }
 
-    /**
-     * 延期请求类
-     */
     public static class DelayRequest {
         private String newEndDate;
         private String delayReason;
