@@ -67,10 +67,15 @@ public class TaskController {
     @RequirePermission("task:create")
     public Result<Task> createTask(
             @RequestBody Task task,
-            @RequestHeader(value = "X-User-Id", required = false) String userId) {
+            @RequestHeader(value = "X-User-Id", required = false) String userId,
+            @RequestHeader(value = "X-User-Role", required = false) String userRole) {
         try {
-            if (userId != null && !permissionService.isProjectMember(userId, task.getProjectId())) {
-                return Result.error("无权限在此项目中创建任务");
+            if ("admin".equals(userRole)) {
+                Task createdTask = taskService.createTask(task);
+                return Result.success("任务创建成功", createdTask);
+            }
+            if (userId != null && !permissionService.isProjectOwner(userId, task.getProjectId())) {
+                return Result.error("只有项目负责人可以创建任务");
             }
             Task createdTask = taskService.createTask(task);
             return Result.success("任务创建成功", createdTask);
@@ -117,11 +122,7 @@ public class TaskController {
                 taskService.deleteTask(id);
                 return Result.success();
             }
-            if (userId != null && userId.equals(existingTask.getAssigneeId())) {
-                taskService.deleteTask(id);
-                return Result.success();
-            }
-            return Result.error("无权限删除此任务");
+            return Result.error("只有项目负责人可以删除任务");
         } catch (Exception e) {
             return Result.error(e.getMessage());
         }

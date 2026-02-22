@@ -1,7 +1,9 @@
 package com.wbs.project.service;
 
 import com.wbs.project.entity.Permission;
+import com.wbs.project.entity.Project;
 import com.wbs.project.mapper.PermissionMapper;
+import com.wbs.project.mapper.ProjectMapper;
 import com.wbs.project.mapper.ProjectMemberMapper;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
@@ -17,6 +19,7 @@ public class PermissionService {
 
     private final PermissionMapper permissionMapper;
     private final ProjectMemberMapper projectMemberMapper;
+    private final ProjectMapper projectMapper;
     
     private final ConcurrentHashMap<String, Set<String>> rolePermissionCache = new ConcurrentHashMap<>();
 
@@ -61,7 +64,8 @@ public class PermissionService {
         if (userId == null || projectId == null) {
             return false;
         }
-        return projectMemberMapper.isProjectOwner(projectId, userId);
+        Project project = projectMapper.selectById(projectId);
+        return project != null && userId.equals(project.getOwnerId());
     }
 
     public boolean isProjectMember(String userId, String projectId) {
