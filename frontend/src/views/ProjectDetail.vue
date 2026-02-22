@@ -16,7 +16,7 @@
         </div>
         <div class="flex items-center gap-3">
           <Button variant="secondary" @click="editProject">{{ $t('projectDetail.editProject') }}</Button>
-          <Button variant="danger" @click="deleteProject">{{ $t('projectDetail.deleteProject') }}</Button>
+          <Button v-if="permissionStore.canDeleteProject(projectId)" variant="danger" @click="deleteProject">{{ $t('projectDetail.deleteProject') }}</Button>
         </div>
       </div>
 
@@ -231,6 +231,7 @@ import Badge from '@/components/common/Badge.vue';
 import ProjectModal from '@/components/project/ProjectModal.vue';
 import { useProjectStore } from '@/stores/project';
 import { useTaskStore } from '@/stores/task';
+import { usePermissionStore } from '@/stores/permission';
 import type { Project } from '@/types';
 import { useUserStore } from '@/stores/user';
 import dayjs from 'dayjs';
@@ -241,6 +242,7 @@ const { t } = useI18n();
 const projectStore = useProjectStore();
 const taskStore = useTaskStore();
 const userStore = useUserStore();
+const permissionStore = usePermissionStore();
 
 const projectId = ref(route.params.id as string);
 const modalOpen = ref(false);

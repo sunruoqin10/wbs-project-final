@@ -7,7 +7,7 @@
           <h1 class="text-2xl font-bold text-secondary-900">{{ $t('routes.projectList') }}</h1>
           <p class="mt-1 text-sm text-secondary-600">{{ $t('projectList.subtitle') }}</p>
         </div>
-        <Button variant="primary" @click="createNewProject">
+        <Button v-if="permissionStore.canCreateProject()" variant="primary" @click="createNewProject">
           <svg class="mr-2 h-5 w-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4" />
           </svg>
@@ -84,7 +84,7 @@
           <p class="mt-2 text-sm text-secondary-600">
             {{ searchQuery || selectedStatuses.length > 0 ? $t('projectList.emptyState.noResults') : $t('projectList.emptyState.createFirst') }}
           </p>
-          <Button v-if="!searchQuery && selectedStatuses.length === 0" variant="primary" class="mt-4" @click="openCreateModal">
+          <Button v-if="!searchQuery && selectedStatuses.length === 0 && permissionStore.canCreateProject()" variant="primary" class="mt-4" @click="openCreateModal">
             {{ $t('projectList.emptyState.createButton') }}
           </Button>
         </div>
@@ -112,11 +112,13 @@ import Card from '@/components/common/Card.vue';
 import Button from '@/components/common/Button.vue';
 import Input from '@/components/common/Input.vue';
 import { useProjectStore } from '@/stores/project';
+import { usePermissionStore } from '@/stores/permission';
 import type { Project } from '@/types';
 
 const router = useRouter();
 const { t } = useI18n();
 const projectStore = useProjectStore();
+const permissionStore = usePermissionStore();
 
 const searchQuery = ref('');
 const selectedStatuses = ref<string[]>([]);

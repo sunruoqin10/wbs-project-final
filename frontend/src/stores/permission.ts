@@ -29,7 +29,7 @@ export const usePermissionStore = defineStore('permission', () => {
       'overtime:create', 'overtime:approve', 'overtime:view'
     ],
     'member': [
-      'project:create', 'project:view',
+      'project:view',
       'task:create', 'task:edit',
       'overtime:create', 'overtime:view'
     ]
@@ -91,12 +91,16 @@ export const usePermissionStore = defineStore('permission', () => {
     return false;
   };
 
+  const canCreateProject = (): boolean => {
+    return currentRole.value === 'admin' || currentRole.value === 'project-manager';
+  };
+
   const canEditProject = (projectId: string): boolean => {
     return currentRole.value === 'admin' || isProjectOwner(projectId);
   };
 
   const canDeleteProject = (projectId: string): boolean => {
-    return currentRole.value === 'admin' || isProjectOwner(projectId);
+    return currentRole.value === 'admin' || currentRole.value === 'project-manager';
   };
 
   const canManageProjectMembers = (projectId: string): boolean => {
@@ -157,6 +161,7 @@ export const usePermissionStore = defineStore('permission', () => {
     isProjectOwner,
     isProjectMember,
     hasProjectPermission,
+    canCreateProject,
     canEditProject,
     canDeleteProject,
     canManageProjectMembers,
