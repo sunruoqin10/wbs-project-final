@@ -6,6 +6,7 @@ import com.wbs.project.mapper.ProjectMapper;
 import com.wbs.project.mapper.ProjectMemberMapper;
 import com.wbs.project.mapper.TaskMapper;
 import lombok.RequiredArgsConstructor;
+import org.springframework.context.annotation.Lazy;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -23,6 +24,7 @@ public class ProjectService {
 
     private final ProjectMapper projectMapper;
     private final ProjectMemberMapper projectMemberMapper;
+    @Lazy
     private final TaskService taskService;
     private final TaskMapper taskMapper;
     private final EmailNotificationService emailNotificationService;
@@ -43,6 +45,9 @@ public class ProjectService {
     public Project getProjectById(String id) {
         Project project = projectMapper.selectById(id);
         if (project != null) {
+            loadProjectMembers(project);
+            updateProjectProgressAndStatus(id);
+            project = projectMapper.selectById(id);
             loadProjectMembers(project);
         }
         return project;
@@ -324,5 +329,65 @@ public class ProjectService {
         for (Project project : projects) {
             updateProjectDelayedStatus(project);
         }
+    }
+
+    /**
+     * 更新项目的进度和状态（根据任务）
+     */
+    @Transactional
+    public void updateProjectProgressAndStatus(String projectId) {
+        Project project = projectMapper.selectById(projectId);
+        if (project == null) {
+            return;
+        }
+
+        List<Task> allTasks = taskService.getTasksByProjectId(projectId);
+
+        if (allTasks == null || allTasks.isEmpty()) {
+            project.setProgress(0);
+            projectMapper.update(project);
+            return;
+        }
+
+        int totalLeafTasks = 0;
+        int completedLeafTasks = 0;
+
+        for (Task task : allTasks) {
+            if (taskService.isLeafTask(task.getId())) {
+                totalLeafTasks++;
+                if ("done".equals(task.getStatus())) {
+                    completedLeafTasks++;
+                }
+            }
+        }
+
+        // 如果没有叶子任务（所有任务都是父任务），则统计所有任务
+        if (totalLeafTasks == 0 && !allTasks.isEmpty()) {
+            totalLeafTasks = allTasks.size();
+            for (Task task : allTasks) {
+                if ("done".equals(task.getStatus())) {
+                    completedLeafTasks++;
+                }
+            }
+        }
+
+        if (totalLeafTasks > 0) {
+            int progress = (int) Math.round((double) completedLeafTasks / totalLeafTasks * 100);
+            project.setProgress(progress);
+
+            if (completedLeafTasks == totalLeafTasks) {
+                project.setStatus("completed");
+            } else if (completedLeafTasks > 0) {
+                project.setStatus("active");
+            } else {
+                project.setStatus("planning");
+            }
+        } else {
+            // 如果没有任何任务，保持进度为0
+            project.setProgress(0);
+        }
+
+        project.setUpdatedAt(LocalDateTime.now());
+        projectMapper.update(project);
     }
 }

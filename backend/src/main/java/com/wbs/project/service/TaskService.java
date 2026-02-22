@@ -5,7 +5,8 @@ import com.wbs.project.entity.Task;
 import com.wbs.project.entity.User;
 import com.wbs.project.mapper.ProjectMapper;
 import com.wbs.project.mapper.TaskMapper;
-import lombok.RequiredArgsConstructor;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.context.annotation.Lazy;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -20,13 +21,29 @@ import java.util.stream.Collectors;
  * 任务Service
  */
 @Service
-@RequiredArgsConstructor
 public class TaskService {
 
     private final TaskMapper taskMapper;
     private final EmailNotificationService emailNotificationService;
     private final UserService userService;
     private final ProjectMapper projectMapper;
+    private ProjectService projectService;
+
+    public TaskService(TaskMapper taskMapper, 
+                       EmailNotificationService emailNotificationService,
+                       UserService userService,
+                       ProjectMapper projectMapper) {
+        this.taskMapper = taskMapper;
+        this.emailNotificationService = emailNotificationService;
+        this.userService = userService;
+        this.projectMapper = projectMapper;
+    }
+
+    @Autowired
+    @Lazy
+    public void setProjectService(ProjectService projectService) {
+        this.projectService = projectService;
+    }
 
     /**
      * 查询所有任务
@@ -103,6 +120,11 @@ public class TaskService {
             }
         }
         
+        // 更新项目进度和状态
+        if (task.getProjectId() != null) {
+            projectService.updateProjectProgressAndStatus(task.getProjectId());
+        }
+        
         return task;
     }
 
@@ -151,6 +173,11 @@ public class TaskService {
             // 任务完成通知
             if ("done".equals(task.getStatus())) {
                 emailNotificationService.notifyTaskCompleted(updatedTask, assignee, projectOwner);
+            }
+            
+            // 更新项目进度和状态
+            if (updatedTask.getProjectId() != null) {
+                projectService.updateProjectProgressAndStatus(updatedTask.getProjectId());
             }
         }
         
@@ -239,6 +266,11 @@ public class TaskService {
             // 任务完成通知
             if ("done".equals(status)) {
                 emailNotificationService.notifyTaskCompleted(updatedTask, assignee, projectOwner);
+            }
+            
+            // 更新项目进度和状态
+            if (updatedTask.getProjectId() != null) {
+                projectService.updateProjectProgressAndStatus(updatedTask.getProjectId());
             }
         }
     }
