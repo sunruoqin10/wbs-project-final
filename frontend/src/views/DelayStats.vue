@@ -128,7 +128,7 @@
                 <label class="text-sm text-secondary-600">所属项目：</label>
                 <select v-model="projectFilter" class="rounded border border-secondary-300 px-3 py-1 text-sm">
                   <option value="all">全部项目</option>
-                  <option v-for="project in projectStore.projects" :key="project.id" :value="project.id">
+                  <option v-for="project in accessibleProjects" :key="project.id" :value="project.id">
                     {{ project.name }}
                   </option>
                 </select>
@@ -193,12 +193,14 @@ import Card from '@/components/common/Card.vue';
 import { useProjectStore } from '@/stores/project';
 import { useTaskStore } from '@/stores/task';
 import { useUserStore } from '@/stores/user';
+import { usePermissionStore } from '@/stores/permission';
 import type { Task } from '@/types';
 import dayjs from 'dayjs';
 
 const projectStore = useProjectStore();
 const taskStore = useTaskStore();
 const userStore = useUserStore();
+const permissionStore = usePermissionStore();
 
 const delayDistributionChartRef = ref<HTMLElement>();
 const projectDelayRankingChartRef = ref<HTMLElement>();
@@ -206,15 +208,41 @@ const delayFilter = ref<'all' | 'critical' | 'warning' | 'minor'>('all');
 const projectFilter = ref<string>('all');
 const assigneeFilter = ref<string>('all');
 
+// 获取用户有权限访问的项目
+const accessibleProjects = computed(() => {
+  if (permissionStore.currentRole === 'admin') {
+    return projectStore.projects;
+  }
+  
+  const currentUserId = userStore.currentUserId;
+  if (!currentUserId) {
+    return [];
+  }
+  
+  return projectStore.projects.filter(project => {
+    const isOwner = project.ownerId === currentUserId;
+    const isMember = project.memberIds?.includes(currentUserId) || false;
+    return isOwner || isMember;
+  });
+});
+
+// 获取用户有权限访问的项目ID列表
+const accessibleProjectIds = computed(() => {
+  return accessibleProjects.value.map(p => p.id);
+});
+
 // 延期统计 - 只统计叶子任务（没有子任务的任务）
 const delayStats = computed(() => {
   const allTasks = taskStore.tasks;
+  
+  // 只保留用户有权限访问的项目中的任务
+  const accessibleTasks = allTasks.filter(t => accessibleProjectIds.value.includes(t.projectId));
 
   // 获取所有叶子任务（没有子任务的任务）
-  const allTaskIds = new Set(allTasks.map(t => t.id));
-  const parentTaskIds = new Set(allTasks.filter(t => t.parentTaskId).map(t => t.parentTaskId));
+  const allTaskIds = new Set(accessibleTasks.map(t => t.id));
+  const parentTaskIds = new Set(accessibleTasks.filter(t => t.parentTaskId).map(t => t.parentTaskId));
   const leafTaskIds = new Set([...allTaskIds].filter(id => !parentTaskIds.has(id)));
-  const leafTasks = allTasks.filter(t => leafTaskIds.has(t.id));
+  const leafTasks = accessibleTasks.filter(t => leafTaskIds.has(t.id));
 
   const today = new Date();
 
@@ -260,12 +288,15 @@ const delayStats = computed(() => {
 // 获取所有延期的叶子任务
 const delayedLeafTasks = computed(() => {
   const allTasks = taskStore.tasks;
+  
+  // 只保留用户有权限访问的项目中的任务
+  const accessibleTasks = allTasks.filter(t => accessibleProjectIds.value.includes(t.projectId));
 
   // 获取所有叶子任务
-  const allTaskIds = new Set(allTasks.map(t => t.id));
-  const parentTaskIds = new Set(allTasks.filter(t => t.parentTaskId).map(t => t.parentTaskId));
+  const allTaskIds = new Set(accessibleTasks.map(t => t.id));
+  const parentTaskIds = new Set(accessibleTasks.filter(t => t.parentTaskId).map(t => t.parentTaskId));
   const leafTaskIds = new Set([...allTaskIds].filter(id => !parentTaskIds.has(id)));
-  const leafTasks = allTasks.filter(t => leafTaskIds.has(t.id));
+  const leafTasks = accessibleTasks.filter(t => leafTaskIds.has(t.id));
 
   // 返回延期的叶子任务
   return leafTasks.filter(t => (t.delayedDays || 0) > 0 && t.status !== 'done');
@@ -404,7 +435,7 @@ const initProjectDelayRankingChart = () => {
   const chart = echarts.init(projectDelayRankingChartRef.value);
 
   // 按项目统计延期情况
-  const projectDelayData = projectStore.projects.map(project => {
+  const projectDelayData = accessibleProjects.value.map(project => {
     const projectTasks = delayedLeafTasks.value.filter(t => t.projectId === project.id);
     const totalDelayedDays = projectTasks.reduce((sum, t) => sum + (t.delayedDays || 0), 0);
     return {
