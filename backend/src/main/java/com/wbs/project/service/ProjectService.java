@@ -4,6 +4,7 @@ import com.wbs.project.entity.Project;
 import com.wbs.project.entity.Task;
 import com.wbs.project.mapper.ProjectMapper;
 import com.wbs.project.mapper.ProjectMemberMapper;
+import com.wbs.project.mapper.TaskMapper;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -22,6 +23,8 @@ public class ProjectService {
     private final ProjectMapper projectMapper;
     private final ProjectMemberMapper projectMemberMapper;
     private final TaskService taskService;
+    private final TaskMapper taskMapper;
+    private final EmailNotificationService emailNotificationService;
 
     /**
      * 查询所有项目（包含成员信息）
@@ -99,6 +102,11 @@ public class ProjectService {
             updateProjectMembers(project.getId(), project.getMemberIds());
         }
 
+        // 发送邮件通知
+        if (project.getMemberIds() != null && !project.getMemberIds().isEmpty()) {
+            emailNotificationService.notifyProjectCreated(project, project.getMemberIds());
+        }
+
         return project;
     }
 
@@ -112,6 +120,11 @@ public class ProjectService {
             throw new RuntimeException("项目不存在");
         }
 
+        // 获取旧的成员列表和状态
+        List<String> oldMemberIds = existingProject.getMemberIds() != null ? 
+            new java.util.ArrayList<>(existingProject.getMemberIds()) : new java.util.ArrayList<>();
+        String oldStatus = existingProject.getStatus();
+
         project.setId(id);
         project.setUpdatedAt(LocalDateTime.now());
 
@@ -121,10 +134,45 @@ public class ProjectService {
         // 处理项目成员关系（如果提供了成员列表）
         if (project.getMemberIds() != null) {
             updateProjectMembers(id, project.getMemberIds());
+            
+            // 发送成员变更通知
+            Project updatedProject = getProjectById(id);
+            sendMemberChangeNotifications(existingProject, oldMemberIds, updatedProject.getMemberIds());
+        }
+
+        // 检查状态变更并发送通知
+        if (project.getStatus() != null && !project.getStatus().equals(oldStatus)) {
+            Project updatedProject = getProjectById(id);
+            if (updatedProject.getMemberIds() != null && !updatedProject.getMemberIds().isEmpty()) {
+                emailNotificationService.notifyProjectStatusChanged(
+                    updatedProject, oldStatus, project.getStatus(), updatedProject.getMemberIds());
+            }
         }
 
         // 返回更新后的完整项目信息（包含成员）
         return getProjectById(id);
+    }
+
+    /**
+     * 发送成员变更通知
+     */
+    private void sendMemberChangeNotifications(Project project, List<String> oldMemberIds, List<String> newMemberIds) {
+        if (oldMemberIds == null) oldMemberIds = new java.util.ArrayList<>();
+        if (newMemberIds == null) newMemberIds = new java.util.ArrayList<>();
+
+        // 找出新增的成员
+        for (String newMemberId : newMemberIds) {
+            if (!oldMemberIds.contains(newMemberId)) {
+                emailNotificationService.notifyMemberAdded(project, newMemberId);
+            }
+        }
+
+        // 找出移除的成员
+        for (String oldMemberId : oldMemberIds) {
+            if (!newMemberIds.contains(oldMemberId)) {
+                emailNotificationService.notifyMemberRemoved(project, oldMemberId);
+            }
+        }
     }
 
     /**
@@ -154,8 +202,8 @@ public class ProjectService {
         // 删除项目的所有成员关系
         projectMemberMapper.deleteByProjectId(id);
 
-        // TODO: 删除项目的所有任务
-        // TODO: 删除项目的所有标签
+        // 删除项目的所有任务
+        taskMapper.deleteByProjectId(id);
 
         // 最后删除项目本身
         projectMapper.deleteById(id);

@@ -71,4 +71,9 @@ public interface TaskMapper {
      * 统计指定状态的任务数
      */
     int countByStatus(@Param("status") String status);
+
+    /**
+     * 根据项目ID删除所有任务
+     */
+    int deleteByProjectId(@Param("projectId") String projectId);
 }

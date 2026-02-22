@@ -35,6 +35,8 @@ public class OvertimeService {
     private final UserMapper userMapper;
     private final ProjectMapper projectMapper;
     private final TaskMapper taskMapper;
+    private final EmailNotificationService emailNotificationService;
+    private final UserService userService;
 
     // ==================== CRUD 操作 ====================
 
@@ -109,7 +111,19 @@ public class OvertimeService {
         record.setUpdatedAt(LocalDateTime.now());
 
         overtimeMapper.insert(record);
-        return overtimeMapper.selectById(record.getId());
+        
+        // 发送加班申请提交通知
+        OvertimeRecord createdRecord = overtimeMapper.selectById(record.getId());
+        User applicant = userService.getUserById(request.getUserId());
+        Project project = projectMapper.selectById(request.getProjectId());
+        User projectOwner = project != null && project.getOwnerId() != null ? 
+            userService.getUserById(project.getOwnerId()) : null;
+        
+        if (projectOwner != null) {
+            emailNotificationService.notifyOvertimeSubmitted(createdRecord, applicant, projectOwner);
+        }
+        
+        return createdRecord;
     }
 
     /**
@@ -204,7 +218,18 @@ public class OvertimeService {
 
         record.setUpdatedAt(LocalDateTime.now());
         overtimeMapper.update(record);
-        return overtimeMapper.selectById(id);
+        
+        OvertimeRecord updatedRecord = overtimeMapper.selectById(id);
+        
+        // 发送审批结果通知
+        User applicant = userService.getUserById(record.getUserId());
+        if (request.getApproved()) {
+            emailNotificationService.notifyOvertimeApproved(updatedRecord, applicant);
+        } else {
+            emailNotificationService.notifyOvertimeRejected(updatedRecord, applicant, request.getRejectReason());
+        }
+        
+        return updatedRecord;
     }
 
     /**

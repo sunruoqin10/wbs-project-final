@@ -7,11 +7,43 @@ spring:
   application:
     name: wbs-project
 
+  mail:
+    host: smtp.qq.com
+    port: 587
+    from:
+      addr: 631955572@qq.com
+    username: 631955572@qq.com
+    password: diiuhawpifjmbdag
+    display-name: WBS项目管理系统
+    properties:
+      mail:
+        smtp:
+          auth: true
+          starttls:
+            enable: true
+            required: true
+          ssl:
+            trust: smtp.qq.com
+          connectiontimeout: 5000
+          timeout: 5000
+          writetimeout: 5000
+        debug: false
+
+  freemarker:
+    template-loader-path: classpath:/templates/
+    suffix: .ftl
+    cache: false
+    charset: UTF-8
+    content-type: text/html
+    expose-request-attributes: false
+    expose-session-attributes: false
+    expose-spring-macro-helpers: false
+
   datasource:
     driver-class-name: com.mysql.cj.jdbc.Driver
-    url: jdbc:mysql://8.140.210.133:3306/db_webwbs?useUnicode=true&characterEncoding=utf8&useSSL=false&serverTimezone=Asia/Shanghai&allowPublicKeyRetrieval=true
+    url: jdbc:mysql://localhost:3306/db_webwbs?useUnicode=true&characterEncoding=utf8&useSSL=false&serverTimezone=Asia/Shanghai&allowPublicKeyRetrieval=true
     username: root
-    password: newsip@45
+    password: root
 
   jackson:
     date-format: yyyy-MM-dd HH:mm:ss

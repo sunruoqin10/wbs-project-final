@@ -1,6 +1,9 @@
 package com.wbs.project.service;
 
+import com.wbs.project.entity.Project;
 import com.wbs.project.entity.Task;
+import com.wbs.project.entity.User;
+import com.wbs.project.mapper.ProjectMapper;
 import com.wbs.project.mapper.TaskMapper;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
@@ -21,6 +24,9 @@ import java.util.stream.Collectors;
 public class TaskService {
 
     private final TaskMapper taskMapper;
+    private final EmailNotificationService emailNotificationService;
+    private final UserService userService;
+    private final ProjectMapper projectMapper;
 
     /**
      * 查询所有任务
@@ -79,6 +85,15 @@ public class TaskService {
         task.setUpdatedAt(LocalDateTime.now());
 
         taskMapper.insert(task);
+        
+        // 发送任务分配通知
+        if (task.getAssigneeId() != null) {
+            User assignee = userService.getUserById(task.getAssigneeId());
+            if (assignee != null) {
+                emailNotificationService.notifyTaskAssigned(task, assignee);
+            }
+        }
+        
         return task;
     }
 
@@ -92,10 +107,45 @@ public class TaskService {
             throw new RuntimeException("任务不存在");
         }
 
+        // 保存旧的分配人和状态
+        String oldAssigneeId = existingTask.getAssigneeId();
+        String oldStatus = existingTask.getStatus();
+
         task.setId(id);
         task.setUpdatedAt(LocalDateTime.now());
         taskMapper.update(task);
-        return taskMapper.selectById(id);
+        
+        Task updatedTask = taskMapper.selectById(id);
+        
+        // 获取项目负责人
+        User projectOwner = null;
+        if (updatedTask.getProjectId() != null) {
+            Project project = projectMapper.selectById(updatedTask.getProjectId());
+            if (project != null && project.getOwnerId() != null) {
+                projectOwner = userService.getUserById(project.getOwnerId());
+            }
+        }
+        
+        // 处理分配人变更
+        if (task.getAssigneeId() != null && !task.getAssigneeId().equals(oldAssigneeId)) {
+            User oldAssignee = oldAssigneeId != null ? userService.getUserById(oldAssigneeId) : null;
+            User newAssignee = task.getAssigneeId() != null ? userService.getUserById(task.getAssigneeId()) : null;
+            emailNotificationService.notifyTaskReassigned(updatedTask, oldAssignee, newAssignee);
+        }
+        
+        // 处理状态变更
+        if (task.getStatus() != null && !task.getStatus().equals(oldStatus)) {
+            User assignee = updatedTask.getAssigneeId() != null ? 
+                userService.getUserById(updatedTask.getAssigneeId()) : null;
+            emailNotificationService.notifyTaskStatusChanged(updatedTask, oldStatus, task.getStatus(), assignee, projectOwner);
+            
+            // 任务完成通知
+            if ("done".equals(task.getStatus())) {
+                emailNotificationService.notifyTaskCompleted(updatedTask, assignee, projectOwner);
+            }
+        }
+        
+        return updatedTask;
     }
 
     /**
@@ -149,6 +199,8 @@ public class TaskService {
             throw new RuntimeException("任务不存在");
         }
 
+        String oldStatus = task.getStatus();
+
         task.setStatus(status);
         task.setUpdatedAt(LocalDateTime.now());
         taskMapper.update(task);
@@ -157,6 +209,28 @@ public class TaskService {
         if ("done".equals(status)) {
             task.setProgress(100);
             taskMapper.update(task);
+        }
+
+        // 发送状态变更通知
+        if (!status.equals(oldStatus)) {
+            Task updatedTask = taskMapper.selectById(id);
+            User assignee = updatedTask.getAssigneeId() != null ? 
+                userService.getUserById(updatedTask.getAssigneeId()) : null;
+            
+            User projectOwner = null;
+            if (updatedTask.getProjectId() != null) {
+                Project project = projectMapper.selectById(updatedTask.getProjectId());
+                if (project != null && project.getOwnerId() != null) {
+                    projectOwner = userService.getUserById(project.getOwnerId());
+                }
+            }
+            
+            emailNotificationService.notifyTaskStatusChanged(updatedTask, oldStatus, status, assignee, projectOwner);
+            
+            // 任务完成通知
+            if ("done".equals(status)) {
+                emailNotificationService.notifyTaskCompleted(updatedTask, assignee, projectOwner);
+            }
         }
     }
 

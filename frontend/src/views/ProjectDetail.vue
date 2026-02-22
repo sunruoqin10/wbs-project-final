@@ -568,10 +568,15 @@ const handleSaveProject = async (projectData: Partial<Project>) => {
   }
 };
 
-const deleteProject = () => {
+const deleteProject = async () => {
   if (confirm(t('projectDetail.deleteConfirm'))) {
-    projectStore.deleteProject(projectId.value);
-    router.push('/projects');
+    try {
+      await projectStore.deleteProject(projectId.value);
+      router.push('/projects');
+    } catch (error) {
+      console.error('删除项目失败:', error);
+      alert('删除项目失败: ' + (error as Error).message);
+    }
   }
 };
 </script>

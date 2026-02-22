@@ -19,7 +19,7 @@ async function request<T>(
 ): Promise<T> {
   const url = `${API_BASE_URL}${endpoint}`;
 
-  // 获取token（排除登录接口）
+  // 获取token和用户信息（排除登录接口）
   const userStore = useUserStore();
   const isLoginEndpoint = endpoint === '/users/login';
 
@@ -31,6 +31,16 @@ async function request<T>(
   // 如果有token且不是登录接口，添加Authorization头
   if (userStore.token && !isLoginEndpoint) {
     headers['Authorization'] = `Bearer ${userStore.token}`;
+  }
+
+  // 添加用户ID和角色请求头（用于权限验证）
+  if (!isLoginEndpoint) {
+    if (userStore.currentUserId) {
+      headers['X-User-Id'] = userStore.currentUserId;
+    }
+    if (userStore.currentUser?.role) {
+      headers['X-User-Role'] = userStore.currentUser.role;
+    }
   }
 
   const config: RequestInit = {

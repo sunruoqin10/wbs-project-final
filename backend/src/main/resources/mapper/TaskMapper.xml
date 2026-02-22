@@ -124,4 +124,8 @@
         SELECT COUNT(*) FROM sys_task WHERE status = #{status}
     </select>
 
+    <delete id="deleteByProjectId">
+        DELETE FROM sys_task WHERE project_id = #{projectId}
+    </delete>
+
 </mapper>
