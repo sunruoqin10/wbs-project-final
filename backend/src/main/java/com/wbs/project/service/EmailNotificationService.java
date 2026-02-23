@@ -218,6 +218,24 @@ public class EmailNotificationService {
         }
     }
 
+    public void notifyTaskDelayedToManager(Task task, User assignee, User manager) {
+        log.info("Notifying manager about task delayed: {}, manager: {}", task.getTitle(), manager.getName());
+        if (manager != null && manager.getEmail() != null) {
+            Map<String, Object> variables = new HashMap<>();
+            variables.put("taskTitle", task.getTitle());
+            variables.put("delayedDays", task.getDelayedDays() != null ? task.getDelayedDays() : 0);
+            variables.put("userName", manager.getName());
+            variables.put("assigneeName", assignee != null ? assignee.getName() : "未分配");
+            emailService.sendEmail(
+                manager.getEmail(),
+                null,
+                "【WBS系统】任务延期预警：" + task.getTitle(),
+                "task-delayed-owner",
+                variables
+            );
+        }
+    }
+
     public void notifyTaskCompleted(Task task, User assignee, User projectOwner) {
         log.info("Notifying task completed: {}", task.getTitle());
         String ccEmail = (projectOwner != null && projectOwner.getEmail() != null) ? projectOwner.getEmail() : null;

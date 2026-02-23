@@ -1,0 +1,50 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+        "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.wbs.project.mapper.DelayNotificationRecordMapper">
+
+    <resultMap id="BaseResultMap" type="com.wbs.project.entity.DelayNotificationRecord">
+        <id column="id" property="id"/>
+        <result column="task_id" property="taskId"/>
+        <result column="project_id" property="projectId"/>
+        <result column="notified_user_id" property="notifiedUserId"/>
+        <result column="notified_email" property="notifiedEmail"/>
+        <result column="notification_date" property="notificationDate"/>
+        <result column="created_at" property="createdAt"/>
+    </resultMap>
+
+    <sql id="Base_Column_List">
+        id, task_id, project_id, notified_user_id, notified_email, notification_date, created_at
+    </sql>
+
+    <insert id="insert" parameterType="com.wbs.project.entity.DelayNotificationRecord">
+        INSERT INTO delay_notification_record (id, task_id, project_id, notified_user_id, notified_email, notification_date, created_at)
+        VALUES (#{id}, #{taskId}, #{projectId}, #{notifiedUserId}, #{notifiedEmail}, #{notificationDate}, #{createdAt})
+    </insert>
+
+    <select id="selectByTaskIdAndDate" resultMap="BaseResultMap">
+        SELECT <include refid="Base_Column_List"/>
+        FROM delay_notification_record
+        WHERE task_id = #{taskId}
+          AND notified_user_id = #{notifiedUserId}
+          AND notification_date = #{notificationDate}
+    </select>
+
+    <select id="selectByTaskIdAndDateAfter" resultMap="BaseResultMap">
+        SELECT <include refid="Base_Column_List"/>
+        FROM delay_notification_record
+        WHERE task_id = #{taskId}
+          AND notified_user_id = #{notifiedUserId}
+          AND notification_date >= #{notificationDate}
+        ORDER BY notification_date DESC
+    </select>
+
+    <delete id="deleteByDateBefore">
+        DELETE FROM delay_notification_record WHERE notification_date &lt; #{date}
+    </delete>
+
+    <delete id="deleteByProjectId">
+        DELETE FROM delay_notification_record WHERE project_id = #{projectId}
+    </delete>
+
+</mapper>

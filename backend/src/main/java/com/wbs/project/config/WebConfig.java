@@ -23,6 +23,7 @@ public class WebConfig implements WebMvcConfigurer {
                 .excludePathPatterns(
                         "/users/login",           // 登录接口
                         "/users/count",           // 获取用户总数（可选）
+                        "/delay-notifications/trigger", // 手动触发延期检查
                         "/error"                  // 错误页面
                 );
     }

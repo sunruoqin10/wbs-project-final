@@ -138,4 +138,11 @@ public class UserService {
 
         return user;
     }
+
+    /**
+     * 获取所有项目经理
+     */
+    public List<User> getManagers() {
+        return userMapper.selectByRole("project-manager");
+    }
 }
