@@ -266,6 +266,7 @@ public class OvertimeService {
         stats.setRejectedRecords((int) records.stream().filter(r -> "rejected".equals(r.getStatus())).count());
 
         stats.setTotalHours(records.stream()
+                .filter(r -> "approved".equals(r.getStatus()))
                 .map(OvertimeRecord::getHours)
                 .reduce(BigDecimal.ZERO, BigDecimal::add));
 
@@ -280,7 +281,11 @@ public class OvertimeService {
                 .reduce(BigDecimal.ZERO, BigDecimal::add));
 
         // 加班总人数（去重）
-        stats.setTotalPeople((int) records.stream().map(OvertimeRecord::getUserId).distinct().count());
+        stats.setTotalPeople((int) records.stream()
+                .filter(r -> "approved".equals(r.getStatus()))
+                .map(OvertimeRecord::getUserId)
+                .distinct()
+                .count());
 
         // 待审批数量
         stats.setPendingApprovals((int) records.stream().filter(r -> "pending".equals(r.getStatus())).count());
@@ -296,16 +301,27 @@ public class OvertimeService {
                 .collect(Collectors.toList());
 
         stats.setThisMonthHours(monthRecords.stream()
+                .filter(r -> "approved".equals(r.getStatus()))
                 .map(OvertimeRecord::getHours)
                 .reduce(BigDecimal.ZERO, BigDecimal::add));
 
-        stats.setThisMonthPeople((int) monthRecords.stream().map(OvertimeRecord::getUserId).distinct().count());
+        stats.setThisMonthPeople((int) monthRecords.stream()
+                .filter(r -> "approved".equals(r.getStatus()))
+                .map(OvertimeRecord::getUserId)
+                .distinct()
+                .count());
 
         // 按类型统计
         OvertimeDTO.ByTypeStats byType = new OvertimeDTO.ByTypeStats();
-        byType.setWeekday((int) records.stream().filter(r -> "weekday".equals(r.getOvertimeType())).count());
-        byType.setWeekend((int) records.stream().filter(r -> "weekend".equals(r.getOvertimeType())).count());
-        byType.setHoliday((int) records.stream().filter(r -> "holiday".equals(r.getOvertimeType())).count());
+        byType.setWeekday((int) records.stream()
+                .filter(r -> "approved".equals(r.getStatus()))
+                .filter(r -> "weekday".equals(r.getOvertimeType())).count());
+        byType.setWeekend((int) records.stream()
+                .filter(r -> "approved".equals(r.getStatus()))
+                .filter(r -> "weekend".equals(r.getOvertimeType())).count());
+        byType.setHoliday((int) records.stream()
+                .filter(r -> "approved".equals(r.getStatus()))
+                .filter(r -> "holiday".equals(r.getOvertimeType())).count());
         stats.setByType(byType);
 
         // 获取项目加班统计

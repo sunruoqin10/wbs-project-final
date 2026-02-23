@@ -359,23 +359,25 @@ const totalPayHours = computed(() => {
 // 重新计算统计数据，基于用户有权限访问的项目
 const stats = computed(() => {
   const records = accessibleRecords.value;
+  const approvedRecords = records.filter(r => r.status === 'approved');
   const now = dayjs();
   const thisMonth = now.format('YYYY-MM');
   
   const thisMonthRecords = records.filter(r => r.overtimeDate.startsWith(thisMonth));
+  const thisMonthApprovedRecords = approvedRecords.filter(r => r.overtimeDate.startsWith(thisMonth));
   const pendingRecords = records.filter(r => r.status === 'pending');
-  const peopleSet = new Set(thisMonthRecords.map(r => r.userId));
+  const peopleSet = new Set(thisMonthApprovedRecords.map(r => r.userId));
   
   const byType = {
-    weekday: records.filter(r => r.overtimeType === 'weekday').reduce((sum, r) => sum + r.hours, 0),
-    weekend: records.filter(r => r.overtimeType === 'weekend').reduce((sum, r) => sum + r.hours, 0),
-    holiday: records.filter(r => r.overtimeType === 'holiday').reduce((sum, r) => sum + r.hours, 0)
+    weekday: approvedRecords.filter(r => r.overtimeType === 'weekday').reduce((sum, r) => sum + r.hours, 0),
+    weekend: approvedRecords.filter(r => r.overtimeType === 'weekend').reduce((sum, r) => sum + r.hours, 0),
+    holiday: approvedRecords.filter(r => r.overtimeType === 'holiday').reduce((sum, r) => sum + r.hours, 0)
   };
   
   const byProject: any[] = [];
   const projectMap = new Map<string, { projectId: string; projectName: string; hours: number; count: number }>();
   
-  records.forEach(record => {
+  approvedRecords.forEach(record => {
     const project = projectStore.projectById(record.projectId);
     if (!project) return;
     
@@ -406,10 +408,10 @@ const stats = computed(() => {
   
   return {
     totalRecords: records.length,
-    totalHours: records.reduce((sum, r) => sum + r.hours, 0),
-    totalPeople: new Set(records.map(r => r.userId)).size,
+    totalHours: approvedRecords.reduce((sum, r) => sum + r.hours, 0),
+    totalPeople: new Set(approvedRecords.map(r => r.userId)).size,
     pendingApprovals: pendingRecords.length,
-    thisMonthHours: thisMonthRecords.reduce((sum, r) => sum + r.hours, 0),
+    thisMonthHours: thisMonthApprovedRecords.reduce((sum, r) => sum + r.hours, 0),
     thisMonthPeople: peopleSet.size,
     byType,
     byProject
@@ -595,10 +597,10 @@ const initTrendChart = () => {
     const date = dayjs().subtract(i, 'day');
     dates.push(date.format('MM-DD'));
 
-    // 计算该日期的加班时长（只统计用户有权限访问的项目）
+    // 计算该日期的加班时长（只统计用户有权限访问的项目且已通过）
     const dateStr = date.format('YYYY-MM-DD');
     const dayHours = accessibleRecords.value
-      .filter(r => r.overtimeDate === dateStr)
+      .filter(r => r.overtimeDate === dateStr && r.status === 'approved')
       .reduce((sum, r) => sum + r.hours, 0);
     hours.push(dayHours);
   }
