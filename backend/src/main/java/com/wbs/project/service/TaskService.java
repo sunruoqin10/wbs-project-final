@@ -5,6 +5,7 @@ import com.wbs.project.entity.Task;
 import com.wbs.project.entity.User;
 import com.wbs.project.mapper.ProjectMapper;
 import com.wbs.project.mapper.TaskMapper;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.annotation.Lazy;
 import org.springframework.stereotype.Service;
@@ -20,6 +21,7 @@ import java.util.stream.Collectors;
 /**
  * 任务Service
  */
+@Slf4j
 @Service
 public class TaskService {
 
@@ -357,18 +359,14 @@ public class TaskService {
             if (task.getOriginalEndDate() != null) {
                 long days = ChronoUnit.DAYS.between(task.getOriginalEndDate(), today);
                 task.setDelayedDays((int) days);
-                System.out.println("  [延期计算] " + task.getTitle() +
-                    ": 原始结束日期=" + task.getOriginalEndDate() +
-                    ", 今天=" + today +
-                    ", 延期天数=" + days);
+                log.debug("  [延期计算] {}: 原始结束日期={}, 今天={}, 延期天数={}", 
+                    task.getTitle(), task.getOriginalEndDate(), today, days);
             } else {
                 // 否则使用当前结束日期计算
                 long days = ChronoUnit.DAYS.between(task.getEndDate(), today);
                 task.setDelayedDays((int) days);
-                System.out.println("  [延期计算] " + task.getTitle() +
-                    ": 结束日期=" + task.getEndDate() +
-                    ", 今天=" + today +
-                    ", 延期天数=" + days);
+                log.debug("  [延期计算] {}: 结束日期={}, 今天={}, 延期天数={}", 
+                    task.getTitle(), task.getEndDate(), today, days);
             }
         } else {
             // 如果任务不再延期，清零 delayedDays
@@ -417,17 +415,15 @@ public class TaskService {
 
         // 调试输出
         if (totalDelayedDays > 0) {
-            System.out.println("=== 父任务 [" + task.getTitle() + "] 的子任务延期累计 ===");
-            System.out.println("子孙任务总数: " + allDescendants.size());
+            log.debug("=== 父任务 [{}] 的子任务延期累计 ===", task.getTitle());
+            log.debug("子孙任务总数: {}", allDescendants.size());
             for (Task descendant : allDescendants) {
                 boolean isLeaf = isLeafTask(descendant.getId());
-                System.out.println("  - " + descendant.getTitle() +
-                    " (叶子:" + isLeaf +
-                    ", 延期:" + descendant.getIsDelayed() +
-                    ", 天数:" + descendant.getDelayedDays() + ")");
+                log.debug("  - {} (叶子:{}, 延期:{}, 天数:{})", 
+                    descendant.getTitle(), isLeaf, descendant.getIsDelayed(), descendant.getDelayedDays());
             }
-            System.out.println("延期叶子任务数: " + delayedCount);
-            System.out.println("累计延期天数: " + totalDelayedDays);
+            log.debug("延期叶子任务数: {}", delayedCount);
+            log.debug("累计延期天数: {}", totalDelayedDays);
         }
 
         task.setChildrenDelayedCount(delayedCount);

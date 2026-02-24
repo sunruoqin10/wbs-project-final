@@ -23,11 +23,11 @@
 
 ## 📧 三、邮件通知问题
 
-| 问题                | 描述                                       | 影响                | 状态    |
-| ----------------- | ---------------------------------------- | ----------------- | ----- |
-| **6. 邮件发送缺少重试机制** | `EmailNotificationService` 发送邮件失败时没有重试逻辑 | ⚠️ 网络波动可能导致重要通知丢失 | |
-| **7. 邮件发送没有异步处理** | 邮件发送是同步的，会阻塞请求响应                         | ⚠️ 影响用户体验，增加响应时间  | |
-| **8. 缺少邮件发送记录**   | 没有数据库表记录邮件发送状态、发送时间等                     | ⚠️ 无法追踪邮件是否成功送达   | ✅ 已解决 |
+| 问题                | 描述                                       | 影响                | 状态     |
+| ----------------- | ---------------------------------------- | ----------------- | ------ |
+| **6. 邮件发送缺少重试机制** | `EmailNotificationService` 发送邮件失败时没有重试逻辑 | ⚠️ 网络波动可能导致重要通知丢失 | <br /> |
+| **7. 邮件发送没有异步处理** | 邮件发送是同步的，会阻塞请求响应                         | ⚠️ 影响用户体验，增加响应时间  | <br /> |
+| **8. 缺少邮件发送记录**   | 没有数据库表记录邮件发送状态、发送时间等                     | ⚠️ 无法追踪邮件是否成功送达   | ✅ 已解决  |
 
 ***
 
@@ -64,13 +64,13 @@
 
 ## 🏗️ 七、代码架构问题
 
-| 问题                | 描述                                                     | 影响                | 状态    |
-| ----------------- | ------------------------------------------------------ | ----------------- | ----- |
-| **19. 缺少统一的异常处理** | 没有 `@ControllerAdvice` 全局异常处理器，各个Controller自己try-catch | ⚠️ 代码重复，错误响应格式不统一 | ✅ 已解决 |
-| **20. 缺少参数校验**    | Controller层没有使用 `@Valid` 或 `@Validated` 注解进行参数校验       | ⚠️ 可能导致脏数据进入系统    | |
-| **21. SQL注入风险**   | MyBatis mapper中有些SQL可能使用了 `${}` 而非 `#{}`（需要检查）         | ❌ 安全隐患            | |
-| **22. 缺少日志规范**    | 有些地方用 `System.out.println`，有些用 `log.info()`，不统一        | ⚠️ 日志管理混乱         | |
-| **23. 缺少单元测试**    | 没有看到测试代码                                               | ⚠️ 代码质量无法保证       | |
+| 问题                | 描述                                                     | 影响                | 状态     |
+| ----------------- | ------------------------------------------------------ | ----------------- | ------ |
+| **19. 缺少统一的异常处理** | 没有 `@ControllerAdvice` 全局异常处理器，各个Controller自己try-catch | ⚠️ 代码重复，错误响应格式不统一 | ✅ 已解决  |
+| **20. 缺少参数校验**    | Controller层没有使用 `@Valid` 或 `@Validated` 注解进行参数校验       | ⚠️ 可能导致脏数据进入系统    | <br /> |
+| **21. SQL注入风险**   | MyBatis mapper中有些SQL可能使用了 `${}` 而非 `#{}`（需要检查）         | ❌ 安全隐患            | <br /> |
+| **22. 缺少日志规范**    | 有些地方用 `System.out.println`，有些用 `log.info()`，不统一        | ⚠️ 日志管理混乱         | ✅ 已解决  |
+| **23. 缺少单元测试**    | 没有看到测试代码                                               | ⚠️ 代码质量无法保证       | <br /> |
 
 ***
 
@@ -167,11 +167,16 @@
 1. **创建自定义业务异常类** `BusinessException.java` - 支持自定义错误码和错误消息
 
 2. **创建全局异常处理器** `GlobalExceptionHandler.java` - 使用 `@RestControllerAdvice` 注解实现全局异常处理，支持多种异常类型：
-   - `BusinessException`：业务异常
-   - `MethodArgumentNotValidException`：参数校验异常
-   - `BindException`：参数绑定异常
-   - `IllegalArgumentException`：非法参数异常
-   - `Exception`：系统异常
+
+   * `BusinessException`：业务异常
+
+   * `MethodArgumentNotValidException`：参数校验异常
+
+   * `BindException`：参数绑定异常
+
+   * `IllegalArgumentException`：非法参数异常
+
+   * `Exception`：系统异常
 
 3. **移除所有 Controller 中重复的 try-catch 块** - 简化代码，统一异常处理
 
@@ -190,6 +195,22 @@
 * `backend/src/main/java/com/wbs/project/controller/UserController.java`
 
 * `backend/src/main/java/com/wbs/project/controller/DelayNotificationController.java`
+
+***
+
+### 问题22：缺少日志规范（已修复）
+
+**修复内容：**
+
+1. **给 TaskService 添加 @Slf4j 注解** - 统一使用 Lombok 的 Slf4j 注解
+
+2. **将所有 System.out.println 替换为 log** - 使用 log.debug 替代调试信息，确保日志可以通过配置文件控制输出级别
+
+3. **使用参数化日志** - 避免字符串拼接，提高性能和代码可读性
+
+**修改的文件：**
+
+* `backend/src/main/java/com/wbs/project/service/TaskService.java`
 
 ***
 
