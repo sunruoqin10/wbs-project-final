@@ -338,6 +338,7 @@
       :open="showMemberDetailModal"
       @close="showMemberDetailModal = false"
       title="成员任务详情"
+      size="3xl"
     >
       <div v-if="selectedMemberTasks.length > 0" class="space-y-4">
         <div class="grid grid-cols-2 gap-4">
