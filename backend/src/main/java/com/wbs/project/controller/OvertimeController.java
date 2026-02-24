@@ -61,12 +61,8 @@ public class OvertimeController {
      */
     @PostMapping
     public Result<OvertimeRecord> createRecord(@RequestBody OvertimeDTO.CreateRequest request) {
-        try {
-            OvertimeRecord record = overtimeService.createRecord(request);
-            return Result.success("加班记录创建成功", record);
-        } catch (Exception e) {
-            return Result.error(e.getMessage());
-        }
+        OvertimeRecord record = overtimeService.createRecord(request);
+        return Result.success("加班记录创建成功", record);
     }
 
     /**
@@ -75,12 +71,8 @@ public class OvertimeController {
      */
     @PutMapping("/{id}")
     public Result<OvertimeRecord> updateRecord(@PathVariable String id, @RequestBody OvertimeDTO.UpdateRequest request) {
-        try {
-            OvertimeRecord record = overtimeService.updateRecord(id, request);
-            return Result.success("加班记录更新成功", record);
-        } catch (Exception e) {
-            return Result.error(e.getMessage());
-        }
+        OvertimeRecord record = overtimeService.updateRecord(id, request);
+        return Result.success("加班记录更新成功", record);
     }
 
     /**
@@ -89,12 +81,8 @@ public class OvertimeController {
      */
     @DeleteMapping("/{id}")
     public Result<Void> deleteRecord(@PathVariable String id) {
-        try {
-            overtimeService.deleteRecord(id);
-            return Result.success();
-        } catch (Exception e) {
-            return Result.error(e.getMessage());
-        }
+        overtimeService.deleteRecord(id);
+        return Result.success();
     }
 
     // ==================== 审批 API ====================
@@ -105,13 +93,9 @@ public class OvertimeController {
      */
     @PutMapping("/{id}/approve")
     public Result<OvertimeRecord> approveRecord(@PathVariable String id, @RequestBody OvertimeDTO.ApproveRequest request) {
-        try {
-            OvertimeRecord record = overtimeService.approveRecord(id, request);
-            String message = request.getApproved() ? "加班申请已批准" : "加班申请已拒绝";
-            return Result.success(message, record);
-        } catch (Exception e) {
-            return Result.error(e.getMessage());
-        }
+        OvertimeRecord record = overtimeService.approveRecord(id, request);
+        String message = request.getApproved() ? "加班申请已批准" : "加班申请已拒绝";
+        return Result.success(message, record);
     }
 
     // ==================== 统计 API ====================

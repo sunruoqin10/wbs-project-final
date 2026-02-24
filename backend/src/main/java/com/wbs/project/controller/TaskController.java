@@ -69,19 +69,15 @@ public class TaskController {
             @RequestBody Task task,
             @RequestHeader(value = "X-User-Id", required = false) String userId,
             @RequestHeader(value = "X-User-Role", required = false) String userRole) {
-        try {
-            if ("admin".equals(userRole)) {
-                Task createdTask = taskService.createTask(task);
-                return Result.success("任务创建成功", createdTask);
-            }
-            if (userId != null && !permissionService.isProjectOwner(userId, task.getProjectId())) {
-                return Result.error("只有项目负责人可以创建任务");
-            }
+        if ("admin".equals(userRole)) {
             Task createdTask = taskService.createTask(task);
             return Result.success("任务创建成功", createdTask);
-        } catch (Exception e) {
-            return Result.error(e.getMessage());
         }
+        if (userId != null && !permissionService.isProjectOwner(userId, task.getProjectId())) {
+            return Result.error("只有项目负责人可以创建任务");
+        }
+        Task createdTask = taskService.createTask(task);
+        return Result.success("任务创建成功", createdTask);
     }
 
     @PutMapping("/{id}")
@@ -89,19 +85,15 @@ public class TaskController {
             @PathVariable String id, 
             @RequestBody Task task,
             @RequestHeader(value = "X-User-Id", required = false) String userId) {
-        try {
-            Task existingTask = taskService.getTaskById(id);
-            if (existingTask == null) {
-                return Result.error("任务不存在");
-            }
-            if (userId != null && !permissionService.isProjectMember(userId, existingTask.getProjectId())) {
-                return Result.error("无权限编辑此任务");
-            }
-            Task updatedTask = taskService.updateTask(id, task);
-            return Result.success("任务更新成功", updatedTask);
-        } catch (Exception e) {
-            return Result.error(e.getMessage());
+        Task existingTask = taskService.getTaskById(id);
+        if (existingTask == null) {
+            return Result.error("任务不存在");
         }
+        if (userId != null && !permissionService.isProjectMember(userId, existingTask.getProjectId())) {
+            return Result.error("无权限编辑此任务");
+        }
+        Task updatedTask = taskService.updateTask(id, task);
+        return Result.success("任务更新成功", updatedTask);
     }
 
     @DeleteMapping("/{id}")
@@ -109,23 +101,19 @@ public class TaskController {
             @PathVariable String id,
             @RequestHeader(value = "X-User-Id", required = false) String userId,
             @RequestHeader(value = "X-User-Role", required = false) String userRole) {
-        try {
-            Task existingTask = taskService.getTaskById(id);
-            if (existingTask == null) {
-                return Result.error("任务不存在");
-            }
-            if ("admin".equals(userRole)) {
-                taskService.deleteTask(id);
-                return Result.success();
-            }
-            if (userId != null && permissionService.isProjectOwner(userId, existingTask.getProjectId())) {
-                taskService.deleteTask(id);
-                return Result.success();
-            }
-            return Result.error("只有项目负责人可以删除任务");
-        } catch (Exception e) {
-            return Result.error(e.getMessage());
+        Task existingTask = taskService.getTaskById(id);
+        if (existingTask == null) {
+            return Result.error("任务不存在");
         }
+        if ("admin".equals(userRole)) {
+            taskService.deleteTask(id);
+            return Result.success();
+        }
+        if (userId != null && permissionService.isProjectOwner(userId, existingTask.getProjectId())) {
+            taskService.deleteTask(id);
+            return Result.success();
+        }
+        return Result.error("只有项目负责人可以删除任务");
     }
 
     @PatchMapping("/{id}/status")
@@ -133,19 +121,15 @@ public class TaskController {
             @PathVariable String id, 
             @RequestBody StatusRequest request,
             @RequestHeader(value = "X-User-Id", required = false) String userId) {
-        try {
-            Task existingTask = taskService.getTaskById(id);
-            if (existingTask == null) {
-                return Result.error("任务不存在");
-            }
-            if (userId != null && !permissionService.isProjectMember(userId, existingTask.getProjectId())) {
-                return Result.error("无权限更新此任务状态");
-            }
-            taskService.updateTaskStatus(id, request.getStatus());
-            return Result.success();
-        } catch (Exception e) {
-            return Result.error(e.getMessage());
+        Task existingTask = taskService.getTaskById(id);
+        if (existingTask == null) {
+            return Result.error("任务不存在");
         }
+        if (userId != null && !permissionService.isProjectMember(userId, existingTask.getProjectId())) {
+            return Result.error("无权限更新此任务状态");
+        }
+        taskService.updateTaskStatus(id, request.getStatus());
+        return Result.success();
     }
 
     @PatchMapping("/{id}/progress")
@@ -153,19 +137,15 @@ public class TaskController {
             @PathVariable String id, 
             @RequestBody ProgressRequest request,
             @RequestHeader(value = "X-User-Id", required = false) String userId) {
-        try {
-            Task existingTask = taskService.getTaskById(id);
-            if (existingTask == null) {
-                return Result.error("任务不存在");
-            }
-            if (userId != null && !permissionService.isProjectMember(userId, existingTask.getProjectId())) {
-                return Result.error("无权限更新此任务进度");
-            }
-            taskService.updateTaskProgress(id, request.getProgress());
-            return Result.success();
-        } catch (Exception e) {
-            return Result.error(e.getMessage());
+        Task existingTask = taskService.getTaskById(id);
+        if (existingTask == null) {
+            return Result.error("任务不存在");
         }
+        if (userId != null && !permissionService.isProjectMember(userId, existingTask.getProjectId())) {
+            return Result.error("无权限更新此任务进度");
+        }
+        taskService.updateTaskProgress(id, request.getProgress());
+        return Result.success();
     }
 
     @GetMapping("/stats")
@@ -222,19 +202,15 @@ public class TaskController {
         @PathVariable String id,
         @RequestBody DelayRequest request,
         @RequestHeader(value = "X-User-Id", required = false) String userId) {
-        try {
-            Task existingTask = taskService.getTaskById(id);
-            if (existingTask == null) {
-                return Result.error("任务不存在");
-            }
-            if (userId != null && !permissionService.isProjectMember(userId, existingTask.getProjectId())) {
-                return Result.error("无权限记录此任务延期");
-            }
-            Task updatedTask = taskService.recordTaskDelay(id, request.getNewEndDate(), request.getDelayReason());
-            return Result.success("延期记录成功", updatedTask);
-        } catch (Exception e) {
-            return Result.error(e.getMessage());
+        Task existingTask = taskService.getTaskById(id);
+        if (existingTask == null) {
+            return Result.error("任务不存在");
         }
+        if (userId != null && !permissionService.isProjectMember(userId, existingTask.getProjectId())) {
+            return Result.error("无权限记录此任务延期");
+        }
+        Task updatedTask = taskService.recordTaskDelay(id, request.getNewEndDate(), request.getDelayReason());
+        return Result.success("延期记录成功", updatedTask);
     }
 
     public static class StatusRequest {

@@ -59,12 +59,8 @@ public class ProjectController {
     @PostMapping
     @RequirePermission("project:create")
     public Result<Project> createProject(@RequestBody Project project) {
-        try {
-            Project createdProject = projectService.createProject(project);
-            return Result.success("项目创建成功", createdProject);
-        } catch (Exception e) {
-            return Result.error(e.getMessage());
-        }
+        Project createdProject = projectService.createProject(project);
+        return Result.success("项目创建成功", createdProject);
     }
 
     @PutMapping("/{id}")
@@ -73,21 +69,17 @@ public class ProjectController {
             @RequestBody Project project,
             @RequestHeader(value = "X-User-Id", required = false) String userId,
             @RequestHeader(value = "X-User-Role", required = false) String userRole) {
-        try {
-            if ("admin".equals(userRole)) {
-                Project updatedProject = projectService.updateProject(id, project);
-                projectService.updateProjectDelayedStatus(updatedProject);
-                return Result.success("项目更新成功", updatedProject);
-            }
-            if (userId != null && !permissionService.isProjectOwner(userId, id)) {
-                return Result.error("无权限编辑此项目");
-            }
+        if ("admin".equals(userRole)) {
             Project updatedProject = projectService.updateProject(id, project);
             projectService.updateProjectDelayedStatus(updatedProject);
             return Result.success("项目更新成功", updatedProject);
-        } catch (Exception e) {
-            return Result.error(e.getMessage());
         }
+        if (userId != null && !permissionService.isProjectOwner(userId, id)) {
+            return Result.error("无权限编辑此项目");
+        }
+        Project updatedProject = projectService.updateProject(id, project);
+        projectService.updateProjectDelayedStatus(updatedProject);
+        return Result.success("项目更新成功", updatedProject);
     }
 
     @DeleteMapping("/{id}")
@@ -95,19 +87,15 @@ public class ProjectController {
             @PathVariable String id,
             @RequestHeader(value = "X-User-Id", required = false) String userId,
             @RequestHeader(value = "X-User-Role", required = false) String userRole) {
-        try {
-            if ("admin".equals(userRole)) {
-                projectService.deleteProject(id);
-                return Result.success();
-            }
-            if (userId != null && permissionService.isProjectOwner(userId, id)) {
-                projectService.deleteProject(id);
-                return Result.success();
-            }
-            return Result.error("无权限删除此项目");
-        } catch (Exception e) {
-            return Result.error(e.getMessage());
+        if ("admin".equals(userRole)) {
+            projectService.deleteProject(id);
+            return Result.success();
         }
+        if (userId != null && permissionService.isProjectOwner(userId, id)) {
+            projectService.deleteProject(id);
+            return Result.success();
+        }
+        return Result.error("无权限删除此项目");
     }
 
     @GetMapping("/stats")

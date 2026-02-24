@@ -14,11 +14,7 @@ public class DelayNotificationController {
 
     @PostMapping("/trigger")
     public Result<String> triggerDelayCheck() {
-        try {
-            delayNotificationScheduler.checkAndSendDelayNotificationsManual();
-            return Result.success("延期检查已触发");
-        } catch (Exception e) {
-            return Result.error("触发延期检查失败: " + e.getMessage());
-        }
+        delayNotificationScheduler.checkAndSendDelayNotificationsManual();
+        return Result.success("延期检查已触发");
     }
 }

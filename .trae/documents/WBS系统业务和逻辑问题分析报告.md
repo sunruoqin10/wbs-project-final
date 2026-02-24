@@ -23,11 +23,11 @@
 
 ## 📧 三、邮件通知问题
 
-| 问题                | 描述                                       | 影响                |
-| ----------------- | ---------------------------------------- | ----------------- |
-| **6. 邮件发送缺少重试机制** | `EmailNotificationService` 发送邮件失败时没有重试逻辑 | ⚠️ 网络波动可能导致重要通知丢失 |
-| **7. 邮件发送没有异步处理** | 邮件发送是同步的，会阻塞请求响应                         | ⚠️ 影响用户体验，增加响应时间  |
-| **8. 缺少邮件发送记录**   | 没有数据库表记录邮件发送状态、发送时间等                     | ⚠️ 无法追踪邮件是否成功送达   |
+| 问题                | 描述                                       | 影响                | 状态    |
+| ----------------- | ---------------------------------------- | ----------------- | ----- |
+| **6. 邮件发送缺少重试机制** | `EmailNotificationService` 发送邮件失败时没有重试逻辑 | ⚠️ 网络波动可能导致重要通知丢失 | |
+| **7. 邮件发送没有异步处理** | 邮件发送是同步的，会阻塞请求响应                         | ⚠️ 影响用户体验，增加响应时间  | |
+| **8. 缺少邮件发送记录**   | 没有数据库表记录邮件发送状态、发送时间等                     | ⚠️ 无法追踪邮件是否成功送达   | ✅ 已解决 |
 
 ***
 
@@ -64,13 +64,13 @@
 
 ## 🏗️ 七、代码架构问题
 
-| 问题                | 描述                                                     | 影响                |
-| ----------------- | ------------------------------------------------------ | ----------------- |
-| **19. 缺少统一的异常处理** | 没有 `@ControllerAdvice` 全局异常处理器，各个Controller自己try-catch | ⚠️ 代码重复，错误响应格式不统一 |
-| **20. 缺少参数校验**    | Controller层没有使用 `@Valid` 或 `@Validated` 注解进行参数校验       | ⚠️ 可能导致脏数据进入系统    |
-| **21. SQL注入风险**   | MyBatis mapper中有些SQL可能使用了 `${}` 而非 `#{}`（需要检查）         | ❌ 安全隐患            |
-| **22. 缺少日志规范**    | 有些地方用 `System.out.println`，有些用 `log.info()`，不统一        | ⚠️ 日志管理混乱         |
-| **23. 缺少单元测试**    | 没有看到测试代码                                               | ⚠️ 代码质量无法保证       |
+| 问题                | 描述                                                     | 影响                | 状态    |
+| ----------------- | ------------------------------------------------------ | ----------------- | ----- |
+| **19. 缺少统一的异常处理** | 没有 `@ControllerAdvice` 全局异常处理器，各个Controller自己try-catch | ⚠️ 代码重复，错误响应格式不统一 | ✅ 已解决 |
+| **20. 缺少参数校验**    | Controller层没有使用 `@Valid` 或 `@Validated` 注解进行参数校验       | ⚠️ 可能导致脏数据进入系统    | |
+| **21. SQL注入风险**   | MyBatis mapper中有些SQL可能使用了 `${}` 而非 `#{}`（需要检查）         | ❌ 安全隐患            | |
+| **22. 缺少日志规范**    | 有些地方用 `System.out.println`，有些用 `log.info()`，不统一        | ⚠️ 日志管理混乱         | |
+| **23. 缺少单元测试**    | 没有看到测试代码                                               | ⚠️ 代码质量无法保证       | |
 
 ***
 
@@ -83,7 +83,8 @@
 | 🔴 高 | 10   | 数据软删除           |
 | 🟡 中 | 4    | 前后端统计统一 ✅       |
 | 🟡 中 | 7    | 邮件异步发送          |
-| 🟡 中 | 19   | 全局异常处理          |
+| 🟡 中 | 8    | 邮件发送记录 ✅        |
+| 🟡 中 | 19   | 全局异常处理 ✅        |
 | 🟡 中 | 20   | 参数校验            |
 | 🟢 低 | 其他   | 优化和改进           |
 
@@ -128,6 +129,67 @@
 * `frontend/src/views/OvertimeManagement.vue`
 
 * `frontend/src/services/api.ts`
+
+***
+
+### 问题8：缺少邮件发送记录（已修复）
+
+**修复内容：**
+
+1. **创建邮件发送记录实体类** `EmailLog.java` - 包含收件人、抄送人、主题、模板名称、发送状态、错误信息、发送时间等字段
+
+2. **创建 EmailLogMapper 接口** - 提供插入、按ID查询、按收件人查询、按状态查询、按日期范围查询、按日期删除等方法
+
+3. **创建 EmailLogMapper.xml 映射文件** - 完整的 SQL 映射配置
+
+4. **创建数据库迁移脚本** `add_email_log_table.sql` - 创建 `email_log` 表，包含必要的索引和注释
+
+5. **修改 EmailService** - 在 `sendEmail()` 和 `sendSimpleEmail()` 方法中添加邮件发送记录逻辑，使用 try-catch-finally 块确保无论发送成功或失败都会记录
+
+**修改的文件：**
+
+* `backend/src/main/java/com/wbs/project/entity/EmailLog.java`
+
+* `backend/src/main/java/com/wbs/project/mapper/EmailLogMapper.java`
+
+* `backend/src/main/resources/mapper/EmailLogMapper.xml`
+
+* `backend/add_email_log_table.sql`
+
+* `backend/src/main/java/com/wbs/project/service/EmailService.java`
+
+***
+
+### 问题19：缺少统一的异常处理（已修复）
+
+**修复内容：**
+
+1. **创建自定义业务异常类** `BusinessException.java` - 支持自定义错误码和错误消息
+
+2. **创建全局异常处理器** `GlobalExceptionHandler.java` - 使用 `@RestControllerAdvice` 注解实现全局异常处理，支持多种异常类型：
+   - `BusinessException`：业务异常
+   - `MethodArgumentNotValidException`：参数校验异常
+   - `BindException`：参数绑定异常
+   - `IllegalArgumentException`：非法参数异常
+   - `Exception`：系统异常
+
+3. **移除所有 Controller 中重复的 try-catch 块** - 简化代码，统一异常处理
+
+**修改的文件：**
+
+* `backend/src/main/java/com/wbs/project/exception/BusinessException.java`
+
+* `backend/src/main/java/com/wbs/project/exception/GlobalExceptionHandler.java`
+
+* `backend/src/main/java/com/wbs/project/controller/OvertimeController.java`
+
+* `backend/src/main/java/com/wbs/project/controller/ProjectController.java`
+
+* `backend/src/main/java/com/wbs/project/controller/TaskController.java`
+
+* `backend/src/main/java/com/wbs/project/controller/UserController.java`
+
+* `backend/src/main/java/com/wbs/project/controller/DelayNotificationController.java`
 
 ***
 

@@ -22,15 +22,11 @@ public class UserController {
 
     @PostMapping("/login")
     public Result<LoginResponse> login(@RequestBody LoginRequest request) {
-        try {
-            User user = userService.login(request.getUserId(), request.getPassword());
-            user.setPassword(null);
-            String token = jwtUtil.generateToken(user.getId(), user.getRole());
-            LoginResponse loginResponse = new LoginResponse(token, user);
-            return Result.success("登录成功", loginResponse);
-        } catch (Exception e) {
-            return Result.error(e.getMessage());
-        }
+        User user = userService.login(request.getUserId(), request.getPassword());
+        user.setPassword(null);
+        String token = jwtUtil.generateToken(user.getId(), user.getRole());
+        LoginResponse loginResponse = new LoginResponse(token, user);
+        return Result.success("登录成功", loginResponse);
     }
 
     @GetMapping
@@ -58,34 +54,22 @@ public class UserController {
     @PostMapping
     @RequirePermission("user:create")
     public Result<User> createUser(@RequestBody User user) {
-        try {
-            User createdUser = userService.createUser(user);
-            return Result.success("用户创建成功", createdUser);
-        } catch (Exception e) {
-            return Result.error(e.getMessage());
-        }
+        User createdUser = userService.createUser(user);
+        return Result.success("用户创建成功", createdUser);
     }
 
     @PutMapping("/{id}")
     @RequirePermission("user:edit")
     public Result<User> updateUser(@PathVariable String id, @RequestBody User user) {
-        try {
-            User updatedUser = userService.updateUser(id, user);
-            return Result.success("用户更新成功", updatedUser);
-        } catch (Exception e) {
-            return Result.error(e.getMessage());
-        }
+        User updatedUser = userService.updateUser(id, user);
+        return Result.success("用户更新成功", updatedUser);
     }
 
     @DeleteMapping("/{id}")
     @RequirePermission("user:delete")
     public Result<Void> deleteUser(@PathVariable String id) {
-        try {
-            userService.deleteUser(id);
-            return Result.success();
-        } catch (Exception e) {
-            return Result.error(e.getMessage());
-        }
+        userService.deleteUser(id);
+        return Result.success();
     }
 
     @GetMapping("/count")
