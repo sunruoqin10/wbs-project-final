@@ -78,15 +78,34 @@
             开始时间
             <span class="text-danger-500">*</span>
           </label>
-          <input
-            v-model="formData.startTime"
-            type="time"
-            :class="[
-              'w-full rounded-lg border px-4 py-2 focus:border-primary-500 focus:outline-none focus:ring-2 focus:ring-primary-500/20',
-              errors.startTime ? 'border-danger-300' : 'border-secondary-200'
-            ]"
-            required
-          />
+          <div class="flex gap-2">
+            <select
+              v-model="startHour"
+              :class="[
+                'w-20 rounded-lg border px-3 py-2 focus:border-primary-500 focus:outline-none focus:ring-2 focus:ring-primary-500/20',
+                errors.startTime ? 'border-danger-300' : 'border-secondary-200'
+              ]"
+              required
+            >
+              <option value="">时</option>
+              <option v-for="h in 24" :key="h" :value="String(h - 1).padStart(2, '0')">
+                {{ String(h - 1).padStart(2, '0') }}
+              </option>
+            </select>
+            <select
+              v-model="startMinute"
+              :class="[
+                'w-20 rounded-lg border px-3 py-2 focus:border-primary-500 focus:outline-none focus:ring-2 focus:ring-primary-500/20',
+                errors.startTime ? 'border-danger-300' : 'border-secondary-200'
+              ]"
+              required
+            >
+              <option value="">分</option>
+              <option v-for="m in 12" :key="m" :value="String((m - 1) * 5).padStart(2, '0')">
+                {{ String((m - 1) * 5).padStart(2, '0') }}
+              </option>
+            </select>
+          </div>
           <p v-if="errors.startTime" class="mt-1 text-sm text-danger-600">{{ errors.startTime }}</p>
         </div>
         <div>
@@ -94,15 +113,34 @@
             结束时间
             <span class="text-danger-500">*</span>
           </label>
-          <input
-            v-model="formData.endTime"
-            type="time"
-            :class="[
-              'w-full rounded-lg border px-4 py-2 focus:border-primary-500 focus:outline-none focus:ring-2 focus:ring-primary-500/20',
-              errors.endTime ? 'border-danger-300' : 'border-secondary-200'
-            ]"
-            required
-          />
+          <div class="flex gap-2">
+            <select
+              v-model="endHour"
+              :class="[
+                'w-20 rounded-lg border px-3 py-2 focus:border-primary-500 focus:outline-none focus:ring-2 focus:ring-primary-500/20',
+                errors.endTime ? 'border-danger-300' : 'border-secondary-200'
+              ]"
+              required
+            >
+              <option value="">时</option>
+              <option v-for="h in 24" :key="h" :value="String(h - 1).padStart(2, '0')">
+                {{ String(h - 1).padStart(2, '0') }}
+              </option>
+            </select>
+            <select
+              v-model="endMinute"
+              :class="[
+                'w-20 rounded-lg border px-3 py-2 focus:border-primary-500 focus:outline-none focus:ring-2 focus:ring-primary-500/20',
+                errors.endTime ? 'border-danger-300' : 'border-secondary-200'
+              ]"
+              required
+            >
+              <option value="">分</option>
+              <option v-for="m in 12" :key="m" :value="String((m - 1) * 5).padStart(2, '0')">
+                {{ String((m - 1) * 5).padStart(2, '0') }}
+              </option>
+            </select>
+          </div>
           <p v-if="errors.endTime" class="mt-1 text-sm text-danger-600">{{ errors.endTime }}</p>
         </div>
       </div>
@@ -202,6 +240,15 @@ const userStore = useUserStore();
 const taskStore = useTaskStore();
 const permissionStore = usePermissionStore();
 
+const isEditing = computed(() => !!props.record);
+const saving = ref(false);
+
+// 时间选择器的时分
+const startHour = ref('');
+const startMinute = ref('');
+const endHour = ref('');
+const endMinute = ref('');
+
 // 用户有权限访问的项目列表
 const accessibleProjects = computed(() => {
   let result;
@@ -233,9 +280,6 @@ const accessibleProjects = computed(() => {
   
   return result;
 });
-
-const isEditing = computed(() => !!props.record);
-const saving = ref(false);
 
 // 表单数据
 const formData = reactive({
@@ -300,11 +344,11 @@ const calculateHours = () => {
     return;
   }
 
-  const [startHour, startMinute] = formData.startTime.split(':').map(Number);
-  const [endHour, endMinute] = formData.endTime.split(':').map(Number);
+  const [sHour, sMinute] = formData.startTime.split(':').map(Number);
+  const [eHour, eMinute] = formData.endTime.split(':').map(Number);
 
-  const startMinutes = startHour * 60 + startMinute;
-  const endMinutes = endHour * 60 + endMinute;
+  const startMinutes = sHour * 60 + sMinute;
+  const endMinutes = eHour * 60 + eMinute;
 
   if (endMinutes <= startMinutes) {
     formData.hours = 0;
@@ -312,7 +356,43 @@ const calculateHours = () => {
   }
 
   const diffMinutes = endMinutes - startMinutes;
-  formData.hours = Math.round(diffMinutes / 60 * 10) / 10; // 保留一位小数
+  formData.hours = Math.round(diffMinutes / 60 * 10) / 10;
+};
+
+// 将时分选择器的值同步到表单
+const updateTimeFromSelectors = () => {
+  if (startHour.value && startMinute.value) {
+    formData.startTime = `${startHour.value}:${startMinute.value}`;
+  } else {
+    formData.startTime = '';
+  }
+
+  if (endHour.value && endMinute.value) {
+    formData.endTime = `${endHour.value}:${endMinute.value}`;
+  } else {
+    formData.endTime = '';
+  }
+};
+
+// 将表单时间同步到时分选择器
+const updateTimeSelectors = () => {
+  if (formData.startTime) {
+    const [hour, minute] = formData.startTime.split(':');
+    startHour.value = hour;
+    startMinute.value = minute;
+  } else {
+    startHour.value = '';
+    startMinute.value = '';
+  }
+
+  if (formData.endTime) {
+    const [hour, minute] = formData.endTime.split(':');
+    endHour.value = hour;
+    endMinute.value = minute;
+  } else {
+    endHour.value = '';
+    endMinute.value = '';
+  }
 };
 
 // 重置表单
@@ -327,6 +407,12 @@ const resetForm = () => {
   formData.overtimeType = '';
   formData.compensationType = '';
   formData.reason = '';
+
+  // 重置时间选择器
+  startHour.value = '';
+  startMinute.value = '';
+  endHour.value = '';
+  endMinute.value = '';
 
   // 清除错误
   Object.keys(errors).forEach(key => {
@@ -347,6 +433,8 @@ const loadRecordData = () => {
     formData.overtimeType = props.record.overtimeType;
     formData.compensationType = props.record.compensationType || '';
     formData.reason = props.record.reason;
+    // 同步时间到选择器
+    updateTimeSelectors();
   } else {
     resetForm();
     // 默认使用当前用户
@@ -456,6 +544,17 @@ const handleClose = () => {
 
 // 监听时间变化，自动计算时长
 watch([() => formData.startTime, () => formData.endTime], () => {
+  calculateHours();
+});
+
+// 监听时间选择器变化，同步到表单并计算时长
+watch([startHour, startMinute], () => {
+  updateTimeFromSelectors();
+  calculateHours();
+});
+
+watch([endHour, endMinute], () => {
+  updateTimeFromSelectors();
   calculateHours();
 });
 

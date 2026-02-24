@@ -136,9 +136,9 @@ public class OvertimeService {
             throw new RuntimeException("加班记录不存在");
         }
 
-        // 只有待审批状态的记录可以修改
-        if (!"pending".equals(existing.getStatus())) {
-            throw new RuntimeException("只有待审批状态的加班记录可以修改");
+        // 只有待审批或已拒绝状态的记录可以修改
+        if (!"pending".equals(existing.getStatus()) && !"rejected".equals(existing.getStatus())) {
+            throw new RuntimeException("只有待审批或已拒绝状态的加班记录可以修改");
         }
 
         // 验证外键
@@ -157,6 +157,14 @@ public class OvertimeService {
         existing.setReason(request.getReason());
         existing.setCompensationType(request.getCompensationType());
         existing.setUpdatedAt(LocalDateTime.now());
+        
+        // 如果是已拒绝状态修改后重新提交，重置为待审批状态
+        if ("rejected".equals(existing.getStatus())) {
+            existing.setStatus("pending");
+            existing.setApproverId(null);
+            existing.setApprovedAt(null);
+            existing.setRejectReason(null);
+        }
 
         overtimeMapper.update(existing);
         return overtimeMapper.selectById(id);
@@ -172,9 +180,9 @@ public class OvertimeService {
             throw new RuntimeException("加班记录不存在");
         }
 
-        // 只有待审批状态的记录可以删除
-        if (!"pending".equals(record.getStatus())) {
-            throw new RuntimeException("只有待审批状态的加班记录可以删除");
+        // 只有待审批或已拒绝状态的记录可以删除
+        if (!"pending".equals(record.getStatus()) && !"rejected".equals(record.getStatus())) {
+            throw new RuntimeException("只有待审批或已拒绝状态的加班记录可以删除");
         }
 
         overtimeMapper.deleteById(id);
