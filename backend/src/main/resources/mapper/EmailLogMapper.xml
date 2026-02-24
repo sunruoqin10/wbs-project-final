@@ -1,0 +1,59 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+        "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.wbs.project.mapper.EmailLogMapper">
+
+    <resultMap id="BaseResultMap" type="com.wbs.project.entity.EmailLog">
+        <id column="id" property="id"/>
+        <result column="to_email" property="toEmail"/>
+        <result column="cc_email" property="ccEmail"/>
+        <result column="subject" property="subject"/>
+        <result column="template_name" property="templateName"/>
+        <result column="status" property="status"/>
+        <result column="error_message" property="errorMessage"/>
+        <result column="sent_at" property="sentAt"/>
+        <result column="created_at" property="createdAt"/>
+    </resultMap>
+
+    <sql id="Base_Column_List">
+        id, to_email, cc_email, subject, template_name, status, error_message, sent_at, created_at
+    </sql>
+
+    <insert id="insert" parameterType="com.wbs.project.entity.EmailLog">
+        INSERT INTO email_log (id, to_email, cc_email, subject, template_name, status, error_message, sent_at, created_at)
+        VALUES (#{id}, #{toEmail}, #{ccEmail}, #{subject}, #{templateName}, #{status}, #{errorMessage}, #{sentAt}, #{createdAt})
+    </insert>
+
+    <select id="selectById" resultMap="BaseResultMap">
+        SELECT <include refid="Base_Column_List"/>
+        FROM email_log
+        WHERE id = #{id}
+    </select>
+
+    <select id="selectByToEmail" resultMap="BaseResultMap">
+        SELECT <include refid="Base_Column_List"/>
+        FROM email_log
+        WHERE to_email = #{toEmail}
+        ORDER BY created_at DESC
+    </select>
+
+    <select id="selectByStatus" resultMap="BaseResultMap">
+        SELECT <include refid="Base_Column_List"/>
+        FROM email_log
+        WHERE status = #{status}
+        ORDER BY created_at DESC
+    </select>
+
+    <select id="selectByDateRange" resultMap="BaseResultMap">
+        SELECT <include refid="Base_Column_List"/>
+        FROM email_log
+        WHERE created_at &gt;= #{startTime}
+          AND created_at &lt;= #{endTime}
+        ORDER BY created_at DESC
+    </select>
+
+    <delete id="deleteByDateBefore">
+        DELETE FROM email_log WHERE created_at &lt; #{date}
+    </delete>
+
+</mapper>

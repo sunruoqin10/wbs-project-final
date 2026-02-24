@@ -14,8 +14,8 @@
 
 ## 📊 二、统计逻辑不一致
 
-| 问题               | 描述                                                                                                                | 影响                | 状态 |
-| ---------------- | ----------------------------------------------------------------------------------------------------------------- | ----------------- |----|
+| 问题               | 描述                                                                                                                | 影响                | 状态    |
+| ---------------- | ----------------------------------------------------------------------------------------------------------------- | ----------------- | ----- |
 | **4. 前端和后端重复统计** | 后端 `OvertimeService.getStats()` 提供了统计数据，但前端 `OvertimeManagement.vue` 又自己在本地重新计算了一遍                                | ⚠️ 浪费资源，可能导致数据不一致 | ✅ 已解决 |
 | **5. 统计状态筛选不完整** | 后端 `sumHoursGroupByUser`、`sumHoursGroupByDate`、`sumHoursGroupByType` 等SQL查询可能还没有添加 `status = 'approved'` 条件（需要检查） | ⚠️ 可能导致已拒绝的记录参与统计 | ✅ 已解决 |
 
@@ -81,39 +81,53 @@
 | 🔴 高 | 1    | Controller层权限控制 |
 | 🔴 高 | 9    | 数据软删除           |
 | 🔴 高 | 10   | 数据软删除           |
-| 🟡 中 | 4    | 前后端统计统一 ✅ |
+| 🟡 中 | 4    | 前后端统计统一 ✅       |
 | 🟡 中 | 7    | 邮件异步发送          |
 | 🟡 中 | 19   | 全局异常处理          |
 | 🟡 中 | 20   | 参数校验            |
 | 🟢 低 | 其他   | 优化和改进           |
 
----
+***
 
 ## ✅ 已解决问题
 
 ### 问题4和5：统计逻辑不一致（已修复）
 
 **修复内容：**
+
 1. **后端SQL查询状态筛选** - 检查并确认所有统计查询已添加 `status = 'approved'` 条件：
-   - `sumHoursGroupByUser` ✅
-   - `sumHoursGroupByProject` ✅
-   - `sumHoursGroupByDate` ✅
-   - `sumHoursGroupByType` ✅
-   - `sumHoursGroupByTask` ✅
-   - `sumHoursByUserId` ✅
-   - `sumHoursByProjectId` ✅
-   - `sumHoursByTaskId` ✅
+
+   * `sumHoursGroupByUser` ✅
+
+   * `sumHoursGroupByProject` ✅
+
+   * `sumHoursGroupByDate` ✅
+
+   * `sumHoursGroupByType` ✅
+
+   * `sumHoursGroupByTask` ✅
+
+   * `sumHoursByUserId` ✅
+
+   * `sumHoursByProjectId` ✅
+
+   * `sumHoursByTaskId` ✅
 
 2. **前端使用后端统计数据** - 修改 `OvertimeManagement.vue`，不再本地重复计算，直接使用 `overtimeStore.stats`
 
 3. **数据类型转换** - 在 `apiService.getOvertimeStats()` 中添加数据转换逻辑，正确处理：
-   - BigDecimal → number 转换
-   - 字段名兼容（hours/totalHours, count/recordCount）
+
+   * BigDecimal → number 转换
+
+   * 字段名兼容（hours/totalHours, count/recordCount）
 
 **修改的文件：**
-- `backend/src/main/resources/mapper/OvertimeMapper.xml`
-- `frontend/src/views/OvertimeManagement.vue`
-- `frontend/src/services/api.ts`
+
+* `backend/src/main/resources/mapper/OvertimeMapper.xml`
+
+* `frontend/src/views/OvertimeManagement.vue`
+
+* `frontend/src/services/api.ts`
 
 ***
 
