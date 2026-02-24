@@ -112,7 +112,7 @@
                 </div>
                 <div class="ml-4">
                   <p class="text-sm font-medium text-secondary-600">延期率</p>
-                  <p class="text-2xl font-semibold text-info-600">{{ personalStats.delayRate.toFixed(1) }}%</p>
+                  <p class="text-2xl font-semibold text-info-600">{{ Math.round(personalStats.delayRate) }}%</p>
                 </div>
               </div>
             </Card>
@@ -245,7 +245,7 @@
                 </div>
                 <div class="ml-4">
                   <p class="text-sm font-medium text-secondary-600">团队延期率</p>
-                  <p class="text-2xl font-semibold text-info-600">{{ teamStats.delayRate.toFixed(1) }}%</p>
+                  <p class="text-2xl font-semibold text-info-600">{{ Math.round(teamStats.delayRate) }}%</p>
                 </div>
               </div>
             </Card>
@@ -313,7 +313,7 @@
                     <td class="whitespace-nowrap px-4 py-3 text-sm font-semibold text-danger-600">{{ member.delayedTasks }}</td>
                     <td class="whitespace-nowrap px-4 py-3 text-sm">
                       <span :class="getDelayRateBadgeClass(member.delayRate)" class="inline-flex rounded-full px-2 py-1 text-xs font-medium">
-                        {{ member.delayRate.toFixed(1) }}%
+                        {{ Math.round(member.delayRate) }}%
                       </span>
                     </td>
                     <td class="whitespace-nowrap px-4 py-3 text-sm text-warning-600 font-semibold">{{ member.totalDelayedDays }} 天</td>
@@ -813,7 +813,7 @@ const initTeamMemberDelayRateChart = () => {
       formatter: (params: any) => {
         const param = params[0];
         const data = memberData[param.dataIndex];
-        return `${getUserName(data.userId)}<br/>延期率: ${data.delayRate.toFixed(1)}%<br/>任务总数: ${data.totalTasks}<br/>延期任务: ${data.delayedTasks}`;
+        return `${getUserName(data.userId)}<br/>延期率: ${Math.round(data.delayRate)}%<br/>任务总数: ${data.totalTasks}<br/>延期任务: ${data.delayedTasks}`;
       }
     },
     grid: {
@@ -856,7 +856,7 @@ const initTeamMemberDelayRateChart = () => {
         label: {
           show: true,
           position: 'right',
-          formatter: '{c}%'
+          formatter: (params: any) => `${Math.round(params.value)}%`
         }
       }
     ]
