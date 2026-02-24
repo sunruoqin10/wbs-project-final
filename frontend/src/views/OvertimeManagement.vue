@@ -239,6 +239,14 @@
                   <td class="whitespace-nowrap px-4 py-3 text-sm">
                     <div class="flex items-center gap-2">
                       <button
+                        v-if="isManagerOrAdmin && record.status === 'pending' && canApprove(record.projectId)"
+                        @click="handleApprove(record)"
+                        class="text-primary-600 hover:text-primary-800"
+                        title="审批"
+                      >
+                        审批
+                      </button>
+                      <button
                         v-if="canEdit(record)"
                         @click="handleEdit(record)"
                         class="text-secondary-600 hover:text-secondary-800"
