@@ -717,12 +717,14 @@ const managedRecords = computed(() => {
   if (!currentUserId) return [];
   
   if (isAdmin.value || isProjectManager.value) {
-    return overtimeStore.overtimeRecords;
+    return overtimeStore.overtimeRecords.filter(r => r.userId !== currentUserId);
   }
   
   if (isProjectOwner.value) {
     const managedProjectIds = getManagedProjectIds();
-    return overtimeStore.overtimeRecords.filter(r => managedProjectIds.includes(r.projectId));
+    return overtimeStore.overtimeRecords.filter(r => 
+      managedProjectIds.includes(r.projectId) && r.userId !== currentUserId
+    );
   }
   
   return [];
