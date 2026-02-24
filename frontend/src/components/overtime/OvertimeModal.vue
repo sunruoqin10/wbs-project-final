@@ -41,17 +41,14 @@
       </div>
 
       <!-- 加班人员 -->
-      <Select
-        v-model="formData.userId"
-        label="加班人员"
-        :error="errors.userId"
-        required
-      >
-        <option value="">请选择人员</option>
-        <option v-for="user in availableUsers" :key="user.id" :value="user.id">
-          {{ user.name }} ({{ user.department }})
-        </option>
-      </Select>
+      <div>
+        <label class="mb-1 block text-sm font-medium text-secondary-700">
+          加班人员
+        </label>
+        <div class="w-full rounded-lg border border-secondary-200 bg-secondary-50 px-4 py-2 text-sm text-secondary-900">
+          {{ currentUser?.name || '' }}
+        </div>
+      </div>
 
       <!-- 加班日期 -->
       <div>
@@ -243,6 +240,11 @@ const permissionStore = usePermissionStore();
 const isEditing = computed(() => !!props.record);
 const saving = ref(false);
 
+const currentUser = computed(() => {
+  if (!userStore.currentUserId) return null;
+  return userStore.users.find(u => u.id === userStore.currentUserId) || null;
+});
+
 // 时间选择器的时分
 const startHour = ref('');
 const startMinute = ref('');
@@ -299,7 +301,6 @@ const formData = reactive({
 const errors = reactive({
   projectId: '',
   taskId: '',
-  userId: '',
   overtimeDate: '',
   startTime: '',
   endTime: '',
@@ -437,7 +438,7 @@ const loadRecordData = () => {
     updateTimeSelectors();
   } else {
     resetForm();
-    // 默认使用当前用户
+    // 始终使用当前用户
     if (userStore.currentUserId) {
       formData.userId = userStore.currentUserId;
     }
@@ -455,11 +456,6 @@ const validateForm = (): boolean => {
 
   if (!formData.projectId) {
     errors.projectId = '请选择所属项目';
-    isValid = false;
-  }
-
-  if (!formData.userId) {
-    errors.userId = '请选择加班人员';
     isValid = false;
   }
 
