@@ -145,7 +145,8 @@ class ApiService {
     const supportedFields: (keyof Task)[] = [
       'projectId', 'parentTaskId', 'title', 'description',
       'status', 'priority', 'assigneeId', 'startDate', 'endDate',
-      'estimatedHours', 'actualHours', 'progress'
+      'estimatedHours', 'actualHours', 'progress',
+      'originalEndDate', 'delayedDays', 'delayReason', 'delayCount', 'lastDelayDate'
     ];
 
     // 必填字段列表（不能为空）
@@ -215,11 +216,12 @@ class ApiService {
     const supportedFields: (keyof Task)[] = [
       'projectId', 'parentTaskId', 'title', 'description',
       'status', 'priority', 'assigneeId', 'startDate', 'endDate',
-      'estimatedHours', 'actualHours', 'progress'
+      'estimatedHours', 'actualHours', 'progress',
+      'originalEndDate', 'delayedDays', 'delayReason', 'delayCount', 'lastDelayDate'
     ];
 
     // 特殊处理数值字段（允许 0 值）
-    const numericFields = ['estimatedHours', 'actualHours', 'progress'];
+    const numericFields = ['estimatedHours', 'actualHours', 'progress', 'delayedDays', 'delayCount'];
 
     const cleanData: any = {};
 
