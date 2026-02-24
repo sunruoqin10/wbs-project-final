@@ -7,6 +7,7 @@ import com.wbs.project.entity.Task;
 import com.wbs.project.entity.User;
 import com.wbs.project.mapper.OvertimeMapper;
 import com.wbs.project.mapper.ProjectMapper;
+import com.wbs.project.mapper.ProjectMemberMapper;
 import com.wbs.project.mapper.TaskMapper;
 import com.wbs.project.mapper.UserMapper;
 import lombok.RequiredArgsConstructor;
@@ -34,9 +35,65 @@ public class OvertimeService {
     private final OvertimeMapper overtimeMapper;
     private final UserMapper userMapper;
     private final ProjectMapper projectMapper;
+    private final ProjectMemberMapper projectMemberMapper;
     private final TaskMapper taskMapper;
     private final EmailNotificationService emailNotificationService;
     private final UserService userService;
+
+    // ==================== 权限验证 ====================
+
+    /**
+     * 验证用户是否有权限访问指定项目的加班记录
+     * 用户有权限的情况：
+     * 1. 管理员可以访问所有项目的加班记录
+     * 2. 项目经理可以访问所有项目的加班记录
+     * 3. 项目负责人（owner_id）可以访问其负责项目的加班记录
+     * 4. 用户可以访问自己提交的加班记录
+     * @param userId 当前用户ID
+     * @param projectId 项目ID
+     * @param recordUserId 加班记录的提交者ID（可选）
+     * @return 是否有权限
+     */
+    public boolean hasPermission(String userId, String projectId, String recordUserId) {
+        if (userId == null || projectId == null) {
+            return false;
+        }
+
+        // 查询用户角色
+        User user = userMapper.selectById(userId);
+        if (user == null) {
+            return false;
+        }
+
+        // 管理员和项目经理可以访问所有项目
+        if ("admin".equals(user.getRole()) || "project-manager".equals(user.getRole())) {
+            return true;
+        }
+
+        // 用户可以访问自己提交的加班记录
+        if (recordUserId != null && userId.equals(recordUserId)) {
+            return true;
+        }
+
+        // 检查用户是否是项目的负责人（owner_id）
+        Project project = projectMapper.selectById(projectId);
+        if (project == null) {
+            return false;
+        }
+
+        // 项目负责人可以访问其负责项目的加班记录
+        return userId.equals(project.getOwnerId());
+    }
+
+    /**
+     * 验证用户是否有权限访问指定项目的加班记录（简化版本，不检查记录提交者）
+     * @param userId 当前用户ID
+     * @param projectId 项目ID
+     * @return 是否有权限
+     */
+    public boolean hasPermission(String userId, String projectId) {
+        return hasPermission(userId, projectId, null);
+    }
 
     // ==================== CRUD 操作 ====================
 
@@ -244,17 +301,26 @@ public class OvertimeService {
      * 验证审批人权限
      */
     private void validateApprover(String approverId, String projectId) {
+        // 查询审批人
+        User approver = userMapper.selectById(approverId);
+        if (approver == null) {
+            throw new RuntimeException("审批人不存在");
+        }
+
+        // 管理员和项目经理可以审批所有项目的加班申请
+        if ("admin".equals(approver.getRole()) || "project-manager".equals(approver.getRole())) {
+            return;
+        }
+
         Project project = projectMapper.selectById(projectId);
         if (project == null) {
             throw new RuntimeException("项目不存在");
         }
 
-        // 项目负责人可以审批
+        // 项目负责人可以审批其负责项目的加班申请
         if (approverId.equals(project.getOwnerId())) {
             return;
         }
-
-        // TODO: 可以扩展其他审批权限逻辑，如部门经理、HR等
 
         throw new RuntimeException("您没有权限审批此加班申请");
     }
