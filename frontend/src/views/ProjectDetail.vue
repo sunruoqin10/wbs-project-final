@@ -247,6 +247,7 @@ import { usePermissionStore } from '@/stores/permission';
 import type { Project } from '@/types';
 import { useUserStore } from '@/stores/user';
 import dayjs from 'dayjs';
+import apiService from '@/services/api';
 
 const route = useRoute();
 const router = useRouter();
@@ -266,13 +267,6 @@ onMounted(() => {
     const project = projectStore.projectById(projectId.value);
     if (project) {
       projectStore.setCurrentProject(project);
-      // 如果项目没有预估工时，自动计算并更新
-      if (!project.estimatedHours || project.estimatedHours === 0) {
-        const hours = calculateEstimatedHours();
-        if (hours > 0) {
-          projectStore.updateProject(projectId.value, { estimatedHours: hours });
-        }
-      }
     }
   }
   // 加载任务数据
@@ -334,156 +328,28 @@ const displayEstimatedHours = computed(() => {
   return total;
 });
 
-// 监听项目变化，如果缺少预估工时则自动计算
-watch(project, async (newProject) => {
-  if (newProject && (!newProject.estimatedHours || newProject.estimatedHours === 0)) {
-    // 基于所有没有父任务的预估工时之和计算
-    const tasks = projectTasks.value;
-    if (tasks.length > 0) {
-      const parentTasks = tasks.filter(task => !task.parentTaskId);
-      const total = parentTasks.reduce((sum, task) => {
-        return sum + (task.estimatedHours || 0);
-      }, 0);
 
-      if (total > 0) {
-        await projectStore.updateProject(projectId.value, { estimatedHours: total });
-      }
-    }
-  }
-});
 
-// 计算项目进度（基于所有叶子任务中已完成任务的比例）
-const computeProjectProgress = (): number => {
-  const tasks = projectTasks.value;
 
-  // 如果没有任务，进度为 0
-  if (tasks.length === 0) {
-    return 0;
-  }
 
-  // 只计算叶子任务（没有子任务的任务）
-  // 通过检查是否有其他任务的 parentTaskId 指向当前任务来判断
-  const leafTasks = tasks.filter(task => {
-    return !tasks.some(otherTask => otherTask.parentTaskId === task.id);
-  });
 
-  if (leafTasks.length === 0) {
-    return 0;
-  }
 
-  // 计算叶子任务中已完成任务的数量
-  const completedTasks = leafTasks.filter(t => t.status === 'done').length;
-
-  // 返回已完成任务的百分比
-  return Math.round((completedTasks / leafTasks.length) * 100);
-};
-
-// 计算项目应该的状态（基于任务状态）
-const computeProjectStatus = (): Project['status'] => {
-  // 如果当前项目状态是已暂停，保持不变（除非手动修改）
-  if (project.value?.status === 'on-hold') {
-    return 'on-hold';
-  }
-
-  const tasks = projectTasks.value;
-
-  // 如果没有任务，返回计划中
-  if (tasks.length === 0) {
-    return 'planning';
-  }
-
-  // 获取所有任务的状态
-  const taskStatuses = tasks.map(t => t.status);
-
-  // 如果所有任务都是已完成，项目状态为已完成
-  if (taskStatuses.every(status => status === 'done')) {
-    return 'completed';
-  }
-
-  // 如果有任务在进行中，项目状态为进行中
-  if (taskStatuses.some(status => status === 'in-progress')) {
-    return 'active';
-  }
-
-  // 如果所有任务都是待办，项目状态为计划中
-  if (taskStatuses.every(status => status === 'todo')) {
-    return 'planning';
-  }
-
-  // 默认返回进行中（混合状态）
-  return 'active';
-};
-
-// 计算预估工时（基于所有没有父任务的任务的预估工时之和）
-const calculateEstimatedHours = (): number => {
-  const tasks = projectTasks.value;
-  if (tasks.length === 0) {
-    return 0;
-  }
-
-  // 只计算没有父任务的任务（顶层任务）
-  const parentTasks = tasks.filter(task => !task.parentTaskId);
-
-  const total = parentTasks.reduce((sum, task) => {
-    return sum + (task.estimatedHours || 0);
-  }, 0);
-
-  return total;
-};
-
-// 监听任务变化，自动更新项目状态、进度和日期
+// 监听任务变化，确保项目数据保持最新
 watch(projectTasks, async () => {
   if (!project.value) return;
-
-  const updateData: Partial<Project> = {};
-
-  // 更新项目进度（基于已完成任务的比例）
-  const newProgress = computeProjectProgress();
-  if (newProgress !== project.value.progress) {
-    updateData.progress = newProgress;
-  }
-
-  // 更新项目状态（如果不是已暂停或废弃状态）
-  if (project.value.status !== 'on-hold' && project.value.status !== 'cancelled') {
-    const newStatus = computeProjectStatus();
-    if (newStatus !== project.value.status) {
-      updateData.status = newStatus;
+  
+  // 重新获取项目的最新数据（从后端获取，而不是本地计算）
+  try {
+    const updatedProject = await apiService.getProject(projectId.value);
+    const index = projectStore.projects.findIndex(p => p.id === projectId.value);
+    if (index !== -1 && updatedProject) {
+      projectStore.projects[index] = updatedProject;
     }
-  }
-
-  // 根据任务自动计算开始日期和结束日期
-  if (projectTasks.value.length > 0) {
-    const startDates = projectTasks.value.map(t => new Date(t.startDate).getTime());
-    const endDates = projectTasks.value.map(t => new Date(t.endDate).getTime());
-
-    const earliestStart = new Date(Math.min(...startDates));
-    const latestEnd = new Date(Math.max(...endDates));
-
-    const newStartDate = earliestStart.toISOString().split('T')[0];
-    const newEndDate = latestEnd.toISOString().split('T')[0];
-
-    // 检查是否需要更新日期
-    if (newStartDate !== project.value.startDate) {
-      updateData.startDate = newStartDate;
+    if (projectStore.currentProject?.id === projectId.value && updatedProject) {
+      projectStore.currentProject = updatedProject;
     }
-    if (newEndDate !== project.value.endDate) {
-      updateData.endDate = newEndDate;
-    }
-  }
-
-  // 如果有任务更新，重新计算预估工时（只计算顶层任务）
-  const parentTasks = projectTasks.value.filter(task => !task.parentTaskId);
-  const newEstimatedHours = parentTasks.reduce((sum, task) => {
-    return sum + (task.estimatedHours || 0);
-  }, 0);
-
-  if (newEstimatedHours !== project.value.estimatedHours) {
-    updateData.estimatedHours = newEstimatedHours;
-  }
-
-  // 如果有需要更新的数据，调用API更新
-  if (Object.keys(updateData).length > 0) {
-    await projectStore.updateProject(projectId.value, updateData);
+  } catch (error) {
+    console.error('Failed to refresh project data:', error);
   }
 }, { deep: true });
 

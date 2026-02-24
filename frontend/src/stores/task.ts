@@ -3,6 +3,7 @@ import { ref } from 'vue';
 import type { Task, SubtaskSummary } from '@/types';
 import apiService from '@/services/api';
 import { tasks as mockTasks } from '@/data/tasks';
+import { useProjectStore } from '@/stores/project';
 
 export const useTaskStore = defineStore('task', () => {
   const tasks = ref<Task[]>([]);
@@ -360,6 +361,20 @@ export const useTaskStore = defineStore('task', () => {
             }
           }
         }
+
+        // 重新加载项目数据以更新进度（如果修改了状态或进度）
+        if (projectId && (data.status !== undefined || data.progress !== undefined)) {
+          const projectStore = useProjectStore();
+          // 重新获取该项目的最新数据
+          const updatedProject = await apiService.getProject(projectId);
+          const projectIndex = projectStore.projects.findIndex(p => p.id === projectId);
+          if (projectIndex !== -1 && updatedProject) {
+            projectStore.projects[projectIndex] = updatedProject;
+          }
+          if (projectStore.currentProject?.id === projectId && updatedProject) {
+            projectStore.currentProject = updatedProject;
+          }
+        }
       }
       return updatedTask;
     } catch (error) {
@@ -473,6 +488,20 @@ export const useTaskStore = defineStore('task', () => {
         await updateParentTaskProgress(task.parentTaskId);
         await updateParentTaskStatus(task.parentTaskId);
       }
+
+      // 重新加载项目数据以更新进度
+      if (task.projectId) {
+        const projectStore = useProjectStore();
+        // 重新获取该项目的最新数据
+        const updatedProject = await apiService.getProject(task.projectId);
+        const projectIndex = projectStore.projects.findIndex(p => p.id === task.projectId);
+        if (projectIndex !== -1 && updatedProject) {
+          projectStore.projects[projectIndex] = updatedProject;
+        }
+        if (projectStore.currentProject?.id === task.projectId && updatedProject) {
+          projectStore.currentProject = updatedProject;
+        }
+      }
     } catch (error) {
       console.error('Failed to update task status:', error);
       // API 调用失败时，本地状态已经被乐观更新了
@@ -525,6 +554,20 @@ export const useTaskStore = defineStore('task', () => {
       if (task.parentTaskId) {
         await updateParentTaskProgress(task.parentTaskId);
         await updateParentTaskStatus(task.parentTaskId);
+      }
+
+      // 重新加载项目数据以更新进度
+      if (task.projectId) {
+        const projectStore = useProjectStore();
+        // 重新获取该项目的最新数据
+        const updatedProject = await apiService.getProject(task.projectId);
+        const projectIndex = projectStore.projects.findIndex(p => p.id === task.projectId);
+        if (projectIndex !== -1 && updatedProject) {
+          projectStore.projects[projectIndex] = updatedProject;
+        }
+        if (projectStore.currentProject?.id === task.projectId && updatedProject) {
+          projectStore.currentProject = updatedProject;
+        }
       }
     } catch (error) {
       console.error('Failed to update task progress:', error);
