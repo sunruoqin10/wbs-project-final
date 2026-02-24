@@ -117,6 +117,8 @@ export const useUserStore = defineStore('user', () => {
       token.value = userToken;
       localStorage.setItem('auth_token', userToken);
     }
+    // 保存当前用户ID到localStorage
+    localStorage.setItem('current_user_id', parsedUser.id);
   };
 
   // 登出
@@ -124,14 +126,17 @@ export const useUserStore = defineStore('user', () => {
     currentUserId.value = null;
     token.value = null;
     localStorage.removeItem('auth_token');
+    localStorage.removeItem('current_user_id');
   };
 
   // 从localStorage恢复Token和用户信息
-  const restoreAuth = () => {
+  const restoreAuth = async () => {
     const savedToken = localStorage.getItem('auth_token');
-    if (savedToken) {
+    const savedUserId = localStorage.getItem('current_user_id');
+    
+    if (savedToken && savedUserId) {
       token.value = savedToken;
-      // TODO: 可以通过token获取用户信息
+      currentUserId.value = savedUserId;
     }
   };
 

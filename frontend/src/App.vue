@@ -12,8 +12,11 @@ import { useUserStore } from './stores/user';
 const projectStore = useProjectStore();
 const userStore = useUserStore();
 
-onMounted(() => {
-  // Initialize stores with data
-  console.log('App initialized');
+onMounted(async () => {
+  // 恢复认证信息并加载用户数据
+  await userStore.restoreAuth();
+  await userStore.loadUsers();
+  
+  console.log('App initialized, current user:', userStore.currentUser);
 });
 </script>

@@ -108,13 +108,16 @@ const router = createRouter({
 
 const whiteList = ['/login', '/test', '/forbidden'];
 
-router.beforeEach((to, from, next) => {
+router.beforeEach(async (to, from, next) => {
   const titleKey = to.meta.titleKey as string;
   const title = titleKey ? i18n.global.t(titleKey) : i18n.global.t('app.name');
   document.title = `${title} - WBS`;
 
   const userStore = useUserStore();
   const permissionStore = usePermissionStore();
+
+  // 恢复认证信息
+  await userStore.restoreAuth();
 
   if (whiteList.includes(to.path)) {
     if (to.path === '/login' && userStore.token) {
@@ -124,6 +127,11 @@ router.beforeEach((to, from, next) => {
     }
   } else {
     if (userStore.token) {
+      // 确保用户数据已加载
+      if (!userStore.currentUserLoaded) {
+        await userStore.loadUsers();
+      }
+      
       const requiredPermission = to.meta.permission as string | undefined;
       
       if (requiredPermission) {
