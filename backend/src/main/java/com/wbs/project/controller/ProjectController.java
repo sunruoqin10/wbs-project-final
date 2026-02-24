@@ -27,7 +27,7 @@ public class ProjectController {
 
     @GetMapping("/{id}")
     public Result<Project> getProjectById(@PathVariable String id) {
-        Project project = projectService.getProjectById(id);
+        Project project = projectService.getProjectByIdWithProgressUpdate(id);
         if (project == null) {
             return Result.error("项目不存在");
         }

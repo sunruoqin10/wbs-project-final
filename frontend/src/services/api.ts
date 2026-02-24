@@ -437,7 +437,45 @@ class ApiService {
 
   async getOvertimeStats(projectId?: string): Promise<OvertimeStats> {
     const params = projectId ? `?projectId=${projectId}` : '';
-    return request<OvertimeStats>(`/overtime/stats${params}`);
+    const data = await request<any>(`/overtime/stats${params}`);
+    
+    // 转换后端 BigDecimal 为前端 number
+    const convertBigDecimal = (value: any): number => {
+      if (value == null) return 0;
+      return Number(value);
+    };
+    
+    // 转换项目统计数据
+    const convertByProject = (projects: any[]): any[] => {
+      if (!projects) return [];
+      return projects.map(p => ({
+        ...p,
+        hours: convertBigDecimal(p.totalHours || p.hours),
+        count: Number(p.recordCount || p.count || 0),
+        totalHours: convertBigDecimal(p.totalHours),
+        recordCount: Number(p.recordCount || 0)
+      }));
+    };
+    
+    return {
+      totalRecords: Number(data.totalRecords || 0),
+      totalHours: convertBigDecimal(data.totalHours),
+      totalPeople: Number(data.totalPeople || 0),
+      pendingApprovals: Number(data.pendingApprovals || data.pendingRecords || 0),
+      thisMonthHours: convertBigDecimal(data.thisMonthHours),
+      thisMonthPeople: Number(data.thisMonthPeople || 0),
+      byType: {
+        weekday: Number(data.byType?.weekday || 0),
+        weekend: Number(data.byType?.weekend || 0),
+        holiday: Number(data.byType?.holiday || 0)
+      },
+      byProject: convertByProject(data.byProject),
+      approvedRecords: Number(data.approvedRecords || 0),
+      approvedHours: convertBigDecimal(data.approvedHours),
+      pendingRecords: Number(data.pendingRecords || 0),
+      pendingHours: convertBigDecimal(data.pendingHours),
+      rejectedRecords: Number(data.rejectedRecords || 0)
+    };
   }
 
   async getOvertimeRecordsByTaskId(taskId: string | number): Promise<OvertimeRecord[]> {

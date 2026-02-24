@@ -177,7 +177,7 @@ public class TaskService {
             
             // 更新项目进度和状态
             if (updatedTask.getProjectId() != null) {
-                projectService.updateProjectProgressAndStatus(updatedTask.getProjectId());
+                projectService.updateProjectProgressAndStatus(updatedTask.getProjectId(), true);
             }
         }
         
@@ -270,7 +270,7 @@ public class TaskService {
             
             // 更新项目进度和状态
             if (updatedTask.getProjectId() != null) {
-                projectService.updateProjectProgressAndStatus(updatedTask.getProjectId());
+                projectService.updateProjectProgressAndStatus(updatedTask.getProjectId(), true);
             }
         }
     }

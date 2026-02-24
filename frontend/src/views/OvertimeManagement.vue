@@ -356,66 +356,25 @@ const totalPayHours = computed(() => {
     .reduce((sum, r) => sum + r.hours, 0);
 });
 
-// 重新计算统计数据，基于用户有权限访问的项目
+// 使用后端返回的统计数据
 const stats = computed(() => {
-  const records = accessibleRecords.value;
-  const approvedRecords = records.filter(r => r.status === 'approved');
-  const now = dayjs();
-  const thisMonth = now.format('YYYY-MM');
-  
-  const thisMonthRecords = records.filter(r => r.overtimeDate.startsWith(thisMonth));
-  const thisMonthApprovedRecords = approvedRecords.filter(r => r.overtimeDate.startsWith(thisMonth));
-  const pendingRecords = records.filter(r => r.status === 'pending');
-  const peopleSet = new Set(thisMonthApprovedRecords.map(r => r.userId));
-  
-  const byType = {
-    weekday: approvedRecords.filter(r => r.overtimeType === 'weekday').reduce((sum, r) => sum + r.hours, 0),
-    weekend: approvedRecords.filter(r => r.overtimeType === 'weekend').reduce((sum, r) => sum + r.hours, 0),
-    holiday: approvedRecords.filter(r => r.overtimeType === 'holiday').reduce((sum, r) => sum + r.hours, 0)
-  };
-  
-  const byProject: any[] = [];
-  const projectMap = new Map<string, { projectId: string; projectName: string; hours: number; count: number }>();
-  
-  approvedRecords.forEach(record => {
-    const project = projectStore.projectById(record.projectId);
-    if (!project) return;
-    
-    if (!projectMap.has(project.id)) {
-      projectMap.set(project.id, {
-        projectId: project.id,
-        projectName: project.name,
-        hours: 0,
-        count: 0
-      });
-    }
-    
-    const projectData = projectMap.get(project.id)!;
-    projectData.hours += record.hours;
-    projectData.count += 1;
-  });
-  
-  projectMap.forEach(value => {
-    byProject.push({
-      projectId: value.projectId,
-      projectName: value.projectName,
-      totalHours: value.hours,
-      hours: value.hours,
-      recordCount: value.count,
-      count: value.count
-    });
-  });
-  
-  return {
-    totalRecords: records.length,
-    totalHours: approvedRecords.reduce((sum, r) => sum + r.hours, 0),
-    totalPeople: new Set(approvedRecords.map(r => r.userId)).size,
-    pendingApprovals: pendingRecords.length,
-    thisMonthHours: thisMonthApprovedRecords.reduce((sum, r) => sum + r.hours, 0),
-    thisMonthPeople: peopleSet.size,
-    byType,
-    byProject
-  };
+  if (!overtimeStore.stats) {
+    return {
+      totalRecords: 0,
+      totalHours: 0,
+      totalPeople: 0,
+      pendingApprovals: 0,
+      thisMonthHours: 0,
+      thisMonthPeople: 0,
+      byType: {
+        weekday: 0,
+        weekend: 0,
+        holiday: 0
+      },
+      byProject: []
+    };
+  }
+  return overtimeStore.stats;
 });
 
 // Filtered records

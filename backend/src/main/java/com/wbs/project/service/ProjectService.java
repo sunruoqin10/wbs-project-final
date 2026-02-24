@@ -46,7 +46,18 @@ public class ProjectService {
         Project project = projectMapper.selectById(id);
         if (project != null) {
             loadProjectMembers(project);
-            updateProjectProgressAndStatus(id);
+        }
+        return project;
+    }
+    
+    /**
+     * 根据ID查询项目并自动更新进度和状态
+     */
+    public Project getProjectByIdWithProgressUpdate(String id) {
+        Project project = projectMapper.selectById(id);
+        if (project != null) {
+            loadProjectMembers(project);
+            updateProjectProgressAndStatus(id, false);
             project = projectMapper.selectById(id);
             loadProjectMembers(project);
         }
@@ -160,7 +171,8 @@ public class ProjectService {
             updateProjectMembers(id, finalMemberIds);
             
             // 发送成员变更通知
-            Project updatedProject = getProjectById(id);
+            Project updatedProject = projectMapper.selectById(id);
+            loadProjectMembers(updatedProject);
             sendMemberChangeNotifications(existingProject, oldMemberIds, finalMemberIds);
         } else if (project.getOwnerId() != null && !project.getOwnerId().equals(existingProject.getOwnerId())) {
             // 如果只更新了负责人，确保新负责人在成员列表中
@@ -175,9 +187,10 @@ public class ProjectService {
             }
         }
 
-        // 检查状态变更并发送通知
+        // 检查状态变更并发送通知（只有当用户显式传入了状态值时才检查）
         if (project.getStatus() != null && !project.getStatus().equals(oldStatus)) {
-            Project updatedProject = getProjectById(id);
+            Project updatedProject = projectMapper.selectById(id);
+            loadProjectMembers(updatedProject);
             if (updatedProject.getMemberIds() != null && !updatedProject.getMemberIds().isEmpty()) {
                 emailNotificationService.notifyProjectStatusChanged(
                     updatedProject, oldStatus, project.getStatus(), updatedProject.getMemberIds());
@@ -185,7 +198,9 @@ public class ProjectService {
         }
 
         // 返回更新后的完整项目信息（包含成员）
-        return getProjectById(id);
+        Project result = projectMapper.selectById(id);
+        loadProjectMembers(result);
+        return result;
     }
 
     /**
@@ -336,10 +351,22 @@ public class ProjectService {
      */
     @Transactional
     public void updateProjectProgressAndStatus(String projectId) {
+        updateProjectProgressAndStatus(projectId, false);
+    }
+    
+    /**
+     * 更新项目的进度和状态（根据任务）
+     * @param projectId 项目ID
+     * @param sendNotification 是否发送状态变更通知
+     */
+    @Transactional
+    public void updateProjectProgressAndStatus(String projectId, boolean sendNotification) {
         Project project = projectMapper.selectById(projectId);
         if (project == null) {
             return;
         }
+
+        String oldStatus = project.getStatus();
 
         List<Task> allTasks = taskService.getTasksByProjectId(projectId);
 
@@ -389,5 +416,14 @@ public class ProjectService {
 
         project.setUpdatedAt(LocalDateTime.now());
         projectMapper.update(project);
+        
+        // 如果状态变更且需要发送通知
+        if (sendNotification && !project.getStatus().equals(oldStatus)) {
+            loadProjectMembers(project);
+            if (project.getMemberIds() != null && !project.getMemberIds().isEmpty()) {
+                emailNotificationService.notifyProjectStatusChanged(
+                    project, oldStatus, project.getStatus(), project.getMemberIds());
+            }
+        }
     }
 }
