@@ -337,7 +337,7 @@
     <Modal
       :open="showMemberDetailModal"
       @close="showMemberDetailModal = false"
-      title="成员延期详情"
+      title="成员任务详情"
     >
       <div v-if="selectedMemberTasks.length > 0" class="space-y-4">
         <div class="grid grid-cols-2 gap-4">
@@ -355,6 +355,7 @@
             <thead class="bg-secondary-50 sticky top-0">
               <tr>
                 <th class="px-4 py-3 text-left text-xs font-medium uppercase text-secondary-500">任务名称</th>
+                <th class="px-4 py-3 text-left text-xs font-medium uppercase text-secondary-500">所属项目</th>
                 <th class="px-4 py-3 text-left text-xs font-medium uppercase text-secondary-500">延期天数</th>
                 <th class="px-4 py-3 text-left text-xs font-medium uppercase text-secondary-500">严重程度</th>
                 <th class="px-4 py-3 text-left text-xs font-medium uppercase text-secondary-500">状态</th>
@@ -363,6 +364,7 @@
             <tbody class="divide-y divide-secondary-200 bg-white">
               <tr v-for="task in selectedMemberTasks" :key="task.id" class="hover:bg-secondary-50">
                 <td class="whitespace-nowrap px-4 py-3 text-sm font-medium text-secondary-900">{{ task.title }}</td>
+                <td class="whitespace-nowrap px-4 py-3 text-sm text-secondary-600">{{ getProjectName(task.projectId) }}</td>
                 <td class="whitespace-nowrap px-4 py-3 text-sm font-semibold" :class="getDelayTextClass(task.delayedDays || 0)">
                   {{ task.delayedDays || 0 }} 天
                 </td>
@@ -380,6 +382,13 @@
             </tbody>
           </table>
         </div>
+      </div>
+      <div v-else class="py-8 text-center">
+        <svg class="mx-auto h-12 w-12 text-secondary-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2" />
+        </svg>
+        <h3 class="mt-2 text-sm font-medium text-secondary-900">暂无任务</h3>
+        <p class="mt-1 text-sm text-secondary-500">该成员当前没有负责的任务</p>
       </div>
     </Modal>
   </MainLayout>
@@ -553,8 +562,7 @@ const teamStats = computed(() => {
 
 const selectedMemberTasks = computed(() => {
   if (!selectedMemberId.value) return [];
-  const tasks = getTasksForUser(selectedMemberId.value);
-  return tasks.filter(t => (t.delayedDays || 0) > 0 && t.status !== 'done');
+  return getTasksForUser(selectedMemberId.value);
 });
 
 const selectedMemberStats = computed(() => {
