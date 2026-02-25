@@ -3,21 +3,21 @@
     <div class="space-y-6">
       <div class="flex items-center justify-between">
         <div>
-          <h1 class="text-2xl font-bold text-secondary-900">项目加班管理</h1>
-          <p class="mt-1 text-sm text-secondary-600">记录和管理项目成员的加班情况</p>
+          <h1 class="text-2xl font-bold text-secondary-900">{{ $t('overtime.title') }}</h1>
+          <p class="mt-1 text-sm text-secondary-600">{{ $t('overtime.subtitle') }}</p>
         </div>
         <div class="flex items-center gap-2">
           <Button variant="secondary" @click="handleExportToExcel">
             <svg class="mr-2 h-5 w-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
               <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4" />
             </svg>
-            导出Excel
+            {{ $t('overtime.exportExcel') }}
           </Button>
           <Button variant="primary" @click="handleAddOvertime">
             <svg class="mr-2 h-5 w-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
               <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4" />
             </svg>
-            新增加班
+            {{ $t('overtime.addNew') }}
           </Button>
         </div>
       </div>
@@ -37,7 +37,7 @@
               <svg class="h-5 w-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" />
               </svg>
-              个人加班信息
+              {{ $t('overtime.personalTab') }}
             </div>
           </button>
           <button
@@ -54,7 +54,7 @@
               <svg class="h-5 w-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0zm6 3a2 2 0 11-4 0 2 2 0 014 0zM7 10a2 2 0 11-4 0 2 2 0 014 0z" />
               </svg>
-              管辖成员加班信息
+              {{ $t('overtime.teamTab') }}
             </div>
           </button>
         </nav>
@@ -70,8 +70,8 @@
                 </svg>
               </div>
               <div class="ml-4">
-                <p class="text-sm font-medium text-secondary-600">本月加班时长</p>
-                <p class="text-2xl font-semibold text-blue-600">{{ personalStats.thisMonthHours }} 小时</p>
+                <p class="text-sm font-medium text-secondary-600">{{ $t('overtime.stats.thisMonthHours') }}</p>
+                <p class="text-2xl font-semibold text-blue-600">{{ personalStats.thisMonthHours }} {{ $t('overtime.stats.hours') }}</p>
               </div>
             </div>
           </Card>
@@ -84,8 +84,8 @@
                 </svg>
               </div>
               <div class="ml-4">
-                <p class="text-sm font-medium text-secondary-600">加班次数</p>
-                <p class="text-2xl font-semibold text-green-600">{{ personalStats.totalRecords }} 次</p>
+                <p class="text-sm font-medium text-secondary-600">{{ $t('overtime.stats.totalRecords') }}</p>
+                <p class="text-2xl font-semibold text-green-600">{{ personalStats.totalRecords }} {{ $t('overtime.stats.times') }}</p>
               </div>
             </div>
           </Card>
@@ -98,8 +98,8 @@
                 </svg>
               </div>
               <div class="ml-4">
-                <p class="text-sm font-medium text-secondary-600">调休累计</p>
-                <p class="text-2xl font-semibold text-purple-600">{{ personalTotalCompTimeoff }} 小时</p>
+                <p class="text-sm font-medium text-secondary-600">{{ $t('overtime.stats.totalCompTimeoff') }}</p>
+                <p class="text-2xl font-semibold text-purple-600">{{ personalTotalCompTimeoff }} {{ $t('overtime.stats.hours') }}</p>
               </div>
             </div>
           </Card>
@@ -112,8 +112,8 @@
                 </svg>
               </div>
               <div class="ml-4">
-                <p class="text-sm font-medium text-secondary-600">加班费累计</p>
-                <p class="text-2xl font-semibold text-red-600">{{ personalTotalPayHours }} 小时</p>
+                <p class="text-sm font-medium text-secondary-600">{{ $t('overtime.stats.totalPayHours') }}</p>
+                <p class="text-2xl font-semibold text-red-600">{{ personalTotalPayHours }} {{ $t('overtime.stats.hours') }}</p>
               </div>
             </div>
           </Card>
@@ -122,14 +122,14 @@
         <div class="grid grid-cols-1 gap-6 lg:grid-cols-2">
           <Card>
             <template #header>
-              <h3 class="text-lg font-semibold text-secondary-900">加班趋势（最近30天）</h3>
+              <h3 class="text-lg font-semibold text-secondary-900">{{ $t('overtime.charts.trend') }}</h3>
             </template>
             <div class="h-80" ref="personalTrendChartRef"></div>
           </Card>
 
           <Card>
             <template #header>
-              <h3 class="text-lg font-semibold text-secondary-900">项目加班分布</h3>
+              <h3 class="text-lg font-semibold text-secondary-900">{{ $t('overtime.charts.projectDistribution') }}</h3>
             </template>
             <div class="h-80" ref="personalDistributionChartRef"></div>
           </Card>
@@ -139,40 +139,40 @@
           <template #header>
             <div class="flex flex-wrap items-center gap-4">
               <div class="flex items-center gap-2">
-                <label class="text-sm text-secondary-600">项目：</label>
+                <label class="text-sm text-secondary-600">{{ $t('overtime.filters.project') }}：</label>
                 <select v-model="personalFilters.projectId" class="rounded border border-secondary-300 px-3 py-1 text-sm">
-                  <option value="">全部项目</option>
+                  <option value="">{{ $t('overtime.filters.allProjects') }}</option>
                   <option v-for="project in accessibleProjects" :key="project.id" :value="project.id">
                     {{ project.name }}
                   </option>
                 </select>
               </div>
               <div class="flex items-center gap-2">
-                <label class="text-sm text-secondary-600">状态：</label>
+                <label class="text-sm text-secondary-600">{{ $t('overtime.filters.status') }}：</label>
                 <select v-model="personalFilters.status" class="rounded border border-secondary-300 px-3 py-1 text-sm">
-                  <option value="">全部状态</option>
-                  <option value="pending">待审批</option>
-                  <option value="approved">已通过</option>
-                  <option value="rejected">已拒绝</option>
+                  <option value="">{{ $t('overtime.filters.allStatus') }}</option>
+                  <option value="pending">{{ $t('overtime.statuses.pending') }}</option>
+                  <option value="approved">{{ $t('overtime.statuses.approved') }}</option>
+                  <option value="rejected">{{ $t('overtime.statuses.rejected') }}</option>
                 </select>
               </div>
               <div class="flex items-center gap-2">
-                <label class="text-sm text-secondary-600">类型：</label>
+                <label class="text-sm text-secondary-600">{{ $t('overtime.filters.type') }}：</label>
                 <select v-model="personalFilters.overtimeType" class="rounded border border-secondary-300 px-3 py-1 text-sm">
-                  <option value="">全部类型</option>
-                  <option value="weekday">工作日加班</option>
-                  <option value="weekend">周末加班</option>
-                  <option value="holiday">节假日加班</option>
+                  <option value="">{{ $t('overtime.filters.allTypes') }}</option>
+                  <option value="weekday">{{ $t('overtime.types.weekday') }}</option>
+                  <option value="weekend">{{ $t('overtime.types.weekend') }}</option>
+                  <option value="holiday">{{ $t('overtime.types.holiday') }}</option>
                 </select>
               </div>
               <div class="flex items-center gap-2">
-                <label class="text-sm text-secondary-600">日期范围：</label>
+                <label class="text-sm text-secondary-600">{{ $t('overtime.filters.dateRange') }}：</label>
                 <input
                   v-model="personalFilters.startDate"
                   type="date"
                   class="rounded border border-secondary-300 px-3 py-1 text-sm"
                 />
-                <span class="text-secondary-500">至</span>
+                <span class="text-secondary-500">{{ $t('overtime.filters.to') }}</span>
                 <input
                   v-model="personalFilters.endDate"
                   type="date"
@@ -191,31 +191,31 @@
                       {{ personalSort.order === 'asc' ? '↑' : '↓' }}
                     </span>
                   </th>
-                  <th class="px-4 py-3 text-left text-xs font-medium uppercase text-secondary-500">项目</th>
-                  <th class="px-4 py-3 text-left text-xs font-medium uppercase text-secondary-500">关联任务</th>
-                  <th class="px-4 py-3 text-left text-xs font-medium uppercase text-secondary-500">时间段</th>
+                  <th class="px-4 py-3 text-left text-xs font-medium uppercase text-secondary-500">{{ $t('overtime.columns.project') }}</th>
+                  <th class="px-4 py-3 text-left text-xs font-medium uppercase text-secondary-500">{{ $t('overtime.columns.relatedTask') }}</th>
+                  <th class="px-4 py-3 text-left text-xs font-medium uppercase text-secondary-500">{{ $t('overtime.columns.timePeriod') }}</th>
                   <th class="px-4 py-3 text-left text-xs font-medium uppercase text-secondary-500 cursor-pointer hover:bg-secondary-100" @click="handlePersonalSort('hours')">
-                    时长
+                    {{ $t('overtime.columns.hours') }}
                     <span v-if="personalSort.field === 'hours'" class="ml-1">
                       {{ personalSort.order === 'asc' ? '↑' : '↓' }}
                     </span>
                   </th>
-                  <th class="px-4 py-3 text-left text-xs font-medium uppercase text-secondary-500">类型</th>
-                  <th class="px-4 py-3 text-left text-xs font-medium uppercase text-secondary-500">补偿方式</th>
-                  <th class="px-4 py-3 text-left text-xs font-medium uppercase text-secondary-500">加班事由</th>
+                  <th class="px-4 py-3 text-left text-xs font-medium uppercase text-secondary-500">{{ $t('overtime.columns.type') }}</th>
+                  <th class="px-4 py-3 text-left text-xs font-medium uppercase text-secondary-500">{{ $t('overtime.columns.compensationType') }}</th>
+                  <th class="px-4 py-3 text-left text-xs font-medium uppercase text-secondary-500">{{ $t('overtime.columns.reason') }}</th>
                   <th class="px-4 py-3 text-left text-xs font-medium uppercase text-secondary-500 cursor-pointer hover:bg-secondary-100" @click="handlePersonalSort('status')">
-                    状态
+                    {{ $t('overtime.filters.status') }}
                     <span v-if="personalSort.field === 'status'" class="ml-1">
                       {{ personalSort.order === 'asc' ? '↑' : '↓' }}
                     </span>
                   </th>
-                  <th class="px-4 py-3 text-left text-xs font-medium uppercase text-secondary-500">操作</th>
+                  <th class="px-4 py-3 text-left text-xs font-medium uppercase text-secondary-500">{{ $t('overtime.columns.actions') }}</th>
                 </tr>
               </thead>
               <tbody class="divide-y divide-secondary-200 bg-white">
                 <tr v-if="filteredPersonalRecords.length === 0">
                   <td colspan="10" class="px-4 py-8 text-center text-sm text-secondary-500">
-                    暂无加班记录
+                    {{ $t('overtime.empty.noRecords') }}
                   </td>
                 </tr>
                 <tr v-for="record in filteredPersonalRecords" :key="record.id" class="hover:bg-secondary-50">
@@ -223,7 +223,7 @@
                   <td class="whitespace-nowrap px-4 py-3 text-sm text-secondary-900">{{ getProjectName(record.projectId) }}</td>
                   <td class="px-4 py-3 text-sm text-secondary-600">{{ getTaskName(record.taskId) }}</td>
                   <td class="whitespace-nowrap px-4 py-3 text-sm text-secondary-600">{{ record.startTime }} - {{ record.endTime }}</td>
-                  <td class="whitespace-nowrap px-4 py-3 text-sm font-semibold text-secondary-900">{{ record.hours }} 小时</td>
+                  <td class="whitespace-nowrap px-4 py-3 text-sm font-semibold text-secondary-900">{{ record.hours }} {{ $t('overtime.stats.hours') }}</td>
                   <td class="whitespace-nowrap px-4 py-3 text-sm">
                     <span :class="getTypeBadgeClass(record.overtimeType)" class="inline-flex rounded-full px-2 py-1 text-xs font-medium">
                       {{ getTypeLabel(record.overtimeType) }}
@@ -279,17 +279,17 @@
                 @change="handlePersonalPageSizeChange(personalPagination.pageSize)"
                 class="rounded border border-secondary-300 px-2 py-1 text-sm"
               >
-                <option :value="10">10条/页</option>
-                <option :value="20">20条/页</option>
-                <option :value="50">50条/页</option>
-                <option :value="100">100条/页</option>
+                <option :value="10">10{{ $t('overtime.pagination.perPage') }}</option>
+                <option :value="20">20{{ $t('overtime.pagination.perPage') }}</option>
+                <option :value="50">50{{ $t('overtime.pagination.perPage') }}</option>
+                <option :value="100">100{{ $t('overtime.pagination.perPage') }}</option>
               </select>
               <button
                 @click="handlePersonalPageChange(personalPagination.currentPage - 1)"
                 :disabled="personalPagination.currentPage === 1"
                 class="rounded border border-secondary-300 px-3 py-1 text-sm hover:bg-secondary-50 disabled:opacity-50 disabled:cursor-not-allowed"
               >
-                上一页
+                {{ $t('common.pagination.previous') }}
               </button>
               <button
                 v-for="page in getPersonalPageNumbers()"
@@ -309,7 +309,7 @@
                 :disabled="personalPagination.currentPage === personalTotalPages"
                 class="rounded border border-secondary-300 px-3 py-1 text-sm hover:bg-secondary-50 disabled:opacity-50 disabled:cursor-not-allowed"
               >
-                下一页
+                {{ $t('common.pagination.next') }}
               </button>
             </div>
           </div>
@@ -326,8 +326,8 @@
                 </svg>
               </div>
               <div class="ml-4">
-                <p class="text-sm font-medium text-secondary-600">本月加班时长</p>
-                <p class="text-2xl font-semibold text-blue-600">{{ teamStats.thisMonthHours }} 小时</p>
+                <p class="text-sm font-medium text-secondary-600">{{ $t('overtime.stats.thisMonthHours') }}</p>
+                <p class="text-2xl font-semibold text-blue-600">{{ teamStats.thisMonthHours }} {{ $t('overtime.stats.hours') }}</p>
               </div>
             </div>
           </Card>
@@ -340,8 +340,8 @@
                 </svg>
               </div>
               <div class="ml-4">
-                <p class="text-sm font-medium text-secondary-600">加班人数</p>
-                <p class="text-2xl font-semibold text-green-600">{{ teamStats.thisMonthPeople }} 人</p>
+                <p class="text-sm font-medium text-secondary-600">{{ $t('overtime.stats.thisMonthPeople') }}</p>
+                <p class="text-2xl font-semibold text-green-600">{{ teamStats.thisMonthPeople }} {{ $t('overtime.stats.people') }}</p>
               </div>
             </div>
           </Card>
@@ -354,7 +354,7 @@
                 </svg>
               </div>
               <div class="ml-4">
-                <p class="text-sm font-medium text-secondary-600">待审批数量</p>
+                <p class="text-sm font-medium text-secondary-600">{{ $t('overtime.stats.pendingApproval') }}</p>
                 <p class="text-2xl font-semibold text-orange-600">{{ teamStats.pendingApprovals }}</p>
               </div>
             </div>
@@ -368,8 +368,8 @@
                 </svg>
               </div>
               <div class="ml-4">
-                <p class="text-sm font-medium text-secondary-600">调休累计</p>
-                <p class="text-2xl font-semibold text-purple-600">{{ teamTotalCompTimeoff }} 小时</p>
+                <p class="text-sm font-medium text-secondary-600">{{ $t('overtime.stats.totalCompTimeoff') }}</p>
+                <p class="text-2xl font-semibold text-purple-600">{{ teamTotalCompTimeoff }} {{ $t('overtime.stats.hours') }}</p>
               </div>
             </div>
           </Card>
@@ -382,8 +382,8 @@
                 </svg>
               </div>
               <div class="ml-4">
-                <p class="text-sm font-medium text-secondary-600">加班费累计</p>
-                <p class="text-2xl font-semibold text-red-600">{{ teamTotalPayHours }} 小时</p>
+                <p class="text-sm font-medium text-secondary-600">{{ $t('overtime.stats.totalPayHours') }}</p>
+                <p class="text-2xl font-semibold text-red-600">{{ teamTotalPayHours }} {{ $t('overtime.stats.hours') }}</p>
               </div>
             </div>
           </Card>
@@ -392,14 +392,14 @@
         <div class="grid grid-cols-1 gap-6 lg:grid-cols-2">
           <Card>
             <template #header>
-              <h3 class="text-lg font-semibold text-secondary-900">加班趋势（最近30天）</h3>
+              <h3 class="text-lg font-semibold text-secondary-900">{{ $t('overtime.charts.trend') }}</h3>
             </template>
             <div class="h-80" ref="teamTrendChartRef"></div>
           </Card>
 
           <Card>
             <template #header>
-              <h3 class="text-lg font-semibold text-secondary-900">项目加班分布</h3>
+              <h3 class="text-lg font-semibold text-secondary-900">{{ $t('overtime.charts.projectDistribution') }}</h3>
             </template>
             <div class="h-80" ref="teamDistributionChartRef"></div>
           </Card>
@@ -409,49 +409,49 @@
           <template #header>
             <div class="flex flex-wrap items-center gap-4">
               <div class="flex items-center gap-2">
-                <label class="text-sm text-secondary-600">项目：</label>
+                <label class="text-sm text-secondary-600">{{ $t('overtime.filters.project') }}：</label>
                 <select v-model="teamFilters.projectId" class="rounded border border-secondary-300 px-3 py-1 text-sm">
-                  <option value="">全部项目</option>
+                  <option value="">{{ $t('overtime.filters.allProjects') }}</option>
                   <option v-for="project in accessibleProjects" :key="project.id" :value="project.id">
                     {{ project.name }}
                   </option>
                 </select>
               </div>
               <div class="flex items-center gap-2">
-                <label class="text-sm text-secondary-600">人员：</label>
+                <label class="text-sm text-secondary-600">{{ $t('overtime.filters.projectOwner') }}：</label>
                 <select v-model="teamFilters.userId" class="rounded border border-secondary-300 px-3 py-1 text-sm">
-                  <option value="">全部人员</option>
+                  <option value="">{{ $t('overtime.filters.all') }}</option>
                   <option v-for="user in teamUsers" :key="user.id" :value="user.id">
                     {{ user.name }}
                   </option>
                 </select>
               </div>
               <div class="flex items-center gap-2">
-                <label class="text-sm text-secondary-600">状态：</label>
+                <label class="text-sm text-secondary-600">{{ $t('overtime.filters.status') }}：</label>
                 <select v-model="teamFilters.status" class="rounded border border-secondary-300 px-3 py-1 text-sm">
-                  <option value="">全部状态</option>
-                  <option value="pending">待审批</option>
-                  <option value="approved">已通过</option>
-                  <option value="rejected">已拒绝</option>
+                  <option value="">{{ $t('overtime.filters.allStatus') }}</option>
+                  <option value="pending">{{ $t('overtime.statuses.pending') }}</option>
+                  <option value="approved">{{ $t('overtime.statuses.approved') }}</option>
+                  <option value="rejected">{{ $t('overtime.statuses.rejected') }}</option>
                 </select>
               </div>
               <div class="flex items-center gap-2">
-                <label class="text-sm text-secondary-600">类型：</label>
+                <label class="text-sm text-secondary-600">{{ $t('overtime.filters.type') }}：</label>
                 <select v-model="teamFilters.overtimeType" class="rounded border border-secondary-300 px-3 py-1 text-sm">
-                  <option value="">全部类型</option>
-                  <option value="weekday">工作日加班</option>
-                  <option value="weekend">周末加班</option>
-                  <option value="holiday">节假日加班</option>
+                  <option value="">{{ $t('overtime.filters.allTypes') }}</option>
+                  <option value="weekday">{{ $t('overtime.types.weekday') }}</option>
+                  <option value="weekend">{{ $t('overtime.types.weekend') }}</option>
+                  <option value="holiday">{{ $t('overtime.types.holiday') }}</option>
                 </select>
               </div>
               <div class="flex items-center gap-2">
-                <label class="text-sm text-secondary-600">日期范围：</label>
+                <label class="text-sm text-secondary-600">{{ $t('overtime.filters.dateRange') }}：</label>
                 <input
                   v-model="teamFilters.startDate"
                   type="date"
                   class="rounded border border-secondary-300 px-3 py-1 text-sm"
                 />
-                <span class="text-secondary-500">至</span>
+                <span class="text-secondary-500">{{ $t('overtime.filters.to') }}</span>
                 <input
                   v-model="teamFilters.endDate"
                   type="date"
@@ -476,31 +476,31 @@
                       {{ teamSort.order === 'asc' ? '↑' : '↓' }}
                     </span>
                   </th>
-                  <th class="px-4 py-3 text-left text-xs font-medium uppercase text-secondary-500">项目</th>
-                  <th class="px-4 py-3 text-left text-xs font-medium uppercase text-secondary-500">项目负责人</th>
-                  <th class="px-4 py-3 text-left text-xs font-medium uppercase text-secondary-500">关联任务</th>
-                  <th class="px-4 py-3 text-left text-xs font-medium uppercase text-secondary-500">时间段</th>
+                  <th class="px-4 py-3 text-left text-xs font-medium uppercase text-secondary-500">{{ $t('overtime.columns.project') }}</th>
+                  <th class="px-4 py-3 text-left text-xs font-medium uppercase text-secondary-500">{{ $t('overtime.filters.projectOwner') }}</th>
+                  <th class="px-4 py-3 text-left text-xs font-medium uppercase text-secondary-500">{{ $t('overtime.columns.relatedTask') }}</th>
+                  <th class="px-4 py-3 text-left text-xs font-medium uppercase text-secondary-500">{{ $t('overtime.columns.timePeriod') }}</th>
                   <th class="px-4 py-3 text-left text-xs font-medium uppercase text-secondary-500 cursor-pointer hover:bg-secondary-100" @click="handleTeamSort('hours')">
-                    时长
+                    {{ $t('overtime.columns.hours') }}
                     <span v-if="teamSort.field === 'hours'" class="ml-1">
                       {{ teamSort.order === 'asc' ? '↑' : '↓' }}
                     </span>
                   </th>
-                  <th class="px-4 py-3 text-left text-xs font-medium uppercase text-secondary-500">类型</th>
-                  <th class="px-4 py-3 text-left text-xs font-medium uppercase text-secondary-500">补偿方式</th>
+                  <th class="px-4 py-3 text-left text-xs font-medium uppercase text-secondary-500">{{ $t('overtime.columns.type') }}</th>
+                  <th class="px-4 py-3 text-left text-xs font-medium uppercase text-secondary-500">{{ $t('overtime.columns.compensationType') }}</th>
                   <th class="px-4 py-3 text-left text-xs font-medium uppercase text-secondary-500 cursor-pointer hover:bg-secondary-100" @click="handleTeamSort('status')">
-                    状态
+                    {{ $t('overtime.filters.status') }}
                     <span v-if="teamSort.field === 'status'" class="ml-1">
                       {{ teamSort.order === 'asc' ? '↑' : '↓' }}
                     </span>
                   </th>
-                  <th class="px-4 py-3 text-left text-xs font-medium uppercase text-secondary-500">操作</th>
+                  <th class="px-4 py-3 text-left text-xs font-medium uppercase text-secondary-500">{{ $t('overtime.columns.actions') }}</th>
                 </tr>
               </thead>
               <tbody class="divide-y divide-secondary-200 bg-white">
                 <tr v-if="filteredTeamRecords.length === 0">
                   <td colspan="11" class="px-4 py-8 text-center text-sm text-secondary-500">
-                    暂无加班记录
+                    {{ $t('overtime.empty.noRecords') }}
                   </td>
                 </tr>
                 <tr v-for="record in filteredTeamRecords" :key="record.id" class="hover:bg-secondary-50">
@@ -519,7 +519,7 @@
                   <td class="whitespace-nowrap px-4 py-3 text-sm text-secondary-600">{{ getProjectOwner(record.projectId) }}</td>
                   <td class="px-4 py-3 text-sm text-secondary-600">{{ getTaskName(record.taskId) }}</td>
                   <td class="whitespace-nowrap px-4 py-3 text-sm text-secondary-600">{{ record.startTime }} - {{ record.endTime }}</td>
-                  <td class="whitespace-nowrap px-4 py-3 text-sm font-semibold text-secondary-900">{{ record.hours }} 小时</td>
+                  <td class="whitespace-nowrap px-4 py-3 text-sm font-semibold text-secondary-900">{{ record.hours }} {{ $t('overtime.stats.hours') }}</td>
                   <td class="whitespace-nowrap px-4 py-3 text-sm">
                     <span :class="getTypeBadgeClass(record.overtimeType)" class="inline-flex rounded-full px-2 py-1 text-xs font-medium">
                       {{ getTypeLabel(record.overtimeType) }}
@@ -572,17 +572,17 @@
                 @change="handleTeamPageSizeChange(teamPagination.pageSize)"
                 class="rounded border border-secondary-300 px-2 py-1 text-sm"
               >
-                <option :value="10">10条/页</option>
-                <option :value="20">20条/页</option>
-                <option :value="50">50条/页</option>
-                <option :value="100">100条/页</option>
+                <option :value="10">10{{ $t('overtime.pagination.perPage') }}</option>
+                <option :value="20">20{{ $t('overtime.pagination.perPage') }}</option>
+                <option :value="50">50{{ $t('overtime.pagination.perPage') }}</option>
+                <option :value="100">100{{ $t('overtime.pagination.perPage') }}</option>
               </select>
               <button
                 @click="handleTeamPageChange(teamPagination.currentPage - 1)"
                 :disabled="teamPagination.currentPage === 1"
                 class="rounded border border-secondary-300 px-3 py-1 text-sm hover:bg-secondary-50 disabled:opacity-50 disabled:cursor-not-allowed"
               >
-                上一页
+                {{ $t('common.pagination.previous') }}
               </button>
               <button
                 v-for="page in getTeamPageNumbers()"
@@ -602,7 +602,7 @@
                 :disabled="teamPagination.currentPage === teamTotalPages"
                 class="rounded border border-secondary-300 px-3 py-1 text-sm hover:bg-secondary-50 disabled:opacity-50 disabled:cursor-not-allowed"
               >
-                下一页
+                {{ $t('common.pagination.next') }}
               </button>
             </div>
           </div>
@@ -629,6 +629,7 @@
 
 <script setup lang="ts">
 import { ref, computed, onMounted, onUnmounted, watch } from 'vue';
+import { useI18n } from 'vue-i18n';
 import * as echarts from 'echarts';
 import dayjs from 'dayjs';
 import MainLayout from '@/components/layout/MainLayout.vue';
@@ -643,6 +644,8 @@ import { useTaskStore } from '@/stores/task';
 import { usePermissionStore } from '@/stores/permission';
 import type { OvertimeRecord } from '@/types';
 import { exportToExcel } from '@/utils/export';
+
+const { t } = useI18n();
 
 const overtimeStore = useOvertimeStore();
 const projectStore = useProjectStore();
@@ -1214,14 +1217,14 @@ const initPersonalDistributionChart = () => {
       formatter: (params: any) => {
         const param = params[0];
         const data = projectData[param.dataIndex];
-        return `${data.projectName}<br/>加班时长: ${data.hours} 小时<br/>加班次数: ${data.count} 次`;
+        return `${data.projectName}<br/>${t('overtime.charts.overtimeHours')}: ${data.hours} ${t('overtime.stats.hours')}<br/>${t('overtime.charts.overtimeCount')}: ${data.count} ${t('overtime.stats.times')}`;
       }
     },
     grid: { left: '20%', right: '10%', top: '10%', bottom: '10%' },
-    xAxis: { type: 'value', name: '小时', nameLocation: 'middle', nameGap: 30 },
+    xAxis: { type: 'value', name: `${t('overtime.stats.hours')}`, nameLocation: 'middle', nameGap: 30 },
     yAxis: { type: 'category', data: projectData.map(item => item.projectName), inverse: true, axisLabel: { width: 100, overflow: 'truncate', ellipsis: '...' } },
     series: [{
-      name: '加班时长',
+      name: t('overtime.charts.overtimeHours'),
       type: 'bar',
       data: projectData.map(item => item.hours),
       itemStyle: {
@@ -1305,7 +1308,7 @@ const initTeamDistributionChart = () => {
 
   if (projectData.length === 0) {
     teamDistributionChartInstance.setOption({
-      title: { text: '暂无数据', left: 'center', top: 'center', textStyle: { color: '#999', fontSize: 14 } }
+      title: { text: t('overtime.empty.noData'), left: 'center', top: 'center', textStyle: { color: '#999', fontSize: 14 } }
     });
     return;
   }
@@ -1317,11 +1320,11 @@ const initTeamDistributionChart = () => {
       formatter: (params: any) => {
         const param = params[0];
         const data = projectData[param.dataIndex];
-        return `${data.projectName}<br/>加班时长: ${data.hours} 小时<br/>加班次数: ${data.count} 次`;
+        return `${data.projectName}<br/>${t('overtime.charts.overtimeHours')}: ${data.hours} ${t('overtime.stats.hours')}<br/>${t('overtime.charts.overtimeCount')}: ${data.count} ${t('overtime.stats.times')}`;
       }
     },
     grid: { left: '20%', right: '10%', top: '10%', bottom: '10%' },
-    xAxis: { type: 'value', name: '小时', nameLocation: 'middle', nameGap: 30 },
+    xAxis: { type: 'value', name: `${t('overtime.stats.hours')}`, nameLocation: 'middle', nameGap: 30 },
     yAxis: { type: 'category', data: projectData.map(item => item.projectName), inverse: true, axisLabel: { width: 100, overflow: 'truncate', ellipsis: '...' } },
     series: [{
       name: '加班时长',

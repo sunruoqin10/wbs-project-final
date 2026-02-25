@@ -3,15 +3,15 @@
     <div class="space-y-6">
       <div class="flex items-center justify-between">
         <div>
-          <h1 class="text-2xl font-bold text-secondary-900">项目延期统计</h1>
-          <p class="mt-1 text-sm text-secondary-600">查看个人和团队的任务延期情况统计</p>
+          <h1 class="text-2xl font-bold text-secondary-900">{{ $t('delayStats.title') }}</h1>
+          <p class="mt-1 text-sm text-secondary-600">{{ $t('delayStats.subtitle') }}</p>
         </div>
         <div class="flex items-center gap-2">
           <Button variant="secondary" @click="handleRefresh" :loading="loading">
             <svg class="mr-2 h-5 w-5" :class="{ 'animate-spin': loading }" fill="none" stroke="currentColor" viewBox="0 0 24 24">
               <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
             </svg>
-            刷新数据
+            {{ $t('delayStats.refresh') }}
           </Button>
         </div>
       </div>
@@ -31,7 +31,7 @@
               <svg class="h-5 w-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" />
               </svg>
-              个人负责任务
+              {{ $t('delayStats.personalTab') }}
             </div>
           </button>
           <button
@@ -47,7 +47,7 @@
               <svg class="h-5 w-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0zm6 3a2 2 0 11-4 0 2 2 0 014 0zM7 10a2 2 0 11-4 0 2 2 0 014 0z" />
               </svg>
-              团队成员任务
+              {{ $t('delayStats.teamTab') }}
             </div>
           </button>
         </nav>
@@ -58,7 +58,7 @@
           <svg class="mx-auto h-8 w-8 animate-spin text-primary-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
           </svg>
-          <p class="mt-2 text-secondary-500">正在加载数据...</p>
+          <p class="mt-2 text-secondary-500">{{ $t('delayStats.loading') }}</p>
         </div>
       </div>
 
@@ -68,8 +68,8 @@
             <svg class="mx-auto h-16 w-16 text-secondary-300" fill="none" stroke="currentColor" viewBox="0 0 24 24">
               <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2" />
             </svg>
-            <h3 class="mt-2 text-lg font-medium text-secondary-900">暂无负责任务</h3>
-            <p class="mt-1 text-sm text-secondary-500">您当前没有负责任何任务</p>
+            <h3 class="mt-2 text-lg font-medium text-secondary-900">{{ $t('delayStats.empty.noTasks') }}</h3>
+            <p class="mt-1 text-sm text-secondary-500">{{ $t('delayStats.empty.noData') }}</p>
           </div>
         </div>
 
@@ -83,7 +83,7 @@
                   </svg>
                 </div>
                 <div class="ml-4">
-                  <p class="text-sm font-medium text-secondary-600">任务总数</p>
+                  <p class="text-sm font-medium text-secondary-600">{{ $t('delayStats.stats.totalTasks') }}</p>
                   <p class="text-2xl font-semibold text-blue-600">{{ personalStats.totalTasks }}</p>
                 </div>
               </div>
@@ -97,7 +97,7 @@
                   </svg>
                 </div>
                 <div class="ml-4">
-                  <p class="text-sm font-medium text-secondary-600">延期任务数</p>
+                  <p class="text-sm font-medium text-secondary-600">{{ $t('delayStats.stats.delayedTasks') }}</p>
                   <p class="text-2xl font-semibold text-danger-600">{{ personalStats.delayedTasks }}</p>
                 </div>
               </div>
@@ -111,7 +111,7 @@
                   </svg>
                 </div>
                 <div class="ml-4">
-                  <p class="text-sm font-medium text-secondary-600">延期率</p>
+                  <p class="text-sm font-medium text-secondary-600">{{ $t('delayStats.stats.delayRate') }}</p>
                   <p class="text-2xl font-semibold text-info-600">{{ Math.round(personalStats.delayRate) }}%</p>
                 </div>
               </div>
@@ -125,7 +125,7 @@
                   </svg>
                 </div>
                 <div class="ml-4">
-                  <p class="text-sm font-medium text-secondary-600">累计延期天数</p>
+                  <p class="text-sm font-medium text-secondary-600">{{ $t('delayStats.stats.totalDelayedDays') }}</p>
                   <p class="text-2xl font-semibold text-warning-600">{{ personalStats.totalDelayedDays }}</p>
                 </div>
               </div>
@@ -135,14 +135,14 @@
           <div class="grid grid-cols-1 gap-6 lg:grid-cols-2">
             <Card>
               <template #header>
-                <h3 class="text-lg font-semibold text-secondary-900">延期时长分布</h3>
+                <h3 class="text-lg font-semibold text-secondary-900">{{ $t('delayStats.charts.delayDurationDistribution') }}</h3>
               </template>
               <div class="h-80" ref="personalDelayDistributionChartRef"></div>
             </Card>
 
             <Card>
               <template #header>
-                <h3 class="text-lg font-semibold text-secondary-900">项目延期分布</h3>
+                <h3 class="text-lg font-semibold text-secondary-900">{{ $t('delayStats.charts.projectDelayDistribution') }}</h3>
               </template>
               <div class="h-80" ref="personalProjectDelayChartRef"></div>
             </Card>
@@ -150,31 +150,31 @@
 
           <Card>
             <template #header>
-              <h3 class="text-lg font-semibold text-secondary-900">延期任务列表</h3>
+              <h3 class="text-lg font-semibold text-secondary-900">{{ $t('delayStats.list.delayedTaskList') }}</h3>
             </template>
             <div class="overflow-x-auto">
               <table class="min-w-full divide-y divide-secondary-200">
                 <thead class="bg-secondary-50">
                   <tr>
-                    <th class="px-4 py-3 text-left text-xs font-medium uppercase text-secondary-500">任务名称</th>
-                    <th class="px-4 py-3 text-left text-xs font-medium uppercase text-secondary-500">所属项目</th>
-                    <th class="px-4 py-3 text-left text-xs font-medium uppercase text-secondary-500">延期天数</th>
-                    <th class="px-4 py-3 text-left text-xs font-medium uppercase text-secondary-500">严重程度</th>
-                    <th class="px-4 py-3 text-left text-xs font-medium uppercase text-secondary-500">结束日期</th>
-                    <th class="px-4 py-3 text-left text-xs font-medium uppercase text-secondary-500">状态</th>
+                    <th class="px-4 py-3 text-left text-xs font-medium uppercase text-secondary-500">{{ $t('delayStats.list.taskName') }}</th>
+                    <th class="px-4 py-3 text-left text-xs font-medium uppercase text-secondary-500">{{ $t('delayStats.list.projectName') }}</th>
+                    <th class="px-4 py-3 text-left text-xs font-medium uppercase text-secondary-500">{{ $t('delayStats.list.delayedDays') }}</th>
+                    <th class="px-4 py-3 text-left text-xs font-medium uppercase text-secondary-500">{{ $t('delayStats.list.severity') }}</th>
+                    <th class="px-4 py-3 text-left text-xs font-medium uppercase text-secondary-500">{{ $t('delayStats.list.endDate') }}</th>
+                    <th class="px-4 py-3 text-left text-xs font-medium uppercase text-secondary-500">{{ $t('delayStats.list.status') }}</th>
                   </tr>
                 </thead>
                 <tbody class="divide-y divide-secondary-200 bg-white">
                   <tr v-if="personalDelayedTasks.length === 0">
                     <td colspan="6" class="px-4 py-8 text-center text-sm text-secondary-500">
-                      暂无延期任务
+                      {{ $t('delayStats.list.noDelayedTasks') }}
                     </td>
                   </tr>
                   <tr v-for="task in personalDelayedTasks" :key="task.id" class="hover:bg-secondary-50">
                     <td class="whitespace-nowrap px-4 py-3 text-sm font-medium text-secondary-900">{{ task.title }}</td>
                     <td class="whitespace-nowrap px-4 py-3 text-sm text-secondary-600">{{ getProjectName(task.projectId) }}</td>
                     <td class="whitespace-nowrap px-4 py-3 text-sm font-semibold" :class="getDelayTextClass(task.delayedDays || 0)">
-                      {{ task.delayedDays || 0 }} 天
+                      {{ task.delayedDays || 0 }} {{ $t('delayStats.common.days') }}
                     </td>
                     <td class="whitespace-nowrap px-4 py-3 text-sm">
                       <span :class="getDelayBadgeClass(task.delayedDays || 0)" class="inline-flex rounded-full px-2 py-1 text-xs font-medium">
@@ -201,8 +201,8 @@
             <svg class="mx-auto h-16 w-16 text-secondary-300" fill="none" stroke="currentColor" viewBox="0 0 24 24">
               <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 0 11-6 0 3 3 0 016 0zm6 3a2 2 0 11-4 0 2 2 0 014 0zM7 10a2 2 0 11-4 0 2 2 0 014 0z" />
             </svg>
-            <h3 class="mt-2 text-lg font-medium text-secondary-900">暂无团队成员</h3>
-            <p class="mt-1 text-sm text-secondary-500">您当前没有管辖的团队成员</p>
+            <h3 class="mt-2 text-lg font-medium text-secondary-900">{{ $t('delayStats.empty.noTeamMembers') }}</h3>
+            <p class="mt-1 text-sm text-secondary-500">{{ $t('delayStats.empty.noTeamMembersDesc') }}</p>
           </div>
         </div>
 
@@ -216,7 +216,7 @@
                   </svg>
                 </div>
                 <div class="ml-4">
-                  <p class="text-sm font-medium text-secondary-600">团队任务总数</p>
+                  <p class="text-sm font-medium text-secondary-600">{{ $t('delayStats.charts.teamTotalTasks') }}</p>
                   <p class="text-2xl font-semibold text-blue-600">{{ teamStats.totalTasks }}</p>
                 </div>
               </div>
@@ -230,7 +230,7 @@
                   </svg>
                 </div>
                 <div class="ml-4">
-                  <p class="text-sm font-medium text-secondary-600">团队延期任务数</p>
+                  <p class="text-sm font-medium text-secondary-600">{{ $t('delayStats.charts.teamDelayedTasks') }}</p>
                   <p class="text-2xl font-semibold text-danger-600">{{ teamStats.delayedTasks }}</p>
                 </div>
               </div>
@@ -244,7 +244,7 @@
                   </svg>
                 </div>
                 <div class="ml-4">
-                  <p class="text-sm font-medium text-secondary-600">团队延期率</p>
+                  <p class="text-sm font-medium text-secondary-600">{{ $t('delayStats.charts.teamDelayRate') }}</p>
                   <p class="text-2xl font-semibold text-info-600">{{ Math.round(teamStats.delayRate) }}%</p>
                 </div>
               </div>
@@ -258,7 +258,7 @@
                   </svg>
                 </div>
                 <div class="ml-4">
-                  <p class="text-sm font-medium text-secondary-600">团队成员数</p>
+                  <p class="text-sm font-medium text-secondary-600">{{ $t('delayStats.charts.teamMemberCount') }}</p>
                   <p class="text-2xl font-semibold text-purple-600">{{ teamMembers.length }}</p>
                 </div>
               </div>
@@ -268,14 +268,14 @@
           <div class="grid grid-cols-1 gap-6 lg:grid-cols-2">
             <Card>
               <template #header>
-                <h3 class="text-lg font-semibold text-secondary-900">成员延期率对比</h3>
+                <h3 class="text-lg font-semibold text-secondary-900">{{ $t('delayStats.charts.memberDelayRateComparison') }}</h3>
               </template>
               <div class="h-80" ref="teamMemberDelayRateChartRef"></div>
             </Card>
 
             <Card>
               <template #header>
-                <h3 class="text-lg font-semibold text-secondary-900">成员延期任务数对比</h3>
+                <h3 class="text-lg font-semibold text-secondary-900">{{ $t('delayStats.charts.memberDelayedTasksComparison') }}</h3>
               </template>
               <div class="h-80" ref="teamMemberDelayCountChartRef"></div>
             </Card>
@@ -283,18 +283,18 @@
 
           <Card>
             <template #header>
-              <h3 class="text-lg font-semibold text-secondary-900">团队成员延期详情</h3>
+              <h3 class="text-lg font-semibold text-secondary-900">{{ $t('delayStats.charts.teamMemberDelayDetails') }}</h3>
             </template>
             <div class="overflow-x-auto">
               <table class="min-w-full divide-y divide-secondary-200">
                 <thead class="bg-secondary-50">
                   <tr>
-                    <th class="px-4 py-3 text-left text-xs font-medium uppercase text-secondary-500">成员</th>
-                    <th class="px-4 py-3 text-left text-xs font-medium uppercase text-secondary-500">任务总数</th>
-                    <th class="px-4 py-3 text-left text-xs font-medium uppercase text-secondary-500">延期任务数</th>
-                    <th class="px-4 py-3 text-left text-xs font-medium uppercase text-secondary-500">延期率</th>
-                    <th class="px-4 py-3 text-left text-xs font-medium uppercase text-secondary-500">累计延期天数</th>
-                    <th class="px-4 py-3 text-left text-xs font-medium uppercase text-secondary-500">操作</th>
+                    <th class="px-4 py-3 text-left text-xs font-medium uppercase text-secondary-500">{{ $t('delayStats.list.member') }}</th>
+                    <th class="px-4 py-3 text-left text-xs font-medium uppercase text-secondary-500">{{ $t('delayStats.list.totalTasks') }}</th>
+                    <th class="px-4 py-3 text-left text-xs font-medium uppercase text-secondary-500">{{ $t('delayStats.list.delayedTasks') }}</th>
+                    <th class="px-4 py-3 text-left text-xs font-medium uppercase text-secondary-500">{{ $t('delayStats.list.delayRate') }}</th>
+                    <th class="px-4 py-3 text-left text-xs font-medium uppercase text-secondary-500">{{ $t('delayStats.list.totalDelayedDays') }}</th>
+                    <th class="px-4 py-3 text-left text-xs font-medium uppercase text-secondary-500">{{ $t('delayStats.list.actions') }}</th>
                   </tr>
                 </thead>
                 <tbody class="divide-y divide-secondary-200 bg-white">
@@ -316,13 +316,13 @@
                         {{ Math.round(member.delayRate) }}%
                       </span>
                     </td>
-                    <td class="whitespace-nowrap px-4 py-3 text-sm text-warning-600 font-semibold">{{ member.totalDelayedDays }} 天</td>
+                    <td class="whitespace-nowrap px-4 py-3 text-sm text-warning-600 font-semibold">{{ member.totalDelayedDays }} {{ $t('delayStats.common.days') }}</td>
                     <td class="whitespace-nowrap px-4 py-3 text-sm">
                       <button
                         @click="showMemberDetail(member.userId)"
                         class="text-primary-600 hover:text-primary-800"
                       >
-                        查看详情
+                        {{ $t('delayStats.common.viewDetails') }}
                       </button>
                     </td>
                   </tr>
@@ -337,17 +337,17 @@
     <Modal
       :open="showMemberDetailModal"
       @close="showMemberDetailModal = false"
-      title="成员任务详情"
+      :title="$t('delayStats.details.memberTaskDetails')"
       size="3xl"
     >
       <div v-if="selectedMemberTasks.length > 0" class="space-y-4">
         <div class="grid grid-cols-2 gap-4">
           <div class="rounded-lg bg-secondary-50 p-4">
-            <p class="text-sm font-medium text-secondary-600">任务总数</p>
+            <p class="text-sm font-medium text-secondary-600">{{ $t('delayStats.charts.totalTasks') }}</p>
             <p class="text-2xl font-semibold text-secondary-900">{{ selectedMemberStats.totalTasks }}</p>
           </div>
           <div class="rounded-lg bg-secondary-50 p-4">
-            <p class="text-sm font-medium text-secondary-600">延期任务数</p>
+            <p class="text-sm font-medium text-secondary-600">{{ $t('delayStats.charts.delayedTasksCount') }}</p>
             <p class="text-2xl font-semibold text-danger-600">{{ selectedMemberStats.delayedTasks }}</p>
           </div>
         </div>
@@ -355,11 +355,11 @@
           <table class="min-w-full divide-y divide-secondary-200">
             <thead class="bg-secondary-50 sticky top-0">
               <tr>
-                <th class="px-4 py-3 text-left text-xs font-medium uppercase text-secondary-500">任务名称</th>
-                <th class="px-4 py-3 text-left text-xs font-medium uppercase text-secondary-500">所属项目</th>
-                <th class="px-4 py-3 text-left text-xs font-medium uppercase text-secondary-500">延期天数</th>
-                <th class="px-4 py-3 text-left text-xs font-medium uppercase text-secondary-500">严重程度</th>
-                <th class="px-4 py-3 text-left text-xs font-medium uppercase text-secondary-500">状态</th>
+                <th class="px-4 py-3 text-left text-xs font-medium uppercase text-secondary-500">{{ $t('delayStats.list.taskName') }}</th>
+                <th class="px-4 py-3 text-left text-xs font-medium uppercase text-secondary-500">{{ $t('delayStats.list.projectName') }}</th>
+                <th class="px-4 py-3 text-left text-xs font-medium uppercase text-secondary-500">{{ $t('delayStats.list.delayedDays') }}</th>
+                <th class="px-4 py-3 text-left text-xs font-medium uppercase text-secondary-500">{{ $t('delayStats.list.severity') }}</th>
+                <th class="px-4 py-3 text-left text-xs font-medium uppercase text-secondary-500">{{ $t('delayStats.list.status') }}</th>
               </tr>
             </thead>
             <tbody class="divide-y divide-secondary-200 bg-white">
@@ -367,7 +367,7 @@
                 <td class="whitespace-nowrap px-4 py-3 text-sm font-medium text-secondary-900">{{ task.title }}</td>
                 <td class="whitespace-nowrap px-4 py-3 text-sm text-secondary-600">{{ getProjectName(task.projectId) }}</td>
                 <td class="whitespace-nowrap px-4 py-3 text-sm font-semibold" :class="getDelayTextClass(task.delayedDays || 0)">
-                  {{ task.delayedDays || 0 }} 天
+                  {{ task.delayedDays || 0 }} {{ $t('delayStats.common.days') }}
                 </td>
                 <td class="whitespace-nowrap px-4 py-3 text-sm">
                   <span :class="getDelayBadgeClass(task.delayedDays || 0)" class="inline-flex rounded-full px-2 py-1 text-xs font-medium">
@@ -388,8 +388,8 @@
         <svg class="mx-auto h-12 w-12 text-secondary-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
           <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2" />
         </svg>
-        <h3 class="mt-2 text-sm font-medium text-secondary-900">暂无任务</h3>
-        <p class="mt-1 text-sm text-secondary-500">该成员当前没有负责的任务</p>
+        <h3 class="mt-2 text-sm font-medium text-secondary-900">{{ $t('delayStats.common.noTasks') }}</h3>
+        <p class="mt-1 text-sm text-secondary-500">{{ $t('delayStats.common.noTasksForMember') }}</p>
       </div>
     </Modal>
   </MainLayout>
@@ -397,6 +397,7 @@
 
 <script setup lang="ts">
 import { ref, computed, onMounted, watch, onUnmounted } from 'vue';
+import { useI18n } from 'vue-i18n';
 import * as echarts from 'echarts';
 import dayjs from 'dayjs';
 import MainLayout from '@/components/layout/MainLayout.vue';
@@ -408,6 +409,8 @@ import { useTaskStore } from '@/stores/task';
 import { useUserStore } from '@/stores/user';
 import { usePermissionStore } from '@/stores/permission';
 import type { Task } from '@/types';
+
+const { t } = useI18n();
 
 const projectStore = useProjectStore();
 const taskStore = useTaskStore();
@@ -583,13 +586,13 @@ const selectedMemberStats = computed(() => {
 
 const getProjectName = (projectId: string) => {
   const project = projectStore.projectById(projectId);
-  return project?.name || '未知项目';
+  return project?.name || $t('delayStats.common.unknownProject');
 };
 
 const getUserName = (userId?: string) => {
   if (!userId) return '-';
   const user = userStore.userById(userId);
-  return user?.name || '未知';
+  return user?.name || $t('delayStats.common.unknown');
 };
 
 const getUserAvatar = (userId?: string) => {
@@ -615,9 +618,9 @@ const getDelayBadgeClass = (days: number) => {
 };
 
 const getDelaySeverityLabel = (days: number) => {
-  if (days >= 7) return '严重延期';
-  if (days >= 3) return '中度延期';
-  return '轻微延期';
+  if (days >= 7) return t('delayStats.severity.severe');
+  if (days >= 3) return t('delayStats.severity.moderate');
+  return t('delayStats.severity.mild');
 };
 
 const getDelayRateBadgeClass = (rate: number) => {
@@ -643,11 +646,11 @@ const getStatusBadgeClass = (status: string) => {
 const getStatusLabel = (status: string) => {
   switch (status) {
     case 'todo':
-      return '待办';
+      return t('delayStats.status.todo');
     case 'in-progress':
-      return '进行中';
+      return t('delayStats.status.inProgress');
     case 'done':
-      return '已完成';
+      return t('delayStats.status.completed');
     default:
       return status;
   }
@@ -685,7 +688,7 @@ const initPersonalDelayDistributionChart = () => {
     },
     series: [
       {
-        name: '延期任务',
+        name: t('delayStats.charts.delayedTasks'),
         type: 'pie',
         radius: ['40%', '70%'],
         avoidLabelOverlap: false,
@@ -705,7 +708,7 @@ const initPersonalDelayDistributionChart = () => {
             fontWeight: 'bold'
           }
         },
-        data: delayData.length > 0 ? delayData : [{ value: 1, name: '暂无数据', itemStyle: { color: '#d1d5db' } }]
+        data: delayData.length > 0 ? delayData : [{ value: 1, name: t('delayStats.common.noData'), itemStyle: { color: '#d1d5db' } }]
       }
     ]
   };
@@ -749,7 +752,7 @@ const initPersonalProjectDelayChart = () => {
       formatter: (params: any) => {
         const param = params[0];
         const data = projectDelayData[param.dataIndex];
-        return `${data.name}<br/>延期任务数: ${data.count}<br/>累计延期天数: ${data.days}`;
+        return `${data.name}<br/>${t('delayStats.tooltip.projectDelay')}: ${data.count}<br/>${t('delayStats.tooltip.cumulativeDelayedDays')}: ${data.days}`;
       }
     },
     grid: {
@@ -760,7 +763,7 @@ const initPersonalProjectDelayChart = () => {
     },
     xAxis: {
       type: 'value',
-      name: '累计延期天数',
+      name: t('delayStats.charts.totalDelayedDays'),
       nameLocation: 'middle',
       nameGap: 30
     },
@@ -776,7 +779,7 @@ const initPersonalProjectDelayChart = () => {
     },
     series: [
       {
-        name: '累计延期天数',
+        name: t('delayStats.charts.totalDelayedDays'),
         type: 'bar',
         data: projectDelayData.map(item => item.days),
         itemStyle: {
@@ -822,7 +825,7 @@ const initTeamMemberDelayRateChart = () => {
       formatter: (params: any) => {
         const param = params[0];
         const data = memberData[param.dataIndex];
-        return `${getUserName(data.userId)}<br/>延期率: ${Math.round(data.delayRate)}%<br/>任务总数: ${data.totalTasks}<br/>延期任务: ${data.delayedTasks}`;
+        return `${getUserName(data.userId)}<br/>${t('delayStats.tooltip.memberDelayRate')}: ${Math.round(data.delayRate)}%<br/>${t('delayStats.tooltip.totalTasks')}: ${data.totalTasks}<br/>${t('delayStats.tooltip.delayedTasks')}: ${data.delayedTasks}`;
       }
     },
     grid: {
@@ -833,7 +836,7 @@ const initTeamMemberDelayRateChart = () => {
     },
     xAxis: {
       type: 'value',
-      name: '延期率 (%)',
+      name: `${t('delayStats.charts.delayRate')} (%)`,
       nameLocation: 'middle',
       nameGap: 30,
       max: 100
@@ -850,7 +853,7 @@ const initTeamMemberDelayRateChart = () => {
     },
     series: [
       {
-        name: '延期率',
+        name: t('delayStats.charts.delayRate'),
         type: 'bar',
         data: memberData.map(m => m.delayRate),
         itemStyle: {
@@ -873,7 +876,7 @@ const initTeamMemberDelayRateChart = () => {
 
   if (memberData.length === 0) {
     option.series[0].data = [0];
-    option.yAxis.data = ['暂无数据'];
+    option.yAxis.data = [t('delayStats.common.noData')];
   }
 
   chart.setOption(option);
@@ -898,7 +901,7 @@ const initTeamMemberDelayCountChart = () => {
       }
     },
     legend: {
-      data: ['任务总数', '延期任务数'],
+      data: [t('delayStats.charts.totalTasks'), t('delayStats.charts.delayedTasksCount')],
       bottom: '0%'
     },
     grid: {
@@ -921,13 +924,13 @@ const initTeamMemberDelayCountChart = () => {
     },
     series: [
       {
-        name: '任务总数',
+        name: t('delayStats.charts.totalTasks'),
         type: 'bar',
         data: memberData.map(m => m.totalTasks),
         itemStyle: { color: '#3b82f6' }
       },
       {
-        name: '延期任务数',
+        name: t('delayStats.charts.delayedTasksCount'),
         type: 'bar',
         data: memberData.map(m => m.delayedTasks),
         itemStyle: { color: '#dc2626' }

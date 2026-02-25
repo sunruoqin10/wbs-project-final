@@ -692,5 +692,171 @@ export default {
     thisMonth: '이번 달',
     nextMonth: '다음 달',
     lastMonth: '지난 달'
+  },
+
+  // 연장근무 관리
+  overtime: {
+    title: '프로젝트 연장근무 관리',
+    subtitle: '프로젝트 구성원의 연장근무 상황을 기록하고 관리합니다',
+    exportExcel: 'Excel 내보내기',
+    addNew: '새 연장근무 추가',
+    personalTab: '개인 연장근무 정보',
+    teamTab: '담당 구성원 연장근무 정보',
+    stats: {
+      thisMonthHours: '이번 달 연장근무 시간',
+      hours: '시간',
+      totalRecords: '연장근무 횟수',
+      times: '회',
+      totalCompTimeoff: '휴가 누계',
+      totalPayHours: '연장근무비 누계',
+      thisMonthPeople: '연장근무 인원 수',
+      pendingApproval: '승인 대기 수량',
+      people: '명'
+    },
+    charts: {
+      trend: '연장근무 추세（최근 30일）',
+      projectDistribution: '프로젝트별 연장근무 분포',
+      overtimeHours: '연장근무 시간',
+      overtimeCount: '연장근무 횟수'
+    },
+    filters: {
+      project: '프로젝트',
+      allProjects: '전체 프로젝트',
+      status: '상태',
+      allStatus: '전체 상태',
+      type: '유형',
+      allTypes: '전체 유형',
+      all: '전체',
+      dateRange: '날짜 범위',
+      to: '~',
+      date: '날짜',
+      projectName: '프로젝트',
+      projectOwner: '프로젝트 담당자',
+      relatedTask: '관련 작업',
+      timePeriod: '시간대',
+      duration: '시간',
+      reason: '연장근무 사유',
+      approver: '승인자',
+      approvalTime: '승인 시간',
+      compensationType: '보상 방식'
+    },
+    columns: {
+      project: '프로젝트',
+      relatedTask: '관련 작업',
+      timePeriod: '시간대',
+      hours: '시간',
+      type: '유형',
+      compensationType: '보상 방식',
+      reason: '연장근무 사유',
+      actions: '작업'
+    },
+    pagination: {
+      perPage: '건/페이지',
+      itemsPerPage: ['10', '20', '50', '100']
+    },
+    statuses: {
+      pending: '승인 대기',
+      approved: '승인됨',
+      rejected: '거절됨'
+    },
+    types: {
+      weekday: '평일 연장근무',
+      weekend: '주말 연장근무',
+      holiday: '휴일 연장근무'
+    },
+    compensation: {
+      timeoff: '휴가',
+      pay: '급여 보상'
+    },
+    empty: {
+      noRecords: '연장근무 기록 없음',
+      noData: '데이터 없음'
+    }
+  },
+
+  // 지연 통계
+  delayStats: {
+    title: '프로젝트 지연 통계',
+    subtitle: '개인 및 팀의 작업 지연 상황 통계를 조회합니다',
+    refresh: '데이터 새로고침',
+    loading: '데이터를 불러오는 중...',
+    personalTab: '개인 담당 작업',
+    teamTab: '팀 구성원 작업',
+    empty: {
+      noTasks: '담당 작업 없음',
+      noData: '현재 담당하고 있는 작업이 없습니다',
+      noTeamMembers: '팀 구성원 없음',
+      noTeamMembersDesc: '현재 관리하는 팀 구성원이 없습니다'
+    },
+    stats: {
+      totalTasks: '총 작업 수',
+      delayedTasks: '지연된 작업 수',
+      delayRate: '지연율',
+      totalDelayedDays: '총 지연 일수'
+    },
+    charts: {
+      delayDurationDistribution: '지연 시간 분포',
+      projectDelayDistribution: '프로젝트 지연 분포',
+      personalDelayDistribution: '개인 지연 분포',
+      teamDelayDistribution: '팀 지연 분포',
+      delayedTasks: '지연된 작업',
+      totalDelayedDays: '총 지연 일수',
+      delayRate: '지연율',
+      totalTasks: '총 작업 수',
+      delayedTasksCount: '지연된 작업 수',
+      teamTotalTasks: '팀 총 작업 수',
+      teamDelayedTasks: '팀 지연된 작업 수',
+      teamDelayRate: '팀 지연율',
+      teamMemberCount: '팀 구성원 수',
+      memberDelayRateComparison: '구성원 지연율 비교',
+      memberDelayedTasksComparison: '구성원 지연된 작업 수 비교',
+      teamMemberDelayDetails: '팀 구성원 지연 상세'
+    },
+    list: {
+      delayedTaskList: '지연된 작업 목록',
+      taskName: '작업 이름',
+      projectName: '소속 프로젝트',
+      delayedDays: '지연 일수',
+      severity: '심각도',
+      endDate: '종료 날짜',
+      status: '상태',
+      noDelayedTasks: '지연된 작업 없음',
+      member: '구성원',
+      totalTasks: '총 작업 수',
+      delayedTasks: '지연된 작업 수',
+      delayRate: '지연율',
+      totalDelayedDays: '총 지연 일수',
+      actions: '작업',
+      viewDetails: '상세 보기'
+    },
+    details: {
+      memberTaskDetails: '구성원 작업 상세'
+    },
+    severity: {
+      severe: '심각한 지연',
+      moderate: '중간 지연',
+      mild: '약간의 지연'
+    },
+    status: {
+      todo: '대기',
+      inProgress: '진행 중',
+      completed: '완료'
+    },
+    common: {
+      unknownProject: '알 수 없는 프로젝트',
+      unknown: '알 수 없음',
+      noData: '데이터 없음',
+      noTasks: '작업 없음',
+      noTasksForMember: '해당 구성원은 현재 담당하고 있는 작업이 없습니다',
+      days: '일',
+      viewDetails: '상세 보기'
+    },
+    tooltip: {
+      projectDelay: '지연된 작업 수',
+      cumulativeDelayedDays: '총 지연 일수',
+      memberDelayRate: '지연율',
+      totalTasks: '총 작업 수',
+      delayedTasks: '지연된 작업'
+    }
   }
 };

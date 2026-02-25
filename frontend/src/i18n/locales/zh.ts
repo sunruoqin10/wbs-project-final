@@ -707,5 +707,171 @@ export default {
     thisMonth: '本月',
     nextMonth: '下月',
     lastMonth: '上月'
+  },
+
+  // 加班管理
+  overtime: {
+    title: '项目加班管理',
+    subtitle: '记录和管理项目成员的加班情况',
+    exportExcel: '导出Excel',
+    addNew: '新增加班',
+    personalTab: '个人加班信息',
+    teamTab: '管辖成员加班信息',
+    stats: {
+      thisMonthHours: '本月加班时长',
+      hours: '小时',
+      totalRecords: '加班次数',
+      times: '次',
+      totalCompTimeoff: '调休累计',
+      totalPayHours: '加班费累计',
+      thisMonthPeople: '加班人数',
+      pendingApproval: '待审批数量',
+      people: '人'
+    },
+    charts: {
+      trend: '加班趋势（最近30天）',
+      projectDistribution: '项目加班分布',
+      overtimeHours: '加班时长',
+      overtimeCount: '加班次数'
+    },
+    filters: {
+      project: '项目',
+      allProjects: '全部项目',
+      status: '状态',
+      allStatus: '全部状态',
+      type: '类型',
+      allTypes: '全部类型',
+      all: '全部',
+      dateRange: '日期范围',
+      to: '至',
+      date: '日期',
+      projectName: '项目',
+      projectOwner: '项目负责人',
+      relatedTask: '关联任务',
+      timePeriod: '时间段',
+      duration: '时长',
+      reason: '加班事由',
+      approver: '审批人',
+      approvalTime: '审批时间',
+      compensationType: '补偿方式'
+    },
+    columns: {
+      project: '项目',
+      relatedTask: '关联任务',
+      timePeriod: '时间段',
+      hours: '时长',
+      type: '类型',
+      compensationType: '补偿方式',
+      reason: '加班事由',
+      actions: '操作'
+    },
+    pagination: {
+      perPage: '条/页',
+      itemsPerPage: ['10', '20', '50', '100']
+    },
+    statuses: {
+      pending: '待审批',
+      approved: '已通过',
+      rejected: '已拒绝'
+    },
+    types: {
+      weekday: '工作日加班',
+      weekend: '周末加班',
+      holiday: '节假日加班'
+    },
+    compensation: {
+      timeoff: '调休',
+      pay: '工资补偿'
+    },
+    empty: {
+      noRecords: '暂无加班记录',
+      noData: '暂无数据'
+    }
+  },
+
+  // 延期统计
+  delayStats: {
+    title: '项目延期统计',
+    subtitle: '查看个人和团队的任务延期情况统计',
+    refresh: '刷新数据',
+    loading: '正在加载数据...',
+    personalTab: '个人负责任务',
+    teamTab: '团队成员任务',
+    empty: {
+      noTasks: '暂无负责任务',
+      noData: '您当前没有负责任何任务',
+      noTeamMembers: '暂无团队成员',
+      noTeamMembersDesc: '您当前没有管辖的团队成员'
+    },
+    stats: {
+      totalTasks: '任务总数',
+      delayedTasks: '延期任务数',
+      delayRate: '延期率',
+      totalDelayedDays: '累计延期天数'
+    },
+    charts: {
+      delayDurationDistribution: '延期时长分布',
+      projectDelayDistribution: '项目延期分布',
+      personalDelayDistribution: '个人延期分布',
+      teamDelayDistribution: '团队延期分布',
+      delayedTasks: '延期任务',
+      totalDelayedDays: '累计延期天数',
+      delayRate: '延期率',
+      totalTasks: '任务总数',
+      delayedTasksCount: '延期任务数',
+      teamTotalTasks: '团队任务总数',
+      teamDelayedTasks: '团队延期任务数',
+      teamDelayRate: '团队延期率',
+      teamMemberCount: '团队成员数',
+      memberDelayRateComparison: '成员延期率对比',
+      memberDelayedTasksComparison: '成员延期任务数对比',
+      teamMemberDelayDetails: '团队成员延期详情'
+    },
+    list: {
+      delayedTaskList: '延期任务列表',
+      taskName: '任务名称',
+      projectName: '所属项目',
+      delayedDays: '延期天数',
+      severity: '严重程度',
+      endDate: '结束日期',
+      status: '状态',
+      noDelayedTasks: '暂无延期任务',
+      member: '成员',
+      totalTasks: '任务总数',
+      delayedTasks: '延期任务数',
+      delayRate: '延期率',
+      totalDelayedDays: '累计延期天数',
+      actions: '操作',
+      viewDetails: '查看详情'
+    },
+    details: {
+      memberTaskDetails: '成员任务详情'
+    },
+    severity: {
+      severe: '严重延期',
+      moderate: '中度延期',
+      mild: '轻微延期'
+    },
+    status: {
+      todo: '待办',
+      inProgress: '进行中',
+      completed: '已完成'
+    },
+    common: {
+      unknownProject: '未知项目',
+      unknown: '未知',
+      noData: '暂无数据',
+      noTasks: '暂无任务',
+      noTasksForMember: '该成员当前没有负责的任务',
+      days: '天',
+      viewDetails: '查看详情'
+    },
+    tooltip: {
+      projectDelay: '延期任务数',
+      cumulativeDelayedDays: '累计延期天数',
+      memberDelayRate: '延期率',
+      totalTasks: '任务总数',
+      delayedTasks: '延期任务'
+    }
   }
 };
