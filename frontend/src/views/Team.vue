@@ -54,242 +54,251 @@
         <div class="h-80" ref="workloadChartRef"></div>
       </Card>
 
-      <!-- Team Members List -->
-      <Card>
-        <template #header>
-          <h3 class="text-lg font-semibold text-secondary-900">{{ $t('team.allMembers') }}</h3>
-        </template>
-        <div class="overflow-x-auto">
-          <table class="min-w-full divide-y divide-secondary-200">
-            <thead class="bg-secondary-50">
-              <tr>
-                <th class="px-6 py-3 text-left text-xs font-medium uppercase tracking-wider text-secondary-500">
-                  {{ $t('team.name') }}
-                </th>
-                <th class="px-6 py-3 text-left text-xs font-medium uppercase tracking-wider text-secondary-500">
-                  {{ $t('team.role') }}
-                </th>
-                <th class="px-6 py-3 text-left text-xs font-medium uppercase tracking-wider text-secondary-500">
-                  {{ $t('team.department') }}
-                </th>
-                <th class="px-6 py-3 text-left text-xs font-medium uppercase tracking-wider text-secondary-500">
-                  {{ $t('team.skills') }}
-                </th>
-                <th class="px-6 py-3 text-left text-xs font-medium uppercase tracking-wider text-secondary-500">
-                  {{ $t('team.joinedAt') }}
-                </th>
-                <th class="px-6 py-3 text-left text-xs font-medium uppercase tracking-wider text-secondary-500">
-                  {{ $t('team.actions') }}
-                </th>
-              </tr>
-            </thead>
-            <tbody class="divide-y divide-secondary-200 bg-white">
-              <tr v-for="user in users" :key="user.id" class="hover:bg-secondary-50">
-                <td class="whitespace-nowrap px-6 py-4">
-                  <div class="flex items-center">
-                    <img :src="user.avatar" :alt="user.name" class="h-10 w-10 rounded-full" />
-                    <div class="ml-4">
-                      <div class="text-sm font-medium text-secondary-900">{{ user.name }}</div>
-                      <div class="text-sm text-secondary-600">{{ user.email }}</div>
-                    </div>
-                  </div>
-                </td>
-                <td class="whitespace-nowrap px-6 py-4">
-                  <Badge :variant="getRoleBadgeVariant(user.role)">
-                    {{ getRoleLabel(user.role) }}
-                  </Badge>
-                </td>
-                <td class="whitespace-nowrap px-6 py-4 text-sm text-secondary-900">
-                  {{ user.department }}
-                </td>
-                <td class="px-6 py-4">
-                  <div class="flex flex-wrap gap-1">
-                    <template v-if="user.skills && user.skills.length > 0">
-                      <span
-                        v-for="skill in user.skills.slice(0, 2)"
-                        :key="skill"
-                        class="rounded bg-secondary-100 px-2 py-0.5 text-xs text-secondary-600"
-                      >
-                        {{ skill }}
-                      </span>
-                      <span
-                        v-if="user.skills.length > 2"
-                        class="rounded bg-secondary-100 px-2 py-0.5 text-xs text-secondary-600"
-                      >
-                        +{{ user.skills.length - 2 }}
-                      </span>
-                    </template>
-                    <span v-else class="text-xs text-secondary-400">-</span>
-                  </div>
-                </td>
-                <td class="whitespace-nowrap px-6 py-4 text-sm text-secondary-600">
-                  {{ formattedDate(user.joinedAt) }}
-                </td>
-                <td class="whitespace-nowrap px-6 py-4 text-sm">
-                  <button
-                    v-if="permissionStore.canEditUser(user.id)"
-                    @click="openEditModal(user)"
-                    class="text-primary-600 hover:text-primary-900 mr-3"
-                  >
-                    {{ $t('team.edit') }}
-                  </button>
-                  <button
-                    v-if="permissionStore.canDeleteUser()"
-                    @click="handleDeleteMember(user.id)"
-                    class="text-red-600 hover:text-red-900"
-                  >
-                    {{ $t('team.delete') }}
-                  </button>
-                  <span v-if="!permissionStore.canEditUser(user.id) && !permissionStore.canDeleteUser()" class="text-secondary-400">
-                    -
-                  </span>
-                </td>
-              </tr>
-            </tbody>
-          </table>
-        </div>
-      </Card>
+      <!-- Tabs -->
+      <Tabs v-model="activeTab" :tabs="tabs">
+        <template #default="{ activeTab: currentTab }">
+          <div v-if="currentTab === 0" class="space-y-6">
+            <!-- Team Members List -->
+            <Card>
+              <template #header>
+                <h3 class="text-lg font-semibold text-secondary-900">{{ $t('team.allMembers') }}</h3>
+              </template>
+              <div class="overflow-x-auto">
+                <table class="min-w-full divide-y divide-secondary-200">
+                  <thead class="bg-secondary-50">
+                    <tr>
+                      <th class="px-6 py-3 text-left text-xs font-medium uppercase tracking-wider text-secondary-500">
+                        {{ $t('team.name') }}
+                      </th>
+                      <th class="px-6 py-3 text-left text-xs font-medium uppercase tracking-wider text-secondary-500">
+                        {{ $t('team.role') }}
+                      </th>
+                      <th class="px-6 py-3 text-left text-xs font-medium uppercase tracking-wider text-secondary-500">
+                        {{ $t('team.department') }}
+                      </th>
+                      <th class="px-6 py-3 text-left text-xs font-medium uppercase tracking-wider text-secondary-500">
+                        {{ $t('team.skills') }}
+                      </th>
+                      <th class="px-6 py-3 text-left text-xs font-medium uppercase tracking-wider text-secondary-500">
+                        {{ $t('team.joinedAt') }}
+                      </th>
+                      <th class="px-6 py-3 text-left text-xs font-medium uppercase tracking-wider text-secondary-500">
+                        {{ $t('team.actions') }}
+                      </th>
+                    </tr>
+                  </thead>
+                  <tbody class="divide-y divide-secondary-200 bg-white">
+                    <tr v-for="user in users" :key="user.id" class="hover:bg-secondary-50">
+                      <td class="whitespace-nowrap px-6 py-4">
+                        <div class="flex items-center">
+                          <img :src="user.avatar" :alt="user.name" class="h-10 w-10 rounded-full" />
+                          <div class="ml-4">
+                            <div class="text-sm font-medium text-secondary-900">{{ user.name }}</div>
+                            <div class="text-sm text-secondary-600">{{ user.email }}</div>
+                          </div>
+                        </div>
+                      </td>
+                      <td class="whitespace-nowrap px-6 py-4">
+                        <Badge :variant="getRoleBadgeVariant(user.role)">
+                          {{ getRoleLabel(user.role) }}
+                        </Badge>
+                      </td>
+                      <td class="whitespace-nowrap px-6 py-4 text-sm text-secondary-900">
+                        {{ user.department }}
+                      </td>
+                      <td class="px-6 py-4">
+                        <div class="flex flex-wrap gap-1">
+                          <template v-if="user.skills && user.skills.length > 0">
+                            <span
+                              v-for="skill in user.skills.slice(0, 2)"
+                              :key="skill"
+                              class="rounded bg-secondary-100 px-2 py-0.5 text-xs text-secondary-600"
+                            >
+                              {{ skill }}
+                            </span>
+                            <span
+                              v-if="user.skills.length > 2"
+                              class="rounded bg-secondary-100 px-2 py-0.5 text-xs text-secondary-600"
+                            >
+                              +{{ user.skills.length - 2 }}
+                            </span>
+                          </template>
+                          <span v-else class="text-xs text-secondary-400">-</span>
+                        </div>
+                      </td>
+                      <td class="whitespace-nowrap px-6 py-4 text-sm text-secondary-600">
+                        {{ formattedDate(user.joinedAt) }}
+                      </td>
+                      <td class="whitespace-nowrap px-6 py-4 text-sm">
+                        <button
+                          v-if="permissionStore.canEditUser(user.id)"
+                          @click="openEditModal(user)"
+                          class="text-primary-600 hover:text-primary-900 mr-3"
+                        >
+                          {{ $t('team.edit') }}
+                        </button>
+                        <button
+                          v-if="permissionStore.canDeleteUser()"
+                          @click="handleDeleteMember(user.id)"
+                          class="text-red-600 hover:text-red-900"
+                        >
+                          {{ $t('team.delete') }}
+                        </button>
+                        <span v-if="!permissionStore.canEditUser(user.id) && !permissionStore.canDeleteUser()" class="text-secondary-400">
+                          -
+                        </span>
+                      </td>
+                    </tr>
+                  </tbody>
+                </table>
+              </div>
+            </Card>
+          </div>
 
-      <!-- Task Assignment Table -->
-      <Card>
-        <template #header>
-          <div class="flex items-center justify-between">
-            <h3 class="text-lg font-semibold text-secondary-900">{{ $t('team.taskAssignment.title') }}</h3>
-            <div class="flex items-center gap-4">
-              <select 
-                v-model="sortBy" 
-                @change="handleSortChange"
-                class="rounded-lg border border-secondary-300 px-3 py-1.5 text-sm focus:border-primary-500 focus:outline-none focus:ring-1 focus:ring-primary-500"
-              >
-                <option value="memberName">{{ $t('team.taskAssignment.memberName') }}</option>
-                <option value="taskName">{{ $t('team.taskAssignment.taskName') }}</option>
-                <option value="projectName">{{ $t('team.taskAssignment.projectName') }}</option>
-                <option value="status">{{ $t('team.taskAssignment.status') }}</option>
-                <option value="priority">{{ $t('team.taskAssignment.priority') }}</option>
-              </select>
-              <select 
-                v-model="sortOrder" 
-                @change="handleSortChange"
-                class="rounded-lg border border-secondary-300 px-3 py-1.5 text-sm focus:border-primary-500 focus:outline-none focus:ring-1 focus:ring-primary-500"
-              >
-                <option value="asc">↑</option>
-                <option value="desc">↓</option>
-              </select>
-            </div>
+          <div v-else-if="currentTab === 1" class="space-y-6">
+            <!-- Task Assignment Table -->
+            <Card>
+              <template #header>
+                <div class="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
+                  <h3 class="text-lg font-semibold text-secondary-900">{{ $t('team.taskAssignment.title') }}</h3>
+                  <div class="flex items-center gap-2">
+                    <select 
+                      v-model="sortBy" 
+                      @change="handleSortChange"
+                      class="rounded-lg border border-secondary-300 px-3 py-1.5 text-sm focus:border-primary-500 focus:outline-none focus:ring-1 focus:ring-primary-500"
+                    >
+                      <option value="memberName">{{ $t('team.taskAssignment.memberName') }}</option>
+                      <option value="taskName">{{ $t('team.taskAssignment.taskName') }}</option>
+                      <option value="projectName">{{ $t('team.taskAssignment.projectName') }}</option>
+                      <option value="status">{{ $t('team.taskAssignment.status') }}</option>
+                      <option value="priority">{{ $t('team.taskAssignment.priority') }}</option>
+                    </select>
+                    <select 
+                      v-model="sortOrder" 
+                      @change="handleSortChange"
+                      class="rounded-lg border border-secondary-300 px-3 py-1.5 text-sm focus:border-primary-500 focus:outline-none focus:ring-1 focus:ring-primary-500"
+                    >
+                      <option value="asc">↑</option>
+                      <option value="desc">↓</option>
+                    </select>
+                  </div>
+                </div>
+              </template>
+              <div class="overflow-x-auto">
+                <table class="min-w-full divide-y divide-secondary-200">
+                  <thead class="bg-secondary-50">
+                    <tr>
+                      <th class="px-6 py-3 text-left text-xs font-medium uppercase tracking-wider text-secondary-500">
+                        {{ $t('team.taskAssignment.memberName') }}
+                      </th>
+                      <th class="px-6 py-3 text-left text-xs font-medium uppercase tracking-wider text-secondary-500">
+                        {{ $t('team.taskAssignment.taskName') }}
+                      </th>
+                      <th class="px-6 py-3 text-left text-xs font-medium uppercase tracking-wider text-secondary-500">
+                        {{ $t('team.taskAssignment.projectName') }}
+                      </th>
+                      <th class="px-6 py-3 text-left text-xs font-medium uppercase tracking-wider text-secondary-500">
+                        {{ $t('team.taskAssignment.status') }}
+                      </th>
+                      <th class="px-6 py-3 text-left text-xs font-medium uppercase tracking-wider text-secondary-500">
+                        {{ $t('team.taskAssignment.priority') }}
+                      </th>
+                      <th class="px-6 py-3 text-left text-xs font-medium uppercase tracking-wider text-secondary-500">
+                        {{ $t('team.taskAssignment.progress') }}
+                      </th>
+                    </tr>
+                  </thead>
+                  <tbody class="divide-y divide-secondary-200 bg-white">
+                    <tr v-for="item in paginatedTaskAssignments" :key="item.id" class="hover:bg-secondary-50">
+                      <td class="whitespace-nowrap px-6 py-4">
+                        <div class="flex items-center">
+                          <img :src="item.userAvatar" :alt="item.userName" class="h-8 w-8 rounded-full" />
+                          <div class="ml-3">
+                            <div class="text-sm font-medium text-secondary-900">{{ item.userName }}</div>
+                          </div>
+                        </div>
+                      </td>
+                      <td class="px-6 py-4 text-sm text-secondary-900">
+                        {{ item.taskName }}
+                      </td>
+                      <td class="px-6 py-4 text-sm text-secondary-900">
+                        {{ item.projectName }}
+                      </td>
+                      <td class="whitespace-nowrap px-6 py-4">
+                        <Badge :variant="getStatusBadgeVariant(item.status)">
+                          {{ getStatusLabel(item.status) }}
+                        </Badge>
+                      </td>
+                      <td class="whitespace-nowrap px-6 py-4">
+                        <Badge :variant="getPriorityBadgeVariant(item.priority)">
+                          {{ getPriorityLabel(item.priority) }}
+                        </Badge>
+                      </td>
+                      <td class="px-6 py-4">
+                        <div class="w-32">
+                          <div class="flex items-center">
+                            <div class="flex-1 bg-secondary-200 rounded-full h-2">
+                              <div 
+                                class="bg-primary-600 h-2 rounded-full transition-all duration-300" 
+                                :style="{ width: `${item.progress}%` }"
+                              ></div>
+                            </div>
+                            <span class="ml-2 text-sm text-secondary-600">{{ item.progress }}%</span>
+                          </div>
+                        </div>
+                      </td>
+                    </tr>
+                    <tr v-if="sortedTaskAssignments.length === 0">
+                      <td colspan="6" class="px-6 py-12 text-center text-sm text-secondary-500">
+                        {{ $t('team.taskAssignment.noData') }}
+                      </td>
+                    </tr>
+                  </tbody>
+                </table>
+              </div>
+              <!-- Pagination -->
+              <div v-if="sortedTaskAssignments.length > 0" class="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 border-t border-secondary-200 px-6 py-4">
+                <div class="flex items-center gap-2">
+                  <span class="text-sm text-secondary-600">{{ $t('team.taskAssignment.itemsPerPage') }}</span>
+                  <select 
+                    v-model="itemsPerPage" 
+                    @change="handleItemsPerPageChange"
+                    class="rounded-lg border border-secondary-300 px-2 py-1 text-sm focus:border-primary-500 focus:outline-none focus:ring-1 focus:ring-primary-500"
+                  >
+                    <option :value="5">5</option>
+                    <option :value="10">10</option>
+                    <option :value="20">20</option>
+                    <option :value="50">50</option>
+                  </select>
+                </div>
+                <div class="flex items-center gap-4">
+                  <span class="text-sm text-secondary-600">
+                    {{ $t('team.taskAssignment.page', { current: currentPage, total: totalPages }) }}
+                  </span>
+                  <div class="flex gap-2">
+                    <Button 
+                      variant="secondary" 
+                      size="sm" 
+                      :disabled="currentPage === 1"
+                      @click="currentPage--"
+                    >
+                      {{ $t('team.taskAssignment.previous') }}
+                    </Button>
+                    <Button 
+                      variant="secondary" 
+                      size="sm" 
+                      :disabled="currentPage === totalPages"
+                      @click="currentPage++"
+                    >
+                      {{ $t('team.taskAssignment.next') }}
+                    </Button>
+                  </div>
+                </div>
+              </div>
+            </Card>
           </div>
         </template>
-        <div class="overflow-x-auto">
-          <table class="min-w-full divide-y divide-secondary-200">
-            <thead class="bg-secondary-50">
-              <tr>
-                <th class="px-6 py-3 text-left text-xs font-medium uppercase tracking-wider text-secondary-500">
-                  {{ $t('team.taskAssignment.memberName') }}
-                </th>
-                <th class="px-6 py-3 text-left text-xs font-medium uppercase tracking-wider text-secondary-500">
-                  {{ $t('team.taskAssignment.taskName') }}
-                </th>
-                <th class="px-6 py-3 text-left text-xs font-medium uppercase tracking-wider text-secondary-500">
-                  {{ $t('team.taskAssignment.projectName') }}
-                </th>
-                <th class="px-6 py-3 text-left text-xs font-medium uppercase tracking-wider text-secondary-500">
-                  {{ $t('team.taskAssignment.status') }}
-                </th>
-                <th class="px-6 py-3 text-left text-xs font-medium uppercase tracking-wider text-secondary-500">
-                  {{ $t('team.taskAssignment.priority') }}
-                </th>
-                <th class="px-6 py-3 text-left text-xs font-medium uppercase tracking-wider text-secondary-500">
-                  {{ $t('team.taskAssignment.progress') }}
-                </th>
-              </tr>
-            </thead>
-            <tbody class="divide-y divide-secondary-200 bg-white">
-              <tr v-for="item in paginatedTaskAssignments" :key="item.id" class="hover:bg-secondary-50">
-                <td class="whitespace-nowrap px-6 py-4">
-                  <div class="flex items-center">
-                    <img :src="item.userAvatar" :alt="item.userName" class="h-8 w-8 rounded-full" />
-                    <div class="ml-3">
-                      <div class="text-sm font-medium text-secondary-900">{{ item.userName }}</div>
-                    </div>
-                  </div>
-                </td>
-                <td class="px-6 py-4 text-sm text-secondary-900">
-                  {{ item.taskName }}
-                </td>
-                <td class="px-6 py-4 text-sm text-secondary-900">
-                  {{ item.projectName }}
-                </td>
-                <td class="whitespace-nowrap px-6 py-4">
-                  <Badge :variant="getStatusBadgeVariant(item.status)">
-                    {{ getStatusLabel(item.status) }}
-                  </Badge>
-                </td>
-                <td class="whitespace-nowrap px-6 py-4">
-                  <Badge :variant="getPriorityBadgeVariant(item.priority)">
-                    {{ getPriorityLabel(item.priority) }}
-                  </Badge>
-                </td>
-                <td class="px-6 py-4">
-                  <div class="w-32">
-                    <div class="flex items-center">
-                      <div class="flex-1 bg-secondary-200 rounded-full h-2">
-                        <div 
-                          class="bg-primary-600 h-2 rounded-full transition-all duration-300" 
-                          :style="{ width: `${item.progress}%` }"
-                        ></div>
-                      </div>
-                      <span class="ml-2 text-sm text-secondary-600">{{ item.progress }}%</span>
-                    </div>
-                  </div>
-                </td>
-              </tr>
-              <tr v-if="sortedTaskAssignments.length === 0">
-                <td colspan="6" class="px-6 py-12 text-center text-sm text-secondary-500">
-                  {{ $t('team.taskAssignment.noData') }}
-                </td>
-              </tr>
-            </tbody>
-          </table>
-        </div>
-        <!-- Pagination -->
-        <div v-if="sortedTaskAssignments.length > 0" class="flex items-center justify-between border-t border-secondary-200 px-6 py-4">
-          <div class="flex items-center gap-2">
-            <span class="text-sm text-secondary-600">{{ $t('team.taskAssignment.itemsPerPage') }}</span>
-            <select 
-              v-model="itemsPerPage" 
-              @change="handleItemsPerPageChange"
-              class="rounded-lg border border-secondary-300 px-2 py-1 text-sm focus:border-primary-500 focus:outline-none focus:ring-1 focus:ring-primary-500"
-            >
-              <option :value="5">5</option>
-              <option :value="10">10</option>
-              <option :value="20">20</option>
-              <option :value="50">50</option>
-            </select>
-          </div>
-          <div class="flex items-center gap-4">
-            <span class="text-sm text-secondary-600">
-              {{ $t('team.taskAssignment.page', { current: currentPage, total: totalPages }) }}
-            </span>
-            <div class="flex gap-2">
-              <Button 
-                variant="secondary" 
-                size="sm" 
-                :disabled="currentPage === 1"
-                @click="currentPage--"
-              >
-                {{ $t('team.taskAssignment.previous') }}
-              </Button>
-              <Button 
-                variant="secondary" 
-                size="sm" 
-                :disabled="currentPage === totalPages"
-                @click="currentPage++"
-              >
-                {{ $t('team.taskAssignment.next') }}
-              </Button>
-            </div>
-          </div>
-        </div>
-      </Card>
+      </Tabs>
     </div>
 
     <!-- Add/Edit Member Modal -->
@@ -380,6 +389,8 @@ import Card from '@/components/common/Card.vue';
 import Button from '@/components/common/Button.vue';
 import Badge from '@/components/common/Badge.vue';
 import Modal from '@/components/common/Modal.vue';
+import Tabs from '@/components/common/Tabs.vue';
+import type { Tab } from '@/components/common/Tabs.vue';
 import { useUserStore } from '@/stores/user';
 import { useTaskStore } from '@/stores/task';
 import { useProjectStore } from '@/stores/project';
@@ -409,6 +420,20 @@ const permissionStore = usePermissionStore();
 
 const users = computed(() => userStore.users);
 const workloadChartRef = ref<HTMLElement>();
+const activeTab = ref(0);
+
+const tabs = computed<Tab[]>(() => [
+  {
+    label: t('team.allMembers'),
+    badge: users.value.length,
+    value: 'members'
+  },
+  {
+    label: t('team.taskAssignment.title'),
+    badge: taskAssignments.value.length,
+    value: 'tasks'
+  }
+]);
 
 // Add Member Modal
 const showAddMemberModal = ref(false);
