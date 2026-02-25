@@ -478,6 +478,21 @@ export default {
     emptyState: {
       title: '暂无成员',
       message: '还没有团队成员'
+    },
+    taskAssignment: {
+      title: '任务分配情况',
+      memberName: '成员姓名',
+      taskName: '任务名称',
+      projectName: '项目名称',
+      status: '状态',
+      priority: '优先级',
+      progress: '进度',
+      noData: '暂无任务分配数据',
+      previous: '上一页',
+      next: '下一页',
+      page: '第 {current} 页 / 共 {total} 页',
+      itemsPerPage: '每页条数',
+      sort: '排序'
     }
   },
 

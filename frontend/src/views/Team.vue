@@ -149,6 +149,147 @@
         </template>
         <div class="h-80" ref="workloadChartRef"></div>
       </Card>
+
+      <!-- Task Assignment Table -->
+      <Card>
+        <template #header>
+          <div class="flex items-center justify-between">
+            <h3 class="text-lg font-semibold text-secondary-900">{{ $t('team.taskAssignment.title') }}</h3>
+            <div class="flex items-center gap-4">
+              <select 
+                v-model="sortBy" 
+                @change="handleSortChange"
+                class="rounded-lg border border-secondary-300 px-3 py-1.5 text-sm focus:border-primary-500 focus:outline-none focus:ring-1 focus:ring-primary-500"
+              >
+                <option value="memberName">{{ $t('team.taskAssignment.memberName') }}</option>
+                <option value="taskName">{{ $t('team.taskAssignment.taskName') }}</option>
+                <option value="projectName">{{ $t('team.taskAssignment.projectName') }}</option>
+                <option value="status">{{ $t('team.taskAssignment.status') }}</option>
+                <option value="priority">{{ $t('team.taskAssignment.priority') }}</option>
+              </select>
+              <select 
+                v-model="sortOrder" 
+                @change="handleSortChange"
+                class="rounded-lg border border-secondary-300 px-3 py-1.5 text-sm focus:border-primary-500 focus:outline-none focus:ring-1 focus:ring-primary-500"
+              >
+                <option value="asc">↑</option>
+                <option value="desc">↓</option>
+              </select>
+            </div>
+          </div>
+        </template>
+        <div class="overflow-x-auto">
+          <table class="min-w-full divide-y divide-secondary-200">
+            <thead class="bg-secondary-50">
+              <tr>
+                <th class="px-6 py-3 text-left text-xs font-medium uppercase tracking-wider text-secondary-500">
+                  {{ $t('team.taskAssignment.memberName') }}
+                </th>
+                <th class="px-6 py-3 text-left text-xs font-medium uppercase tracking-wider text-secondary-500">
+                  {{ $t('team.taskAssignment.taskName') }}
+                </th>
+                <th class="px-6 py-3 text-left text-xs font-medium uppercase tracking-wider text-secondary-500">
+                  {{ $t('team.taskAssignment.projectName') }}
+                </th>
+                <th class="px-6 py-3 text-left text-xs font-medium uppercase tracking-wider text-secondary-500">
+                  {{ $t('team.taskAssignment.status') }}
+                </th>
+                <th class="px-6 py-3 text-left text-xs font-medium uppercase tracking-wider text-secondary-500">
+                  {{ $t('team.taskAssignment.priority') }}
+                </th>
+                <th class="px-6 py-3 text-left text-xs font-medium uppercase tracking-wider text-secondary-500">
+                  {{ $t('team.taskAssignment.progress') }}
+                </th>
+              </tr>
+            </thead>
+            <tbody class="divide-y divide-secondary-200 bg-white">
+              <tr v-for="item in paginatedTaskAssignments" :key="item.id" class="hover:bg-secondary-50">
+                <td class="whitespace-nowrap px-6 py-4">
+                  <div class="flex items-center">
+                    <img :src="item.userAvatar" :alt="item.userName" class="h-8 w-8 rounded-full" />
+                    <div class="ml-3">
+                      <div class="text-sm font-medium text-secondary-900">{{ item.userName }}</div>
+                    </div>
+                  </div>
+                </td>
+                <td class="px-6 py-4 text-sm text-secondary-900">
+                  {{ item.taskName }}
+                </td>
+                <td class="px-6 py-4 text-sm text-secondary-900">
+                  {{ item.projectName }}
+                </td>
+                <td class="whitespace-nowrap px-6 py-4">
+                  <Badge :variant="getStatusBadgeVariant(item.status)">
+                    {{ getStatusLabel(item.status) }}
+                  </Badge>
+                </td>
+                <td class="whitespace-nowrap px-6 py-4">
+                  <Badge :variant="getPriorityBadgeVariant(item.priority)">
+                    {{ getPriorityLabel(item.priority) }}
+                  </Badge>
+                </td>
+                <td class="px-6 py-4">
+                  <div class="w-32">
+                    <div class="flex items-center">
+                      <div class="flex-1 bg-secondary-200 rounded-full h-2">
+                        <div 
+                          class="bg-primary-600 h-2 rounded-full transition-all duration-300" 
+                          :style="{ width: `${item.progress}%` }"
+                        ></div>
+                      </div>
+                      <span class="ml-2 text-sm text-secondary-600">{{ item.progress }}%</span>
+                    </div>
+                  </div>
+                </td>
+              </tr>
+              <tr v-if="sortedTaskAssignments.length === 0">
+                <td colspan="6" class="px-6 py-12 text-center text-sm text-secondary-500">
+                  {{ $t('team.taskAssignment.noData') }}
+                </td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+        <!-- Pagination -->
+        <div v-if="sortedTaskAssignments.length > 0" class="flex items-center justify-between border-t border-secondary-200 px-6 py-4">
+          <div class="flex items-center gap-2">
+            <span class="text-sm text-secondary-600">{{ $t('team.taskAssignment.itemsPerPage') }}</span>
+            <select 
+              v-model="itemsPerPage" 
+              @change="handleItemsPerPageChange"
+              class="rounded-lg border border-secondary-300 px-2 py-1 text-sm focus:border-primary-500 focus:outline-none focus:ring-1 focus:ring-primary-500"
+            >
+              <option :value="5">5</option>
+              <option :value="10">10</option>
+              <option :value="20">20</option>
+              <option :value="50">50</option>
+            </select>
+          </div>
+          <div class="flex items-center gap-4">
+            <span class="text-sm text-secondary-600">
+              {{ $t('team.taskAssignment.page', { current: currentPage, total: totalPages }) }}
+            </span>
+            <div class="flex gap-2">
+              <Button 
+                variant="secondary" 
+                size="sm" 
+                :disabled="currentPage === 1"
+                @click="currentPage--"
+              >
+                {{ $t('team.taskAssignment.previous') }}
+              </Button>
+              <Button 
+                variant="secondary" 
+                size="sm" 
+                :disabled="currentPage === totalPages"
+                @click="currentPage++"
+              >
+                {{ $t('team.taskAssignment.next') }}
+              </Button>
+            </div>
+          </div>
+        </div>
+      </Card>
     </div>
 
     <!-- Add/Edit Member Modal -->
@@ -231,7 +372,7 @@
 </template>
 
 <script setup lang="ts">
-import { ref, computed, onMounted, reactive } from 'vue';
+import { ref, computed, onMounted, reactive, watch } from 'vue';
 import { useI18n } from 'vue-i18n';
 import * as echarts from 'echarts';
 import MainLayout from '@/components/layout/MainLayout.vue';
@@ -241,13 +382,29 @@ import Badge from '@/components/common/Badge.vue';
 import Modal from '@/components/common/Modal.vue';
 import { useUserStore } from '@/stores/user';
 import { useTaskStore } from '@/stores/task';
+import { useProjectStore } from '@/stores/project';
 import { usePermissionStore } from '@/stores/permission';
-import type { User } from '@/types';
+import type { User, Task, Project } from '@/types';
 import dayjs from 'dayjs';
+
+interface TaskAssignment {
+  id: string;
+  userId: string;
+  userName: string;
+  userAvatar: string;
+  taskId: string;
+  taskName: string;
+  projectId: string;
+  projectName: string;
+  status: Task['status'];
+  priority: Task['priority'];
+  progress: number;
+}
 
 const { t } = useI18n();
 const userStore = useUserStore();
 const taskStore = useTaskStore();
+const projectStore = useProjectStore();
 const permissionStore = usePermissionStore();
 
 const users = computed(() => userStore.users);
@@ -481,11 +638,198 @@ const initWorkloadChart = () => {
   chart.setOption(option);
 };
 
+// Task Assignment Table
+const sortBy = ref<string>('memberName');
+const sortOrder = ref<'asc' | 'desc'>('asc');
+const currentPage = ref<number>(1);
+const itemsPerPage = ref<number>(10);
+
+// 计算任务分配数据
+const taskAssignments = computed<TaskAssignment[]>(() => {
+  const allTaskIds = new Set(taskStore.tasks.map(t => t.id));
+  const parentTaskIds = new Set(taskStore.tasks.filter(t => t.parentTaskId).map(t => t.parentTaskId));
+  const leafTaskIds = new Set([...allTaskIds].filter(id => !parentTaskIds.has(id)));
+
+  const assignments: TaskAssignment[] = [];
+  const userMap = new Map(users.value.map(u => [u.id, u]));
+  const projectMap = new Map(projectStore.projects.map(p => [p.id, p]));
+
+  // 处理有负责人的任务
+  const assignedTasks = taskStore.tasks.filter(t => t.assigneeId);
+
+  assignedTasks.forEach(task => {
+    const user = userMap.get(task.assigneeId!);
+    const project = projectMap.get(task.projectId);
+    if (!user || !project) return;
+
+    // 判断是否应该显示此任务
+    const shouldShow = () => {
+      // 如果是叶子任务，始终显示
+      if (leafTaskIds.has(task.id)) return true;
+
+      // 如果是根任务（没有父任务）且没有叶子子任务分配给同一人，则显示
+      if (!task.parentTaskId) {
+        const descendants = getAllDescendantTasks(task.id);
+        const hasLeafAssignedToSameUser = descendants.some(d => 
+          leafTaskIds.has(d.id) && d.assigneeId === user.id
+        );
+        if (!hasLeafAssignedToSameUser) return true;
+      }
+
+      return false;
+    };
+
+    if (shouldShow()) {
+      assignments.push({
+        id: `${user.id}-${task.id}`,
+        userId: user.id,
+        userName: user.name,
+        userAvatar: user.avatar,
+        taskId: task.id,
+        taskName: task.title,
+        projectId: project.id,
+        projectName: project.name,
+        status: task.status,
+        priority: task.priority,
+        progress: task.progress
+      });
+    }
+  });
+
+  return assignments;
+});
+
+// 获取所有子孙任务
+const getAllDescendantTasks = (taskId: string): Task[] => {
+  const directSubtasks = taskStore.tasks.filter(t => t.parentTaskId === taskId);
+  let allDescendants = [...directSubtasks];
+  
+  directSubtasks.forEach(subtask => {
+    const subDescendants = getAllDescendantTasks(subtask.id);
+    allDescendants = [...allDescendants, ...subDescendants];
+  });
+  
+  return allDescendants;
+};
+
+// 排序后的任务分配数据
+const sortedTaskAssignments = computed<TaskAssignment[]>(() => {
+  const sorted = [...taskAssignments.value];
+  sorted.sort((a, b) => {
+    let aVal: string | number = '';
+    let bVal: string | number = '';
+
+    switch (sortBy.value) {
+      case 'memberName':
+        aVal = a.userName;
+        bVal = b.userName;
+        break;
+      case 'taskName':
+        aVal = a.taskName;
+        bVal = b.taskName;
+        break;
+      case 'projectName':
+        aVal = a.projectName;
+        bVal = b.projectName;
+        break;
+      case 'status':
+        aVal = a.status;
+        bVal = b.status;
+        break;
+      case 'priority':
+        const priorityOrder = { urgent: 0, high: 1, medium: 2, low: 3 };
+        aVal = priorityOrder[a.priority];
+        bVal = priorityOrder[b.priority];
+        break;
+      default:
+        aVal = a.userName;
+        bVal = b.userName;
+    }
+
+    if (typeof aVal === 'string' && typeof bVal === 'string') {
+      return sortOrder.value === 'asc' 
+        ? aVal.localeCompare(bVal, 'zh-CN')
+        : bVal.localeCompare(aVal, 'zh-CN');
+    }
+
+    return sortOrder.value === 'asc' 
+      ? (aVal as number) - (bVal as number)
+      : (bVal as number) - (aVal as number);
+  });
+
+  return sorted;
+});
+
+// 分页后的任务分配数据
+const paginatedTaskAssignments = computed<TaskAssignment[]>(() => {
+  const start = (currentPage.value - 1) * itemsPerPage.value;
+  const end = start + itemsPerPage.value;
+  return sortedTaskAssignments.value.slice(start, end);
+});
+
+// 总页数
+const totalPages = computed(() => {
+  return Math.ceil(sortedTaskAssignments.value.length / itemsPerPage.value) || 1;
+});
+
+// 处理排序变化
+const handleSortChange = () => {
+  currentPage.value = 1;
+};
+
+// 处理每页条数变化
+const handleItemsPerPageChange = () => {
+  currentPage.value = 1;
+};
+
+// 状态标签样式
+const getStatusBadgeVariant = (status: Task['status']) => {
+  const variants: Record<Task['status'], 'default' | 'primary' | 'danger' | 'success' | 'warning' | 'info'> = {
+    'todo': 'default',
+    'in-progress': 'primary',
+    'done': 'success'
+  };
+  return variants[status] || 'default';
+};
+
+// 状态标签文本
+const getStatusLabel = (status: Task['status']) => {
+  return t(`taskStatus.${status.replace('-', '')}`);
+};
+
+// 优先级标签样式
+const getPriorityBadgeVariant = (priority: Task['priority']) => {
+  const variants: Record<Task['priority'], 'default' | 'primary' | 'danger' | 'success' | 'warning' | 'info'> = {
+    'low': 'default',
+    'medium': 'info',
+    'high': 'warning',
+    'urgent': 'danger'
+  };
+  return variants[priority] || 'default';
+};
+
+// 优先级标签文本
+const getPriorityLabel = (priority: Task['priority']) => {
+  return t(`priorities.${priority}`);
+};
+
+// 监听任务、用户、项目数据变化，重置当前页
+watch([() => taskStore.tasks, () => userStore.users, () => projectStore.projects], () => {
+  currentPage.value = 1;
+});
+
 onMounted(async () => {
   // 确保用户数据已加载
   await userStore.loadUsers();
 
-  // 确保任务数据已加载（工作负载分布图表需要）
+  // 确保项目数据已加载（任务分配表格需要）
+  try {
+    await projectStore.loadProjects();
+  } catch (error) {
+    console.warn('加载项目数据失败:', error);
+  }
+
+  // 确保任务数据已加载（工作负载分布图表和任务分配表格需要）
   try {
     await taskStore.loadTasks();
   } catch (error) {
