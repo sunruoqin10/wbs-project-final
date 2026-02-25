@@ -67,13 +67,13 @@ const routes: RouteRecordRaw[] = [
     path: '/delay-stats',
     name: 'DelayStats',
     component: () => import('@/views/DelayStats.vue'),
-    meta: { title: '项目延期统计' }
+    meta: { titleKey: 'routes.delayStats' }
   },
   {
     path: '/overtime',
     name: 'OvertimeManagement',
     component: () => import('@/views/OvertimeManagement.vue'),
-    meta: { title: '项目加班管理', permission: 'overtime:view' }
+    meta: { titleKey: 'routes.overtime', permission: 'overtime:view' }
   },
   {
     path: '/team',

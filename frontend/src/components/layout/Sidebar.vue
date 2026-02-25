@@ -89,13 +89,13 @@ const menuItems = computed(() => [
   },
   {
     name: 'delay-stats',
-    label: '项目延期统计',
+    label: t('routes.delayStats'),
     to: '/delay-stats',
     icon: '<svg class="h-6 w-6 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" /></svg>'
   },
   {
     name: 'overtime',
-    label: '项目加班管理',
+    label: t('routes.overtime'),
     to: '/overtime',
     icon: '<svg class="h-6 w-6 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" /></svg>'
   },

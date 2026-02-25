@@ -64,6 +64,8 @@ export default {
     projectDetail: '项目详情',
     taskBoard: '任务看板',
     ganttView: '甘特图',
+    delayStats: '项目延期统计',
+    overtime: '项目加班管理',
     team: '团队成员',
     reports: '报表统计',
     settings: '设置',

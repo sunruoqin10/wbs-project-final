@@ -64,6 +64,8 @@ export default {
     projectDetail: '프로젝트 상세',
     taskBoard: '작업 보드',
     ganttView: '간트 차트',
+    delayStats: '프로젝트 지연 통계',
+    overtime: '프로젝트 연장근무 관리',
     team: '팀 구성원',
     reports: '보고서',
     settings: '설정',

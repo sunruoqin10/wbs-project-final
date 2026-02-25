@@ -208,6 +208,8 @@ const pageTitle = computed(() => {
     ProjectDetail: 'routes.projectDetail',
     TaskBoard: 'routes.taskBoard',
     GanttView: 'routes.ganttView',
+    DelayStats: 'routes.delayStats',
+    OvertimeManagement: 'routes.overtime',
     Team: 'routes.team',
     Reports: 'routes.reports',
     Settings: 'routes.settings'
