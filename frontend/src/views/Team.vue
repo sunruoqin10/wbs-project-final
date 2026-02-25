@@ -46,6 +46,14 @@
         </Card>
       </div>
 
+      <!-- Workload Distribution -->
+      <Card>
+        <template #header>
+          <h3 class="text-lg font-semibold text-secondary-900">{{ $t('team.workloadDistribution') }}</h3>
+        </template>
+        <div class="h-80" ref="workloadChartRef"></div>
+      </Card>
+
       <!-- Team Members List -->
       <Card>
         <template #header>
@@ -140,14 +148,6 @@
             </tbody>
           </table>
         </div>
-      </Card>
-
-      <!-- Workload Distribution -->
-      <Card>
-        <template #header>
-          <h3 class="text-lg font-semibold text-secondary-900">{{ $t('team.workloadDistribution') }}</h3>
-        </template>
-        <div class="h-80" ref="workloadChartRef"></div>
       </Card>
 
       <!-- Task Assignment Table -->
