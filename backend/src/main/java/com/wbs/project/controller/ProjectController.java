@@ -1,9 +1,7 @@
 package com.wbs.project.controller;
 
-import com.wbs.project.annotation.RequirePermission;
 import com.wbs.project.common.Result;
 import com.wbs.project.entity.Project;
-import com.wbs.project.service.PermissionService;
 import com.wbs.project.service.ProjectService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.web.bind.annotation.*;
@@ -16,7 +14,6 @@ import java.util.List;
 public class ProjectController {
 
     private final ProjectService projectService;
-    private final PermissionService permissionService;
 
     @GetMapping
     public Result<List<Project>> getAllProjects() {
@@ -57,7 +54,6 @@ public class ProjectController {
     }
 
     @PostMapping
-    @RequirePermission("project:create")
     public Result<Project> createProject(@RequestBody Project project) {
         Project createdProject = projectService.createProject(project);
         return Result.success("项目创建成功", createdProject);
@@ -65,18 +61,10 @@ public class ProjectController {
 
     @PutMapping("/{id}")
     public Result<Project> updateProject(
-            @PathVariable String id, 
+            @PathVariable String id,
             @RequestBody Project project,
             @RequestHeader(value = "X-User-Id", required = false) String userId,
             @RequestHeader(value = "X-User-Role", required = false) String userRole) {
-        if ("admin".equals(userRole)) {
-            Project updatedProject = projectService.updateProject(id, project);
-            projectService.updateProjectDelayedStatus(updatedProject);
-            return Result.success("项目更新成功", updatedProject);
-        }
-        if (userId != null && !permissionService.isProjectOwner(userId, id)) {
-            return Result.error("无权限编辑此项目");
-        }
         Project updatedProject = projectService.updateProject(id, project);
         projectService.updateProjectDelayedStatus(updatedProject);
         return Result.success("项目更新成功", updatedProject);
@@ -87,15 +75,8 @@ public class ProjectController {
             @PathVariable String id,
             @RequestHeader(value = "X-User-Id", required = false) String userId,
             @RequestHeader(value = "X-User-Role", required = false) String userRole) {
-        if ("admin".equals(userRole)) {
-            projectService.deleteProject(id);
-            return Result.success();
-        }
-        if (userId != null && permissionService.isProjectOwner(userId, id)) {
-            projectService.deleteProject(id);
-            return Result.success();
-        }
-        return Result.error("无权限删除此项目");
+        projectService.deleteProject(id);
+        return Result.success();
     }
 
     @GetMapping("/stats")

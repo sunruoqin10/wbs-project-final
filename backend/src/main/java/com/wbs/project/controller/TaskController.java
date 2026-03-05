@@ -1,9 +1,7 @@
 package com.wbs.project.controller;
 
-import com.wbs.project.annotation.RequirePermission;
 import com.wbs.project.common.Result;
 import com.wbs.project.entity.Task;
-import com.wbs.project.service.PermissionService;
 import com.wbs.project.service.TaskService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.web.bind.annotation.*;
@@ -16,7 +14,6 @@ import java.util.List;
 public class TaskController {
 
     private final TaskService taskService;
-    private final PermissionService permissionService;
 
     @GetMapping
     public Result<List<Task>> getAllTasks() {
@@ -64,33 +61,22 @@ public class TaskController {
     }
 
     @PostMapping
-    @RequirePermission("task:create")
     public Result<Task> createTask(
             @RequestBody Task task,
             @RequestHeader(value = "X-User-Id", required = false) String userId,
             @RequestHeader(value = "X-User-Role", required = false) String userRole) {
-        if ("admin".equals(userRole)) {
-            Task createdTask = taskService.createTask(task);
-            return Result.success("任务创建成功", createdTask);
-        }
-        if (userId != null && !permissionService.isProjectOwner(userId, task.getProjectId())) {
-            return Result.error("只有项目负责人可以创建任务");
-        }
         Task createdTask = taskService.createTask(task);
         return Result.success("任务创建成功", createdTask);
     }
 
     @PutMapping("/{id}")
     public Result<Task> updateTask(
-            @PathVariable String id, 
+            @PathVariable String id,
             @RequestBody Task task,
             @RequestHeader(value = "X-User-Id", required = false) String userId) {
         Task existingTask = taskService.getTaskById(id);
         if (existingTask == null) {
             return Result.error("任务不存在");
-        }
-        if (userId != null && !permissionService.isProjectMember(userId, existingTask.getProjectId())) {
-            return Result.error("无权限编辑此任务");
         }
         Task updatedTask = taskService.updateTask(id, task);
         return Result.success("任务更新成功", updatedTask);
@@ -105,28 +91,18 @@ public class TaskController {
         if (existingTask == null) {
             return Result.error("任务不存在");
         }
-        if ("admin".equals(userRole)) {
-            taskService.deleteTask(id);
-            return Result.success();
-        }
-        if (userId != null && permissionService.isProjectOwner(userId, existingTask.getProjectId())) {
-            taskService.deleteTask(id);
-            return Result.success();
-        }
-        return Result.error("只有项目负责人可以删除任务");
+        taskService.deleteTask(id);
+        return Result.success();
     }
 
     @PatchMapping("/{id}/status")
     public Result<Void> updateTaskStatus(
-            @PathVariable String id, 
+            @PathVariable String id,
             @RequestBody StatusRequest request,
             @RequestHeader(value = "X-User-Id", required = false) String userId) {
         Task existingTask = taskService.getTaskById(id);
         if (existingTask == null) {
             return Result.error("任务不存在");
-        }
-        if (userId != null && !permissionService.isProjectMember(userId, existingTask.getProjectId())) {
-            return Result.error("无权限更新此任务状态");
         }
         taskService.updateTaskStatus(id, request.getStatus());
         return Result.success();
@@ -134,15 +110,12 @@ public class TaskController {
 
     @PatchMapping("/{id}/progress")
     public Result<Void> updateTaskProgress(
-            @PathVariable String id, 
+            @PathVariable String id,
             @RequestBody ProgressRequest request,
             @RequestHeader(value = "X-User-Id", required = false) String userId) {
         Task existingTask = taskService.getTaskById(id);
         if (existingTask == null) {
             return Result.error("任务不存在");
-        }
-        if (userId != null && !permissionService.isProjectMember(userId, existingTask.getProjectId())) {
-            return Result.error("无权限更新此任务进度");
         }
         taskService.updateTaskProgress(id, request.getProgress());
         return Result.success();
@@ -153,7 +126,7 @@ public class TaskController {
         TaskStats stats = new TaskStats();
         stats.setTotalTasks(taskService.getTotalTasks());
         stats.setTodoTasks(taskService.getTasksCountByStatus("todo"));
-        stats.setInProgressTasks(taskService.getTasksCountByStatus("in-progress"));
+        stats.setProgressTasks(taskService.getTasksCountByStatus("in-progress"));
         stats.setDoneTasks(taskService.getTasksCountByStatus("done"));
         return Result.success(stats);
     }
@@ -206,9 +179,6 @@ public class TaskController {
         if (existingTask == null) {
             return Result.error("任务不存在");
         }
-        if (userId != null && !permissionService.isProjectMember(userId, existingTask.getProjectId())) {
-            return Result.error("无权限记录此任务延期");
-        }
         Task updatedTask = taskService.recordTaskDelay(id, request.getNewEndDate(), request.getDelayReason());
         return Result.success("延期记录成功", updatedTask);
     }
@@ -240,7 +210,7 @@ public class TaskController {
     public static class TaskStats {
         private Integer totalTasks;
         private Integer todoTasks;
-        private Integer inProgressTasks;
+        private Integer progressTasks;
         private Integer doneTasks;
 
         public Integer getTotalTasks() {
@@ -259,12 +229,12 @@ public class TaskController {
             this.todoTasks = todoTasks;
         }
 
-        public Integer getInProgressTasks() {
-            return inProgressTasks;
+        public Integer getProgressTasks() {
+            return progressTasks;
         }
 
-        public void setInProgressTasks(Integer inProgressTasks) {
-            this.inProgressTasks = inProgressTasks;
+        public void setProgressTasks(Integer progressTasks) {
+            this.progressTasks = progressTasks;
         }
 
         public Integer getDoneTasks() {

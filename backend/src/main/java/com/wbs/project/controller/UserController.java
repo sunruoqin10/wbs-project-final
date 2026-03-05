@@ -1,6 +1,5 @@
 package com.wbs.project.controller;
 
-import com.wbs.project.annotation.RequirePermission;
 import com.wbs.project.common.Result;
 import com.wbs.project.entity.LoginRequest;
 import com.wbs.project.entity.LoginResponse;
@@ -30,7 +29,6 @@ public class UserController {
     }
 
     @GetMapping
-    @RequirePermission("user:view")
     public Result<List<User>> getAllUsers() {
         List<User> users = userService.getAllUsers();
         return Result.success(users);
@@ -52,21 +50,18 @@ public class UserController {
     }
 
     @PostMapping
-    @RequirePermission("user:create")
     public Result<User> createUser(@RequestBody User user) {
         User createdUser = userService.createUser(user);
         return Result.success("用户创建成功", createdUser);
     }
 
     @PutMapping("/{id}")
-    @RequirePermission("user:edit")
     public Result<User> updateUser(@PathVariable String id, @RequestBody User user) {
         User updatedUser = userService.updateUser(id, user);
         return Result.success("用户更新成功", updatedUser);
     }
 
     @DeleteMapping("/{id}")
-    @RequirePermission("user:delete")
     public Result<Void> deleteUser(@PathVariable String id) {
         userService.deleteUser(id);
         return Result.success();
