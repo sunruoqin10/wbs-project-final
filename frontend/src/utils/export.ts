@@ -1,6 +1,7 @@
 import ExcelJS from 'exceljs';
 import type { Project, Task, User } from '@/types/index';
 import { saveAs } from 'file-saver';
+import { exportGanttChart } from './exportGantt';
 
 // ==================== Type Definitions ====================
 
@@ -548,11 +549,15 @@ async function exportComprehensive(data: ComprehensiveData, filename: string): P
  * - exportToExcelNamespace.projects(projects, filename)
  * - exportToExcelNamespace.statistics(data, filename)
  * - exportToExcelNamespace.comprehensive(data, filename)
+ * - exportToExcelNamespace.gantt(data, filename)
  */
 export const exportToExcelNamespace = {
   projects: exportProjects,
   statistics: exportStatistics,
-  comprehensive: exportComprehensive
+  comprehensive: exportComprehensive,
+  gantt: async (data: any, filename: string) => {
+    await exportGanttChart(data, filename);
+  }
 };
 
 // 默认导出命名空间
