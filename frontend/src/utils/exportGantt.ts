@@ -211,11 +211,11 @@ export async function exportGanttChart(
     // 构建任务层级
     const taskHierarchy = buildTaskHierarchy(projectTasks, null, 0);
 
-    // 左侧信息列数
-    const infoColCount = 4;
+    // 左侧信息列数（任务名称、状态、负责人、开始时间、结束时间、进度）
+    const infoColCount = 6;
 
     // 第3行：月份行 - 不合并，直接在每个单元格显示月份
-    const monthRow = ['任务名称', '状态', '负责人', '进度'];
+    const monthRow = ['任务名称', '状态', '负责人', '开始时间', '结束时间', '进度'];
     dateRange.forEach(date => {
       const monthLabel = `${date.getMonth() + 1}月`;
       monthRow.push(monthLabel);
@@ -246,7 +246,7 @@ export async function exportGanttChart(
     }
 
     // 第4行：日期表头
-    const headerRow = ['任务名称', '状态', '负责人', '进度'];
+    const headerRow = ['任务名称', '状态', '负责人', '开始时间', '结束时间', '进度'];
     dateRange.forEach(date => {
       headerRow.push(formatDateShort(date));
     });
@@ -279,11 +279,13 @@ export async function exportGanttChart(
       const taskStart = new Date(task.startDate);
       const taskEnd = new Date(task.endDate);
 
-      // 添加基本信息
+      // 添加基本信息（包含开始时间和结束时间）
       const rowData = [
         taskTitle,
         translateTaskStatus(task.status),
         getUserName(task.assigneeId, data.users),
+        formatDate(task.startDate),
+        formatDate(task.endDate),
         `${task.progress}%`
       ];
 
@@ -347,11 +349,18 @@ export async function exportGanttChart(
                 right: { style: 'thin', color: { argb: 'FFD3D3D3' } }
               }
             };
+
+            // 在进度条中显示完成标记
+            if (isInCompleted) {
+              cell.value = '✓';
+            }
           } else {
-            // 非任务期间
             cell.style = {
-              font: { size: 10 },
-              alignment: { vertical: 'middle', horizontal: 'center' },
+              fill: {
+                type: 'pattern',
+                pattern: 'solid',
+                fgColor: { argb: isWeekend(currentDate) ? 'FFF5F5F5' : 'FFFFFFFF' }
+              },
               border: {
                 top: { style: 'thin', color: { argb: 'FFD3D3D3' } },
                 left: { style: 'thin', color: { argb: 'FFD3D3D3' } },
@@ -359,53 +368,32 @@ export async function exportGanttChart(
                 right: { style: 'thin', color: { argb: 'FFD3D3D3' } }
               }
             };
-
-            // 周末标记
-            if (isWeekend(currentDate)) {
-              cell.style.fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: 'FFE8E8E8' } };
-            }
           }
         }
       }
     });
 
     // 设置列宽
-    worksheet.getColumn(1).width = 35;  // 任务名称
-    worksheet.getColumn(2).width = 10;  // 状态
-    worksheet.getColumn(3).width = 12;  // 负责人
-    worksheet.getColumn(4).width = 10;  // 进度
+    worksheet.getColumn(1).width = 35; // 任务名称
+    worksheet.getColumn(2).width = 10; // 状态
+    worksheet.getColumn(3).width = 12; // 负责人
+    worksheet.getColumn(4).width = 12; // 开始时间
+    worksheet.getColumn(5).width = 12; // 结束时间
+    worksheet.getColumn(6).width = 8;  // 进度
 
-    // 时间轴列宽
-    for (let i = infoColCount + 1; i <= infoColCount + dateRange.length; i++) {
-      worksheet.getColumn(i).width = 3.5;
+    // 设置时间轴列宽
+    for (let i = 7; i <= infoColCount + dateRange.length; i++) {
+      worksheet.getColumn(i).width = 4;
     }
 
-    // 设置行高
-    for (let row = 5; row <= worksheet.rowCount; row++) {
-      worksheet.getRow(row).height = 28;
-    }
-
-    // 冻结窗格
+    // 冻结窗格（冻结前6列和前4行）
     worksheet.views = [
-      {
-        state: 'frozen',
-        xSplit: infoColCount,
-        ySplit: 4
-      }
+      { state: 'frozen', xSplit: infoColCount, ySplit: 4 }
     ];
   }
 
-  // 如果没有项目数据，添加提示工作表
-  if (data.projects.length === 0) {
-    const worksheet = workbook.addWorksheet('提示');
-    worksheet.addRow(['没有项目数据']);
-    worksheet.addRow(['请先创建项目后再导出甘特图']);
-  }
-
-  // 生成文件
+  // 生成并下载文件
   const buffer = await workbook.xlsx.writeBuffer();
-  const blob = new Blob([buffer], {
-    type: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet'
-  });
+  const blob = new Blob([buffer], { type: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet' });
   saveAs(blob, filename);
 }
