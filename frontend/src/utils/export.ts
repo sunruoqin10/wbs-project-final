@@ -132,8 +132,32 @@ function formatDate(dateStr: string): string {
 
 function getUserName(userId: string | undefined, users: User[]): string {
   if (!userId) return '';
-  const user = users.find(u => u.id === userId);
-  return user?.name || userId;
+
+  // 转换为字符串进行比较，避免类型不匹配
+  const userIdStr = String(userId);
+
+  // 尝试精确匹配
+  const user = users.find(u => {
+    const uid = String(u.id);
+    return uid === userIdStr;
+  });
+
+  if (user) {
+    return user.name;
+  }
+
+  // 如果找不到，尝试部分匹配（兼容性处理）
+  const fallbackUser = users.find(u => {
+    const uid = String(u.id);
+    return uid.includes(userIdStr) || userIdStr.includes(uid);
+  });
+
+  if (fallbackUser) {
+    return fallbackUser.name;
+  }
+
+  // 都找不到，返回未分配
+  return '未分配';
 }
 
 function formatSkills(skills: string[] | undefined): string {
