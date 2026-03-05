@@ -126,34 +126,18 @@
         <template #header>
           <h3 class="text-lg font-semibold text-secondary-900">{{ $t('reports.export.title') }}</h3>
         </template>
-        <div class="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3">
-          <button @click="exportProjectsExcel" class="flex items-center justify-center gap-2 rounded-lg border border-secondary-200 p-4 transition-colors hover:bg-secondary-50">
-            <svg class="h-6 w-6 text-success-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 10v6m0 0l-3-3m3 3l3-3m2 8H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
-            </svg>
-            <div class="text-left">
-              <div class="font-medium text-secondary-900">{{ $t('reports.export.projectExcel') }}</div>
-              <div class="text-xs text-secondary-500">{{ $t('reports.export.projectExcelDesc') }}</div>
-            </div>
-          </button>
-
-          <button @click="exportStatisticsExcel" class="flex items-center justify-center gap-2 rounded-lg border border-secondary-200 p-4 transition-colors hover:bg-secondary-50">
-            <svg class="h-6 w-6 text-info-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+        <div class="flex justify-start">
+          <button @click="exportComprehensive" :disabled="isExporting" class="flex items-center justify-center gap-2 rounded-lg bg-primary-50 px-8 py-4 transition-colors hover:bg-primary-100 disabled:opacity-50 disabled:cursor-not-allowed">
+            <svg v-if="!isExporting" class="h-6 w-6 text-primary-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
               <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 17v-2m3 2v-4m3 4v-6m2 10H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
             </svg>
-            <div class="text-left">
-              <div class="font-medium text-secondary-900">{{ $t('reports.export.statisticsExcel') }}</div>
-              <div class="text-xs text-secondary-500">{{ $t('reports.export.statisticsExcelDesc') }}</div>
-            </div>
-          </button>
-
-          <button @click="exportComprehensive" class="flex items-center justify-center gap-2 rounded-lg bg-primary-50 p-4 transition-colors hover:bg-primary-100">
-            <svg class="h-6 w-6 text-primary-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 17v-2m3 2v-4m3 4v-6m2 10H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
+            <svg v-else class="h-6 w-6 text-primary-600 animate-spin" fill="none" viewBox="0 0 24 24">
+              <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
+              <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
             </svg>
             <div class="text-left">
-              <div class="font-medium text-primary-900">{{ $t('reports.export.comprehensiveReport') }}</div>
-              <div class="text-xs text-primary-600">{{ $t('reports.export.comprehensiveReportDesc') }}</div>
+              <div class="font-medium text-primary-900">{{ isExporting ? '正在导出...' : $t('reports.export.comprehensiveReport') }}</div>
+              <div class="text-xs text-primary-600">{{ isExporting ? '请稍候' : $t('reports.export.comprehensiveReportDesc') }}</div>
             </div>
           </button>
         </div>
@@ -171,7 +155,7 @@ import Card from '@/components/common/Card.vue';
 import { useProjectStore } from '@/stores/project';
 import { useTaskStore } from '@/stores/task';
 import { useUserStore } from '@/stores/user';
-import { exportToExcel } from '@/utils/export';
+import { exportToExcelNamespace } from '@/utils/export';
 
 const { t } = useI18n();
 const projectStore = useProjectStore();
@@ -182,6 +166,7 @@ const projectStatusChartRef = ref<HTMLElement>();
 const taskPriorityChartRef = ref<HTMLElement>();
 const projectProgressChartRef = ref<HTMLElement>();
 const teamPerformanceChartRef = ref<HTMLElement>();
+const isExporting = ref(false);
 
 // 从真实数据计算统计数据
 const statistics = computed(() => {
@@ -439,48 +424,22 @@ onMounted(async () => {
   }, 100);
 });
 
-// Export functions
-const exportProjectsExcel = () => {
-  if (projectStore.projects.length === 0) {
-    alert(t('reports.messages.noProjectData'));
-    return;
-  }
-  try {
-    exportToExcel.projects(projectStore.projects, `${t('reports.export.projectExcel')}_${getTimestamp()}.xlsx`);
-    alert(`${t('reports.export.projectExcelDesc')}${t('reports.messages.exportSuccess')}`);
-  } catch (error) {
-    console.error('Export failed:', error);
-    alert(t('reports.messages.exportFailed'));
-  }
-};
-
-const exportStatisticsExcel = () => {
-  try {
-    exportToExcel.statistics(
-      {
-        stats: statistics.value,
-        projects: projectStore.projects,
-        tasks: taskStore.tasks,
-        users: userStore.users
-      },
-      `${t('reports.export.statisticsExcel')}_${getTimestamp()}.xlsx`
-    );
-    alert(`${t('reports.messages.exportSuccess')}`);
-  } catch (error) {
-    console.error('Export failed:', error);
-    alert(t('reports.messages.exportFailed'));
-  }
-};
-
-const exportComprehensive = () => {
+// Export function
+const exportComprehensive = async () => {
   if (projectStore.projects.length === 0) {
     alert(t('reports.messages.noData'));
     return;
   }
 
+  if (isExporting.value) return;
+  isExporting.value = true;
+
   try {
+    // 使用 setTimeout 让 UI 有机会更新
+    await new Promise(resolve => setTimeout(resolve, 50));
+
     // 导出综合 Excel 报表
-    exportToExcel.comprehensive(
+    exportToExcelNamespace.comprehensive(
       {
         projects: projectStore.projects,
         tasks: taskStore.tasks,
@@ -493,6 +452,8 @@ const exportComprehensive = () => {
   } catch (error) {
     console.error('Export failed:', error);
     alert(t('reports.messages.exportFailed'));
+  } finally {
+    isExporting.value = false;
   }
 };
 
