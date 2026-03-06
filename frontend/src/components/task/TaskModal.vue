@@ -2,41 +2,39 @@
   <Modal
     :open="open"
     :title="isEditing ? '编辑任务' : '新建任务'"
-    size="lg"
+    size="2xl"
     @close="handleClose"
   >
-    <form @submit.prevent="handleSubmit" class="space-y-4">
-      <!-- Title -->
-      <Input
-        v-model="formData.title"
-        label="任务标题"
-        placeholder="请输入任务标题"
-        :error="errors.title"
-        required
-      />
+    <form @submit.prevent="handleSubmit" class="space-y-5">
+      <div class="grid grid-cols-1 lg:grid-cols-2 gap-4">
+        <Input
+          v-model="formData.title"
+          label="任务标题"
+          placeholder="请输入任务标题"
+          :error="errors.title"
+          required
+        />
 
-      <!-- Parent Task (只读，创建子任务时显示) -->
-      <div v-if="parentTaskId || parentTaskName">
-        <label class="mb-1 block text-sm font-medium text-secondary-700">父任务</label>
-        <div class="w-full rounded-lg border border-secondary-200 bg-secondary-50 px-4 py-2 text-secondary-700">
-          {{ parentTaskName || formData.parentTaskId }}
+        <div v-if="parentTaskId || parentTaskName">
+          <label class="mb-1 block text-sm font-medium text-secondary-700">父任务</label>
+          <div class="w-full rounded-lg border border-secondary-200 bg-secondary-50 px-3 py-2 text-sm text-secondary-700">
+            {{ parentTaskName || formData.parentTaskId }}
+          </div>
+          <input type="hidden" v-model="formData.parentTaskId" />
         </div>
-        <input type="hidden" v-model="formData.parentTaskId" />
       </div>
 
-      <!-- Description -->
       <div>
         <label class="mb-1 block text-sm font-medium text-secondary-700">描述</label>
         <textarea
           v-model="formData.description"
           rows="3"
-          class="w-full rounded-lg border border-secondary-200 px-4 py-2 focus:border-primary-500 focus:outline-none focus:ring-2 focus:ring-primary-500/20"
+          class="w-full rounded-lg border border-secondary-200 px-3 py-2 text-sm focus:border-primary-500 focus:outline-none focus:ring-2 focus:ring-primary-500/20 resize-none"
           placeholder="请输入任务描述"
         ></textarea>
       </div>
 
-      <div class="grid grid-cols-2 gap-4">
-        <!-- Status -->
+      <div class="grid grid-cols-2 lg:grid-cols-4 gap-3">
         <div>
           <Select
             v-model="formData.status"
@@ -53,11 +51,10 @@
             v-if="hasSubtasks"
             class="mt-1 text-xs text-secondary-500"
           >
-            此任务有子任务，状态由子任务自动确定
+            由子任务自动确定
           </div>
         </div>
 
-        <!-- Priority -->
         <Select
           v-model="formData.priority"
           label="优先级"
@@ -69,81 +66,77 @@
           <option value="high">高</option>
           <option value="urgent">紧急</option>
         </Select>
-      </div>
 
-      <div class="grid grid-cols-2 gap-4">
-        <!-- Start Date -->
         <div>
           <label class="mb-1 block text-sm font-medium text-secondary-700">
-            开始日期
-            <span class="text-danger-500">*</span>
+            开始日期 *
+            <span v-if="hasSubtasks" class="text-xs text-secondary-500 font-normal ml-1">(不可编辑)</span>
           </label>
           <div
             v-if="hasSubtasks"
-            class="mb-2 rounded-md bg-secondary-100 px-3 py-2 text-xs text-secondary-600"
+            class="mb-1 rounded-md bg-secondary-100 px-2 py-1 text-xs text-secondary-600"
           >
-            此任务有子任务，开始时间将由子任务自动计算，无法手动修改
+            由子任务自动计算
           </div>
           <input
             v-model="formData.startDate"
             type="date"
             :disabled="hasSubtasks"
             :class="[
-              'w-full rounded-lg border px-4 py-2 focus:border-primary-500 focus:outline-none focus:ring-2 focus:ring-primary-500/20',
+              'w-full rounded-lg border px-3 py-2 text-sm focus:border-primary-500 focus:outline-none focus:ring-2 focus:ring-primary-500/20',
               errors.startDate ? 'border-danger-300' : 'border-secondary-200',
               { 'opacity-50 cursor-not-allowed bg-secondary-50': hasSubtasks }
             ]"
             required
           />
-          <p v-if="errors.startDate" class="mt-1 text-sm text-danger-600">{{ errors.startDate }}</p>
+          <p v-if="errors.startDate" class="mt-1 text-xs text-danger-600">{{ errors.startDate }}</p>
         </div>
 
-        <!-- End Date -->
         <div>
           <label class="mb-1 block text-sm font-medium text-secondary-700">
-            结束日期
-            <span class="text-danger-500">*</span>
+            结束日期 *
+            <span v-if="hasSubtasks" class="text-xs text-secondary-500 font-normal ml-1">(不可编辑)</span>
           </label>
           <div
             v-if="hasSubtasks"
-            class="mb-2 rounded-md bg-secondary-100 px-3 py-2 text-xs text-secondary-600"
+            class="mb-1 rounded-md bg-secondary-100 px-2 py-1 text-xs text-secondary-600"
           >
-            此任务有子任务，结束时间将由子任务自动计算，无法手动修改
+            由子任务自动计算
           </div>
           <input
             v-model="formData.endDate"
             type="date"
             :disabled="hasSubtasks"
             :class="[
-              'w-full rounded-lg border px-4 py-2 focus:border-primary-500 focus:outline-none focus:ring-2 focus:ring-primary-500/20',
+              'w-full rounded-lg border px-3 py-2 text-sm focus:border-primary-500 focus:outline-none focus:ring-2 focus:ring-primary-500/20',
               errors.endDate ? 'border-danger-300' : 'border-secondary-200',
               { 'opacity-50 cursor-not-allowed bg-secondary-50': hasSubtasks }
             ]"
             required
           />
-          <p v-if="errors.endDate" class="mt-1 text-sm text-danger-600">{{ errors.endDate }}</p>
+          <p v-if="errors.endDate" class="mt-1 text-xs text-danger-600">{{ errors.endDate }}</p>
         </div>
       </div>
 
-      <!-- 延期原因输入（仅当检测到日期延后时显示） -->
-      <div v-if="showDelayReasonInput">
+      <div v-if="showDelayReasonInput" class="rounded-lg bg-warning-50 border border-warning-200 px-3 py-2">
         <label class="mb-1 block text-sm font-medium text-secondary-700">
-          延期原因
-          <span class="text-warning-500">*</span>
+          延期原因 *
         </label>
         <textarea
           v-model="formData.delayReason"
-          rows="3"
-          class="w-full rounded-lg border border-warning-300 px-4 py-2 focus:border-warning-500 focus:outline-none focus:ring-2 focus:ring-warning-500/20"
+          rows="2"
+          class="w-full rounded-lg border border-warning-300 px-3 py-2 text-sm focus:border-warning-500 focus:outline-none focus:ring-2 focus:ring-warning-500/20 resize-none"
           placeholder="请说明延期原因..."
         ></textarea>
-        <div class="mt-1 rounded-md bg-warning-50 px-3 py-2 text-xs text-warning-700">
-          ⚠️ 检测到结束日期延后，请说明延期原因
+        <div class="mt-1 flex items-center gap-1 text-xs text-warning-700">
+          <svg class="h-4 w-4 flex-shrink-0" fill="currentColor" viewBox="0 0 20 20">
+            <path fill-rule="evenodd" d="M8.257 3.099c.765-1.36 2.722-1.36 3.486 0l5.58 9.92c.75 1.334-.213 2.98-1.742 2.98H4.42c-1.53 0-2.493-1.646-1.743-2.98l5.58-9.92zM11 13a1 1 0 11-2 0 1 1 0 012 0zm-1-8a1 1 0 00-1 1v3a1 1 0 002 0V6a1 1 0 00-1-1z" clip-rule="evenodd" />
+          </svg>
+          检测到结束日期延后，请说明延期原因
         </div>
       </div>
 
-      <div class="grid grid-cols-2 gap-4">
-        <!-- Assignee -->
+      <div class="grid grid-cols-1 lg:grid-cols-2 gap-4">
         <Select
           v-model="formData.assigneeId"
           label="负责人"
@@ -156,64 +149,70 @@
           </option>
         </Select>
 
-        <!-- Estimated Hours (只读，自动计算) -->
         <div>
           <label class="mb-1 block text-sm font-medium text-secondary-700">
             预估工时: {{ formatHoursToDays(formData.estimatedHours || 0) }}
-            <span class="text-xs text-secondary-500 font-normal ml-2">(根据工作日自动计算)</span>
           </label>
           <input
             v-model.number="formData.estimatedHours"
             type="number"
-            class="w-full rounded-lg border border-secondary-200 px-4 py-2 bg-secondary-50 text-secondary-600 cursor-not-allowed opacity-60"
+            class="w-full rounded-lg border border-secondary-200 px-3 py-2 text-sm bg-secondary-50 text-secondary-600 cursor-not-allowed opacity-60"
             disabled
           />
-          <p class="mt-1 text-xs text-secondary-500">此字段根据任务的开始日期和结束日期自动计算工作日（每天8小时），无法手动编辑</p>
+          <p class="mt-1 text-xs text-secondary-500">根据工作日自动计算（每天8小时）</p>
         </div>
       </div>
 
-      <!-- Progress -->
       <div>
-        <label class="mb-1 block text-sm font-medium text-secondary-700">进度: {{ formData.progress }}%</label>
+        <label class="mb-1 block text-sm font-medium text-secondary-700">
+          进度: {{ formData.progress }}%
+          <span v-if="hasSubtasks || isTodoStatus || isDoneStatus" class="text-xs text-secondary-500 font-normal ml-1">(自动计算)</span>
+        </label>
         <div
           v-if="hasSubtasks"
-          class="mb-2 rounded-md bg-secondary-100 px-3 py-2 text-xs text-secondary-600"
+          class="mb-2 rounded-md bg-secondary-100 px-2 py-1 text-xs text-secondary-600"
         >
-          此任务有子任务，进度将由子任务自动计算，无法手动修改
+          有子任务，由子任务自动计算
         </div>
         <div
           v-if="isTodoStatus"
-          class="mb-2 rounded-md bg-secondary-100 px-3 py-2 text-xs text-secondary-600"
+          class="mb-2 rounded-md bg-secondary-100 px-2 py-1 text-xs text-secondary-600"
         >
-          待办状态的任务进度固定为0%，无法修改
+          待办状态固定为0%
         </div>
         <div
           v-if="isDoneStatus"
-          class="mb-2 rounded-md bg-secondary-100 px-3 py-2 text-xs text-secondary-600"
+          class="mb-2 rounded-md bg-secondary-100 px-2 py-1 text-xs text-secondary-600"
         >
-          已完成状态的任务进度固定为100%，无法修改
+          已完成状态固定为100%
         </div>
-        <input
-          v-model.number="formData.progress"
-          type="range"
-          min="0"
-          max="100"
-          class="w-full"
-          :disabled="hasSubtasks || isTodoStatus || isDoneStatus"
-          :class="{ 'opacity-50 cursor-not-allowed': hasSubtasks || isTodoStatus || isDoneStatus }"
-        />
+        <div class="flex items-center gap-3">
+          <div class="flex-1">
+            <input
+              v-model.number="formData.progress"
+              type="range"
+              min="0"
+              max="100"
+              class="w-full h-2"
+              :disabled="hasSubtasks || isTodoStatus || isDoneStatus"
+              :class="{ 'opacity-50 cursor-not-allowed': hasSubtasks || isTodoStatus || isDoneStatus }"
+            />
+          </div>
+          <div class="text-2xl font-bold text-primary-600 min-w-[3rem] text-center">
+            {{ formData.progress }}%
+          </div>
+        </div>
       </div>
 
-      <!-- Tags -->
       <div>
-        <label class="mb-1 block text-sm font-medium text-secondary-700">标签</label>
-        <div class="flex flex-wrap gap-2">
+        <label class="mb-2 block text-sm font-medium text-secondary-700">标签</label>
+        <div class="flex flex-wrap gap-1.5">
           <span
             v-for="tag in commonTags"
             :key="tag"
             @click="toggleTag(tag)"
             :class="[
-              'cursor-pointer rounded-full px-3 py-1 text-sm transition-colors',
+              'cursor-pointer rounded-full px-2.5 py-1 text-xs transition-colors',
               formData.tags.includes(tag)
                 ? 'bg-primary-600 text-white'
                 : 'bg-secondary-100 text-secondary-700 hover:bg-secondary-200'
