@@ -149,6 +149,18 @@ export default {
     searchPlaceholder: '프로젝트 검색...',
     status: '상태',
     clearFilters: '필터 지우기',
+    viewModes: {
+      card: '카드',
+      list: '목록'
+    },
+    listView: {
+      projectName: '프로젝트명',
+      status: '상태',
+      progress: '진행률',
+      members: '멤버',
+      dateRange: '기간',
+      actions: '작업'
+    },
     emptyState: {
       title: '프로젝트 없음',
       noResults: '일치하는 프로젝트를 찾을 수 없습니다',

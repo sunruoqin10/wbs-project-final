@@ -149,6 +149,18 @@ export default {
     searchPlaceholder: '搜索项目...',
     status: '状态',
     clearFilters: '清除筛选',
+    viewModes: {
+      card: '卡片',
+      list: '列表'
+    },
+    listView: {
+      projectName: '项目名称',
+      status: '状态',
+      progress: '进度',
+      members: '成员',
+      dateRange: '日期',
+      actions: '操作'
+    },
     emptyState: {
       title: '暂无项目',
       noResults: '没有找到匹配的项目',
