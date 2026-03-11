@@ -11,7 +11,7 @@
             :class="[
               'flex-1 rounded-lg px-4 py-2 font-medium transition-colors',
               approved
-                ? 'bg-success-600 text-white'
+                ? 'bg-green-600 text-white hover:bg-green-700'
                 : 'bg-secondary-100 text-secondary-700 hover:bg-secondary-200'
             ]"
           >
@@ -21,9 +21,9 @@
             @click="approved = false"
             :class="[
               'flex-1 rounded-lg px-4 py-2 font-medium transition-colors',
-              !approved
-                ? 'bg-danger-600 text-white'
-                : 'bg-secondary-100 text-secondary-700 hover:bg-secondary-200'
+              approved
+                ? 'bg-secondary-100 text-secondary-700 hover:bg-secondary-200'
+                : 'bg-red-600 text-white hover:bg-red-700'
             ]"
           >
             {{ $t('weeklyReports.approve.reject') }}

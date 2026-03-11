@@ -147,12 +147,10 @@
 
             <div class="col-span-2 mt-2 flex items-center md:mt-0">
               <div class="flex items-center gap-2">
-                <img
-                  :src="getUserAvatar(report.userId)"
-                  :alt="getUserName(report.userId)"
-                  class="h-7 w-7 rounded-full"
-                />
-                <span class="truncate text-sm text-secondary-700">{{ getUserName(report.userId) }}</span>
+                <div class="h-7 w-7 rounded-full flex items-center justify-center bg-primary-100 text-primary-600 font-semibold text-xs">
+                  {{ getUserName(report?.userId || '').charAt(0).toUpperCase() }}
+                </div>
+                <span class="truncate text-sm text-secondary-700">{{ getUserName(report?.userId || '') }}</span>
               </div>
             </div>
 
@@ -350,28 +348,26 @@ const goToReportDetail = (reportId: string) => {
   router.push(`/weekly-reports/${reportId}`);
 };
 
-const getProjectName = (projectId: string): string => {
+const getProjectName = (projectId: string | undefined): string => {
+  if (!projectId) return t('common.unknown');
   const project = projectStore.projects.find(p => p.id === projectId);
-  return project?.name || projectId;
+  return project?.name || t('common.unknown');
 };
 
-const getProjectColor = (projectId: string): string => {
+const getProjectColor = (projectId: string | undefined): string => {
+  if (!projectId) return '#3b82f6';
   const project = projectStore.projects.find(p => p.id === projectId);
   return project?.color || '#3b82f6';
 };
 
-const getUserName = (userId: string): string => {
+const getUserName = (userId: string | undefined | null): string => {
+  if (!userId) return t('common.unknown');
   const user = userStore.userById(userId);
-  return user?.name || userId;
-};
-
-const getUserAvatar = (userId: string): string => {
-  const user = userStore.userById(userId);
-  return user?.avatar || '';
+  return user?.name || t('common.unknown');
 };
 
 const formatWeekRange = (report: WeeklyReport): string => {
-  if (!report.weekStart || !report.weekEnd) return '-';
+  if (!report?.weekStart || !report?.weekEnd) return '-';
   return `${dayjs(report.weekStart).format('MM/DD')} - ${dayjs(report.weekEnd).format('MM/DD')}`;
 };
 

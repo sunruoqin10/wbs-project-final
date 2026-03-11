@@ -195,13 +195,11 @@ export const useWeeklyReportStore = defineStore('weeklyReport', () => {
 
   const loadComments = async (reportId: string) => {
     try {
-      const response = await apiService.getWeeklyReportComments(reportId);
-      if (response.code === 200 && response.data) {
-        if (currentReport.value && currentReport.value.id === reportId) {
-          currentReport.value.comments = response.data;
-        }
+      const comments = await apiService.getWeeklyReportComments(reportId);
+      if (currentReport.value && currentReport.value.id === reportId) {
+        currentReport.value.comments = comments;
       }
-      return response.data;
+      return comments;
     } catch (error) {
       console.warn('Failed to load comments:', error);
       throw error;
@@ -210,16 +208,14 @@ export const useWeeklyReportStore = defineStore('weeklyReport', () => {
 
   const addComment = async (reportId: string, content: string) => {
     try {
-      const response = await apiService.addWeeklyReportComment(reportId, { content });
-      if (response.code === 200 && response.data) {
-        if (currentReport.value && currentReport.value.id === reportId) {
-          if (!currentReport.value.comments) {
-            currentReport.value.comments = [];
-          }
-          currentReport.value.comments.unshift(response.data);
+      const addedComment = await apiService.addWeeklyReportComment(reportId, { content });
+      if (currentReport.value && currentReport.value.id === reportId) {
+        if (!currentReport.value.comments) {
+          currentReport.value.comments = [];
         }
+        currentReport.value.comments.unshift(addedComment);
       }
-      return response.data;
+      return addedComment;
     } catch (error) {
       console.warn('Failed to add comment:', error);
       throw error;

@@ -681,7 +681,9 @@ export default {
       update: '업데이트 완료',
       delete: '삭제 완료',
       save: '저장 완료',
-      submit: '제출 완료'
+      submit: '제출 완료',
+      approve: '승인 완료',
+      reject: '거부됨'
     },
     error: {
       create: '생성 실패',
@@ -689,6 +691,7 @@ export default {
       delete: '삭제 실패',
       save: '저장 실패',
       submit: '제출 실패',
+      approve: '승인 실패',
       network: '네트워크 오류가 발생했습니다. 다시 시도해주세요',
       unauthorized: '권한이 없습니다. 먼저 로그인하세요',
       forbidden: '이 작업을 수행할 권한이 없습니다',

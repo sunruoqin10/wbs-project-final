@@ -696,7 +696,9 @@ export default {
       update: '更新成功',
       delete: '删除成功',
       save: '保存成功',
-      submit: '提交成功'
+      submit: '提交成功',
+      approve: '审批成功',
+      reject: '已拒绝'
     },
     error: {
       create: '创建失败',
@@ -704,6 +706,7 @@ export default {
       delete: '删除失败',
       save: '保存失败',
       submit: '提交失败',
+      approve: '审批失败',
       network: '网络错误，请稍后重试',
       unauthorized: '未授权，请先登录',
       forbidden: '没有权限执行此操作',

@@ -1,34 +1,34 @@
 <template>
   <div class="space-y-4">
-    <div
-      v-for="comment in comments"
-      :key="comment.id"
-      class="flex gap-3 rounded-lg bg-secondary-50 p-4"
-    >
-      <img
-        :src="getAvatarUrl(comment.userId)"
-        :alt="getUserName(comment.userId)"
-        class="h-10 w-10 flex-shrink-0 rounded-full"
-      />
-      <div class="flex-1 min-w-0">
-        <div class="flex items-center justify-between mb-1">
-          <span class="font-medium text-secondary-900">{{ getUserName(comment.userId) }}</span>
-          <div class="flex items-center gap-2">
-            <span class="text-xs text-secondary-500">{{ formatTime(comment.createdAt) }}</span>
-            <button
-              v-if="canDelete(comment)"
-              @click="$emit('delete', comment.id)"
-              class="text-xs text-secondary-400 hover:text-danger-600"
-              :title="$t('common.delete')"
-            >
-              {{ $t('common.delete') }}
-            </button>
-          </div>
+    <template v-if="props.comments && props.comments.length > 0">
+      <div
+        v-for="comment in props.comments"
+        :key="comment?.id || comment"
+        class="flex gap-3 rounded-lg bg-secondary-50 p-4"
+      >
+        <div class="h-10 w-10 rounded-full flex items-center justify-center bg-primary-100 text-primary-600 font-semibold flex-shrink-0">
+          {{ getUserName(comment?.userId || '').charAt(0).toUpperCase() }}
         </div>
-        <p class="text-sm text-secondary-700">{{ comment.content }}</p>
+        <div class="flex-1 min-w-0">
+          <div class="flex items-center justify-between mb-1">
+            <span class="font-medium text-secondary-900">{{ getUserName(comment?.userId || '') }}</span>
+            <div class="flex items-center gap-2">
+              <span class="text-xs text-secondary-500">{{ formatTime(comment?.createdAt) }}</span>
+              <button
+                v-if="comment && canDelete(comment)"
+                @click="$emit('delete', comment.id)"
+                class="text-xs text-secondary-400 hover:text-danger-600"
+                :title="$t('common.delete')"
+              >
+                {{ $t('common.delete') }}
+              </button>
+            </div>
+          </div>
+          <p class="text-sm text-secondary-700">{{ comment?.content }}</p>
+        </div>
       </div>
-    </div>
-    <div v-if="comments.length === 0" class="py-8 text-center text-secondary-500">
+    </template>
+    <div v-else class="py-8 text-center text-secondary-500">
       {{ $t('weeklyReports.comments.noComments') }}
     </div>
   </div>
@@ -57,11 +57,6 @@ const emit = defineEmits<{
 
 const canDelete = (comment: WeeklyReportComment) => {
   return userStore.currentUserId === comment.userId || userStore.currentRole === 'admin';
-};
-
-const getAvatarUrl = (userId: string) => {
-  const user = userStore.users.find(u => u.id === userId);
-  return user?.avatar || '/default-avatar.png';
 };
 
 const getUserName = (userId: string) => {

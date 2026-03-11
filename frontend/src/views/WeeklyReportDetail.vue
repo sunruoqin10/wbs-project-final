@@ -58,11 +58,9 @@
             </div>
 
             <div class="flex items-center gap-3">
-              <img
-                :src="getUserAvatar(report.userId)"
-                :alt="getUserName(report.userId)"
-                class="h-12 w-12 rounded-full"
-              />
+              <div class="h-12 w-12 rounded-full flex items-center justify-center bg-primary-100 text-primary-600 font-semibold">
+                {{ getUserName(report.userId).charAt(0).toUpperCase() }}
+              </div>
             </div>
           </div>
         </Card>
@@ -103,27 +101,16 @@
         <Card class="mt-6 p-6">
           <h3 class="text-lg font-semibold text-secondary-900 mb-4">{{ $t('weeklyReports.comments.title') }}</h3>
           
-          <div v-if="comments.length === 0" class="text-center py-8 text-secondary-500">
-            {{ $t('weeklyReports.comments.noComments') }}
-          </div>
-
-          <div v-else class="space-y-4">
-            <WeeklyReportComment
-              v-for="comment in comments"
-              :key="comment.id"
-              :comment="comment"
-              :currentUserId="currentUserId"
-              @delete="deleteComment"
-            />
-          </div>
+          <WeeklyReportComment
+            :comments="comments"
+            @delete="deleteComment"
+          />
 
           <div class="mt-6 pt-6 border-t border-secondary-200">
             <div class="flex gap-3">
-              <img
-                :src="currentUser?.avatar || ''"
-                :alt="currentUser?.name || ''"
-                class="h-10 w-10 rounded-full flex-shrink-0"
-              />
+              <div class="h-10 w-10 rounded-full flex items-center justify-center bg-primary-100 text-primary-600 font-semibold flex-shrink-0">
+                {{ getUserName(currentUser?.id || '').charAt(0).toUpperCase() }}
+              </div>
               <div class="flex-1">
                 <textarea
                   v-model="newComment"
@@ -214,9 +201,18 @@ onMounted(async () => {
 });
 
 const loadData = async () => {
-  await weeklyReportStore.loadReports();
-  report.value = await weeklyReportStore.loadReportById(reportId.value);
-  comments.value = await weeklyReportStore.loadComments(reportId.value);
+  try {
+    await userStore.loadUsers();
+    await projectStore.loadProjects();
+    await weeklyReportStore.loadReports();
+    report.value = await weeklyReportStore.loadReportById(reportId.value);
+    const loadedComments = await weeklyReportStore.loadComments(reportId.value);
+    comments.value = loadedComments || [];
+    console.log('[详情页] 加载评论成功:', comments.value);
+  } catch (error) {
+    console.error('Failed to load report data:', error);
+    comments.value = [];
+  }
 };
 
 const goBack = () => {
@@ -236,17 +232,33 @@ const closeApprovalModal = () => {
 };
 
 const handleApproval = async (approved: boolean, comment: string) => {
-  await weeklyReportStore.approveReport(reportId.value, approved, comment);
-  await loadData();
-  closeApprovalModal();
+  try {
+    await weeklyReportStore.approveReport(reportId.value, approved, comment);
+    await loadData();
+    closeApprovalModal();
+    alert(approved ? t('messages.success.approve') : t('messages.success.reject'));
+  } catch (error: any) {
+    const errorMessage = error?.message || error?.response?.data?.message || t('messages.error.approve');
+    alert(errorMessage);
+  }
 };
 
 const submitComment = async () => {
   if (!newComment.value.trim()) return;
   
-  await weeklyReportStore.addComment(reportId.value, newComment.value);
-  newComment.value = '';
-  await loadData();
+  try {
+    const addedComment = await weeklyReportStore.addComment(reportId.value, newComment.value);
+    if (addedComment) {
+      comments.value.unshift(addedComment);
+      console.log('[详情页] 添加评论成功:', addedComment);
+    } else {
+      await loadData();
+    }
+    newComment.value = '';
+  } catch (error) {
+    console.error('Failed to submit comment:', error);
+    await loadData();
+  }
 };
 
 const deleteComment = async (commentId: string) => {
@@ -256,7 +268,7 @@ const deleteComment = async (commentId: string) => {
 
 const getProjectName = (projectId: string): string => {
   const project = projectStore.projects.find(p => p.id === projectId);
-  return project?.name || projectId;
+  return project?.name || t('common.unknown');
 };
 
 const getProjectColor = (projectId: string): string => {
@@ -264,18 +276,14 @@ const getProjectColor = (projectId: string): string => {
   return project?.color || '#3b82f6';
 };
 
-const getUserName = (userId: string): string => {
+const getUserName = (userId: string | undefined | null): string => {
+  if (!userId) return t('common.unknown');
   const user = userStore.userById(userId);
-  return user?.name || userId;
+  return user?.name || t('common.unknown');
 };
 
-const getUserAvatar = (userId: string): string => {
-  const user = userStore.userById(userId);
-  return user?.avatar || '';
-};
-
-const formatWeekRange = (report: WeeklyReport): string => {
-  if (!report.weekStart || !report.weekEnd) return '-';
+const formatWeekRange = (report: WeeklyReport | undefined | null): string => {
+  if (!report?.weekStart || !report?.weekEnd) return '-';
   return `${dayjs(report.weekStart).format('MM/DD')} - ${dayjs(report.weekEnd).format('MM/DD')}`;
 };
 
