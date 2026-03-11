@@ -1,6 +1,6 @@
 // API Service Layer - Connects to Spring Boot backend
 
-import type { Project, Task, User, DelayStats, OvertimeRecord, OvertimeStats, Permission, TaskOvertimeStats } from '@/types';
+import type { Project, Task, User, DelayStats, OvertimeRecord, OvertimeStats, Permission, TaskOvertimeStats, WeeklyReport, WeeklyReportComment } from '@/types';
 import { useUserStore } from '@/stores/user';
 
 const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || '/api';
@@ -521,6 +521,92 @@ class ApiService {
 
   async checkIsMember(userId: string, projectId: string): Promise<{ isMember: boolean }> {
     return request<{ isMember: boolean }>(`/permission/is-member?userId=${userId}&projectId=${projectId}`);
+  }
+
+  // Weekly Reports API
+  async getWeeklyReports(params?: {
+    userId?: string;
+    projectId?: string;
+    status?: string;
+    startDate?: string;
+    endDate?: string;
+  }): Promise<WeeklyReport[]> {
+    const searchParams = new URLSearchParams();
+    if (params?.userId) searchParams.append('userId', params.userId);
+    if (params?.projectId) searchParams.append('projectId', params.projectId);
+    if (params?.status) searchParams.append('status', params.status);
+    if (params?.startDate) searchParams.append('startDate', params.startDate);
+    if (params?.endDate) searchParams.append('endDate', params.endDate);
+
+    const queryString = searchParams.toString();
+    return request<WeeklyReport[]>(`/weekly-reports${queryString ? `?${queryString}` : ''}`);
+  }
+
+  async getWeeklyReportById(id: string | number): Promise<WeeklyReport> {
+    return request<WeeklyReport>(`/weekly-reports/${id}`);
+  }
+
+  async createWeeklyReport(data: Partial<WeeklyReport>): Promise<WeeklyReport> {
+    return request<WeeklyReport>('/weekly-reports', {
+      method: 'POST',
+      body: JSON.stringify(data),
+    });
+  }
+
+  async updateWeeklyReport(id: string | number, data: Partial<WeeklyReport>): Promise<WeeklyReport> {
+    return request<WeeklyReport>(`/weekly-reports/${id}`, {
+      method: 'PUT',
+      body: JSON.stringify(data),
+    });
+  }
+
+  async deleteWeeklyReport(id: string | number): Promise<void> {
+    return request<void>(`/weekly-reports/${id}`, {
+      method: 'DELETE',
+    });
+  }
+
+  async submitWeeklyReport(id: string | number): Promise<WeeklyReport> {
+    return request<WeeklyReport>(`/weekly-reports/${id}/submit`, {
+      method: 'POST',
+      body: JSON.stringify({}),
+    });
+  }
+
+  async approveWeeklyReport(id: string | number, approved: boolean, approveComment?: string): Promise<WeeklyReport> {
+    return request<WeeklyReport>(`/weekly-reports/${id}/approve`, {
+      method: 'POST',
+      body: JSON.stringify({ approved, approveComment }),
+    });
+  }
+
+  async getMyWeeklyReports(userId: string): Promise<WeeklyReport[]> {
+    return request<WeeklyReport[]>(`/weekly-reports/my?userId=${userId}`);
+  }
+
+  async getProjectWeeklyReports(projectId: string): Promise<WeeklyReport[]> {
+    return request<WeeklyReport[]>(`/weekly-reports/project/${projectId}`);
+  }
+
+  async getCurrentWeekReport(userId: string): Promise<WeeklyReport> {
+    return request<WeeklyReport>(`/weekly-reports/current-week?userId=${userId}`);
+  }
+
+  async getWeeklyReportComments(reportId: string): Promise<WeeklyReportComment[]> {
+    return request<WeeklyReportComment[]>(`/weekly-reports/${reportId}/comments`);
+  }
+
+  async addWeeklyReportComment(reportId: string, data: { content: string }): Promise<WeeklyReportComment> {
+    return request<WeeklyReportComment>(`/weekly-reports/${reportId}/comments`, {
+      method: 'POST',
+      body: JSON.stringify(data),
+    });
+  }
+
+  async deleteWeeklyReportComment(commentId: string | number): Promise<void> {
+    return request<void>(`/weekly-reports/comments/${commentId}`, {
+      method: 'DELETE',
+    });
   }
 }
 

@@ -76,6 +76,30 @@ const routes: RouteRecordRaw[] = [
     meta: { titleKey: 'routes.overtime', permission: 'overtime:view' }
   },
   {
+    path: '/weekly-reports',
+    name: 'WeeklyReports',
+    component: () => import('@/views/WeeklyReports.vue'),
+    meta: { titleKey: 'routes.weeklyReports', permission: 'weekly-report:view' }
+  },
+  {
+    path: '/weekly-reports/new',
+    name: 'WeeklyReportNew',
+    component: () => import('@/views/WeeklyReportForm.vue'),
+    meta: { titleKey: 'routes.weeklyReportNew', permission: 'weekly-report:create' }
+  },
+  {
+    path: '/weekly-reports/:id',
+    name: 'WeeklyReportDetail',
+    component: () => import('@/views/WeeklyReportDetail.vue'),
+    meta: { titleKey: 'routes.weeklyReportDetail', permission: 'weekly-report:view' }
+  },
+  {
+    path: '/weekly-reports/:id/edit',
+    name: 'WeeklyReportEdit',
+    component: () => import('@/views/WeeklyReportForm.vue'),
+    meta: { titleKey: 'routes.weeklyReportEdit', permission: 'weekly-report:edit' }
+  },
+  {
     path: '/team',
     name: 'Team',
     component: () => import('@/views/Team.vue'),
@@ -92,6 +116,12 @@ const routes: RouteRecordRaw[] = [
     name: 'Settings',
     component: () => import('@/views/Settings.vue'),
     meta: { titleKey: 'routes.settings', permission: 'settings:view' }
+  },
+  {
+    path: '/weekly-reports/debug',
+    name: 'WeeklyReportDebug',
+    component: () => import('@/views/WeeklyReportDebug.vue'),
+    meta: { title: '周报调试' }
   },
   {
     path: '/forbidden',

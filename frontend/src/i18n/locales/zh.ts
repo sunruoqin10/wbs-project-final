@@ -66,6 +66,10 @@ export default {
     ganttView: '甘特图',
     delayStats: '项目延期统计',
     overtime: '项目加班管理',
+    weeklyReports: '周报管理',
+    weeklyReportNew: '创建周报',
+    weeklyReportDetail: '周报详情',
+    weeklyReportEdit: '编辑周报',
     team: '团队成员',
     reports: '报表统计',
     settings: '设置',
@@ -691,13 +695,15 @@ export default {
       create: '创建成功',
       update: '更新成功',
       delete: '删除成功',
-      save: '保存成功'
+      save: '保存成功',
+      submit: '提交成功'
     },
     error: {
       create: '创建失败',
       update: '更新失败',
       delete: '删除失败',
       save: '保存失败',
+      submit: '提交失败',
       network: '网络错误，请稍后重试',
       unauthorized: '未授权，请先登录',
       forbidden: '没有权限执行此操作',
@@ -886,6 +892,107 @@ export default {
       memberDelayRate: '延期率',
       totalTasks: '任务总数',
       delayedTasks: '延期任务'
+    },
+    tooltip: {
+      projectDelay: '延期任务数',
+      cumulativeDelayedDays: '累计延期天数',
+      memberDelayRate: '延期率',
+      totalTasks: '任务总数',
+      delayedTasks: '延期任务'
+    }
+  },
+
+  // 周报管理
+  weeklyReports: {
+    title: '周报管理',
+    subtitle: '管理和查看项目周报',
+    createReport: '创建周报',
+    newReport: '新建周报',
+    myReports: '我的周报',
+    projectReports: '项目周报',
+    currentWeek: '本周周报',
+    searchPlaceholder: '搜索周报...',
+    status: '状态',
+    clearFilters: '清除筛选',
+    confirmDelete: '确定要删除此周报吗？',
+    viewModes: {
+      card: '卡片',
+      list: '列表'
+    },
+    listView: {
+      project: '项目',
+      week: '周范围',
+      status: '状态',
+      submitter: '提交人',
+      date: '日期',
+      actions: '操作'
+    },
+    statuses: {
+      all: '全部',
+      draft: '草稿',
+      submitted: '已提交',
+      approved: '已审批',
+      rejected: '已拒绝'
+    },
+    form: {
+      createTitle: '创建周报',
+      editTitle: '编辑周报',
+      project: '项目',
+      selectProject: '请选择项目',
+      week: '周范围',
+      weekHint: '自动设置为周一到周日',
+      editHint: '周报提交后，项目和周范围不可修改',
+      completedWork: '本周完成工作',
+      completedWorkPlaceholder: '描述本周完成的主要工作...',
+      nextWeekPlan: '下周计划',
+      nextWeekPlanPlaceholder: '描述下周的工作计划...',
+      problems: '问题与建议',
+      problemsPlaceholder: '记录遇到的问题和建议（可选）...',
+      saveDraft: '保存草稿',
+      submit: '提交',
+      errors: {
+        selectProject: '请选择项目',
+        selectWeek: '请选择周范围',
+        enterCompletedWork: '请输入本周完成工作',
+        enterNextWeekPlan: '请输入下周计划'
+      }
+    },
+    detail: {
+      title: '周报详情',
+      approve: '审批',
+      week: '周范围',
+      submitter: '提交人',
+      submitTime: '提交时间',
+      approveTime: '审批时间',
+      completedWork: '本周完成工作',
+      nextWeekPlan: '下周计划',
+      problems: '问题与建议',
+      noContent: '无内容',
+      approvalComment: '审批意见',
+      rejectionComment: '拒绝原因',
+      approver: '审批人',
+      loading: '加载中...'
+    },
+    comments: {
+      title: '评论',
+      addComment: '添加评论...',
+      submit: '提交',
+      noComments: '暂无评论'
+    },
+    approve: {
+      approve: '通过',
+      reject: '拒绝',
+      comment: '审批意见',
+      commentPlaceholder: '填写审批意见（可选）...',
+      submitApprove: '提交审批',
+      approveSuccess: '周报已审批通过',
+      rejectSuccess: '周报已拒绝'
+    },
+    emptyState: {
+      title: '暂无周报',
+      noResults: '没有找到匹配的周报',
+      createFirst: '开始创建您的第一份周报吧',
+      createButton: '创建周报'
     }
   }
 };

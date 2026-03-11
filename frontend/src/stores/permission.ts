@@ -19,19 +19,22 @@ export const usePermissionStore = defineStore('permission', () => {
       'settings:view', 'settings:edit',
       'project:edit', 'project:manage_members',
       'task:create', 'task:edit', 'task:delete', 'task:assign',
-      'overtime:create', 'overtime:approve', 'overtime:view'
+      'overtime:create', 'overtime:approve', 'overtime:view',
+      'weekly-report:create', 'weekly-report:edit', 'weekly-report:delete', 'weekly-report:view', 'weekly-report:approve'
     ],
     'project-manager': [
       'user:view',
       'project:create', 'project:view',
       'project:edit', 'project:manage_members',
       'task:create', 'task:edit', 'task:delete', 'task:assign',
-      'overtime:create', 'overtime:approve', 'overtime:view'
+      'overtime:create', 'overtime:approve', 'overtime:view',
+      'weekly-report:create', 'weekly-report:edit', 'weekly-report:delete', 'weekly-report:view', 'weekly-report:approve'
     ],
     'member': [
       'project:view',
       'task:create', 'task:edit',
-      'overtime:create', 'overtime:view'
+      'overtime:create', 'overtime:view',
+      'weekly-report:create', 'weekly-report:edit', 'weekly-report:delete', 'weekly-report:view'
     ]
   };
 

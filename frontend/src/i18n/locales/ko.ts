@@ -66,6 +66,10 @@ export default {
     ganttView: '간트 차트',
     delayStats: '프로젝트 지연 통계',
     overtime: '프로젝트 연장근무 관리',
+    weeklyReports: '주간 보고서 관리',
+    weeklyReportNew: '주간 보고서 생성',
+    weeklyReportDetail: '주간 보고서 상세',
+    weeklyReportEdit: '주간 보고서 편집',
     team: '팀 구성원',
     reports: '보고서',
     settings: '설정',
@@ -676,13 +680,15 @@ export default {
       create: '생성 완료',
       update: '업데이트 완료',
       delete: '삭제 완료',
-      save: '저장 완료'
+      save: '저장 완료',
+      submit: '제출 완료'
     },
     error: {
       create: '생성 실패',
       update: '업데이트 실패',
       delete: '삭제 실패',
       save: '저장 실패',
+      submit: '제출 실패',
       network: '네트워크 오류가 발생했습니다. 다시 시도해주세요',
       unauthorized: '권한이 없습니다. 먼저 로그인하세요',
       forbidden: '이 작업을 수행할 권한이 없습니다',
@@ -871,6 +877,100 @@ export default {
       memberDelayRate: '지연율',
       totalTasks: '총 작업 수',
       delayedTasks: '지연된 작업'
+    }
+  },
+
+  // 주간 보고
+  weeklyReports: {
+    title: '주간 보고',
+    subtitle: '프로젝트 주간 보고 관리',
+    createReport: '주간 보고 생성',
+    newReport: '새 주간 보고',
+    myReports: '내 주간 보고',
+    projectReports: '프로젝트 주간 보고',
+    currentWeek: '이번 주 주간 보고',
+    searchPlaceholder: '주간 보고 검색...',
+    status: '상태',
+    clearFilters: '필터 지우기',
+    confirmDelete: '이 주간 보고를 삭제하시겠습니까?',
+    viewModes: {
+      card: '카드',
+      list: '목록'
+    },
+    listView: {
+      project: '프로젝트',
+      week: '주간',
+      status: '상태',
+      submitter: '작성자',
+      date: '날짜',
+      actions: '작업'
+    },
+    statuses: {
+      all: '전체',
+      draft: '초안',
+      submitted: '제출됨',
+      approved: '승인됨',
+      rejected: '거부됨'
+    },
+    form: {
+      createTitle: '주간 보고 생성',
+      editTitle: '주간 보고 편집',
+      project: '프로젝트',
+      selectProject: '프로젝트를 선택하세요',
+      week: '주간',
+      weekHint: '월요일에서 일요일까지 자동 설정',
+      editHint: '주간 보고 제출 후 프로젝트와 주간은 수정할 수 없습니다',
+      completedWork: '이번 주 완료된 작업',
+      completedWorkPlaceholder: '이번 주에 완료한 주요 작업을 설명하세요...',
+      nextWeekPlan: '다음 주 계획',
+      nextWeekPlanPlaceholder: '다음 주의 작업 계획을 설명하세요...',
+      problems: '문제 및 제안',
+      problemsPlaceholder: '문제와 제안을 기록하세요 (선택 사항)...',
+      saveDraft: '초안 저장',
+      submit: '제출',
+      errors: {
+        selectProject: '프로젝트를 선택하세요',
+        selectWeek: '주간을 선택하세요',
+        enterCompletedWork: '이번 주 완료된 작업을 입력하세요',
+        enterNextWeekPlan: '다음 주 계획을 입력하세요'
+      }
+    },
+    detail: {
+      title: '주간 보고 상세',
+      approve: '승인',
+      week: '주간',
+      submitter: '작성자',
+      submitTime: '제출 시간',
+      approveTime: '승인 시간',
+      completedWork: '이번 주 완료된 작업',
+      nextWeekPlan: '다음 주 계획',
+      problems: '문제 및 제안',
+      noContent: '내용 없음',
+      approvalComment: '승인 의견',
+      rejectionComment: '거부 사유',
+      approver: '승인자',
+      loading: '로딩 중...'
+    },
+    comments: {
+      title: '댓글',
+      addComment: '댓글 추가...',
+      submit: '제출',
+      noComments: '댓글 없음'
+    },
+    approve: {
+      approve: '승인',
+      reject: '거부',
+      comment: '승인 의견',
+      commentPlaceholder: '승인 의견을 작성하세요 (선택 사항)...',
+      submitApprove: '승인 제출',
+      approveSuccess: '주간 보고가 승인되었습니다',
+      rejectSuccess: '주간 보고가 거부되었습니다'
+    },
+    emptyState: {
+      title: '주간 보고 없음',
+      noResults: '일치하는 주간 보고를 찾을 수 없습니다',
+      createFirst: '첫 번째 주간 보고를 만들어 보세요',
+      createButton: '주간 보고 생성'
     }
   }
 };

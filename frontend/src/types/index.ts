@@ -190,3 +190,31 @@ export interface ProjectPermissionCheckResult {
   isOwner: boolean;
   isMember: boolean;
 }
+
+export type ReportStatus = 'draft' | 'submitted' | 'approved' | 'rejected';
+
+export interface WeeklyReport {
+  id: string;
+  userId: string;
+  projectId?: string;
+  weekStart: string;
+  weekEnd: string;
+  completedWork: string;
+  nextWeekPlan: string;
+  problems?: string;
+  status: ReportStatus;
+  submitTime?: string;
+  approveTime?: string;
+  approverId?: string;
+  approveComment?: string;
+  createdAt: string;
+  updatedAt: string;
+}
+
+export interface WeeklyReportComment {
+  id: string;
+  reportId: string;
+  userId: string;
+  content: string;
+  createdAt: string;
+}

@@ -1,0 +1,104 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+        "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.wbs.project.mapper.WeeklyReportMapper">
+
+    <resultMap id="BaseResultMap" type="com.wbs.project.entity.WeeklyReport">
+        <id column="id" property="id"/>
+        <result column="user_id" property="userId"/>
+        <result column="project_id" property="projectId"/>
+        <result column="week_start" property="weekStart"/>
+        <result column="week_end" property="weekEnd"/>
+        <result column="completed_work" property="completedWork"/>
+        <result column="next_week_plan" property="nextWeekPlan"/>
+        <result column="problems" property="problems"/>
+        <result column="status" property="status"/>
+        <result column="submit_time" property="submitTime"/>
+        <result column="approve_time" property="approveTime"/>
+        <result column="approver_id" property="approverId"/>
+        <result column="approve_comment" property="approveComment"/>
+        <result column="created_at" property="createdAt"/>
+        <result column="updated_at" property="updatedAt"/>
+    </resultMap>
+
+    <sql id="Base_Column_List">
+        id, user_id, project_id, week_start, week_end, completed_work, next_week_plan, problems, status, submit_time, approve_time, approver_id, approve_comment, created_at, updated_at
+    </sql>
+
+    <select id="selectAll" resultMap="BaseResultMap">
+        SELECT <include refid="Base_Column_List"/>
+        FROM sys_weekly_report
+        ORDER BY created_at DESC
+    </select>
+
+    <select id="selectById" resultMap="BaseResultMap">
+        SELECT <include refid="Base_Column_List"/>
+        FROM sys_weekly_report
+        WHERE id = #{id}
+    </select>
+
+    <select id="selectByUserId" resultMap="BaseResultMap">
+        SELECT <include refid="Base_Column_List"/>
+        FROM sys_weekly_report
+        WHERE user_id = #{userId}
+        ORDER BY created_at DESC
+    </select>
+
+    <select id="selectByProjectId" resultMap="BaseResultMap">
+        SELECT <include refid="Base_Column_List"/>
+        FROM sys_weekly_report
+        WHERE project_id = #{projectId}
+        ORDER BY created_at DESC
+    </select>
+
+    <select id="selectByWeekRange" resultMap="BaseResultMap">
+        SELECT <include refid="Base_Column_List"/>
+        FROM sys_weekly_report
+        WHERE week_start = #{weekStart} AND week_end = #{weekEnd}
+        ORDER BY created_at DESC
+    </select>
+
+    <select id="selectByUserAndWeek" resultMap="BaseResultMap">
+        SELECT <include refid="Base_Column_List"/>
+        FROM sys_weekly_report
+        WHERE user_id = #{userId} AND week_start = #{weekStart}
+    </select>
+
+    <insert id="insert">
+        INSERT INTO sys_weekly_report (id, user_id, project_id, week_start, week_end, completed_work, next_week_plan, problems, status, created_at, updated_at)
+        VALUES (#{id}, #{userId}, #{projectId}, #{weekStart}, #{weekEnd}, #{completedWork}, #{nextWeekPlan}, #{problems}, #{status}, #{createdAt}, #{updatedAt})
+    </insert>
+
+    <update id="update">
+        UPDATE sys_weekly_report
+        SET project_id = #{projectId},
+            week_start = #{weekStart},
+            week_end = #{weekEnd},
+            completed_work = #{completedWork},
+            next_week_plan = #{nextWeekPlan},
+            problems = #{problems},
+            status = #{status},
+            submit_time = #{submitTime},
+            approve_time = #{approveTime},
+            approver_id = #{approverId},
+            approve_comment = #{approveComment},
+            updated_at = #{updatedAt}
+        WHERE id = #{id}
+    </update>
+
+    <delete id="deleteById">
+        DELETE FROM sys_weekly_report WHERE id = #{id}
+    </delete>
+
+    <select id="countByUserId" resultType="int">
+        SELECT COUNT(*) FROM sys_weekly_report WHERE user_id = #{userId}
+    </select>
+
+    <select id="countByProjectId" resultType="int">
+        SELECT COUNT(*) FROM sys_weekly_report WHERE project_id = #{projectId}
+    </select>
+
+    <select id="countByStatus" resultType="int">
+        SELECT COUNT(*) FROM sys_weekly_report WHERE status = #{status}
+    </select>
+</mapper>
