@@ -1008,6 +1008,9 @@ export default {
       nextWeekPlanPlaceholder: '描述下周的工作计划...',
       problems: '问题与建议',
       problemsPlaceholder: '记录遇到的问题和建议（可选）...',
+      documents: '附件文档',
+      selectFiles: '选择文件',
+      filesHint: '支持图片、PDF、Word、Excel等格式，单个文件不超过10MB',
       saveDraft: '保存草稿',
       submit: '提交',
       errors: {
@@ -1047,6 +1050,11 @@ export default {
       submitApprove: '提交审批',
       approveSuccess: '周报已审批通过',
       rejectSuccess: '周报已拒绝'
+    },
+    documents: {
+      title: '相关文档',
+      upload: '上传文档',
+      noDocuments: '暂无相关文档'
     },
     emptyState: {
       title: '暂无周报',

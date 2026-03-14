@@ -32,4 +32,6 @@ public interface DocumentMapper {
     int countByProjectId(@Param("projectId") String projectId);
 
     List<Document> selectByParentId(@Param("parentId") String parentId);
+
+    List<Document> selectByReportId(@Param("reportId") String reportId);
 }

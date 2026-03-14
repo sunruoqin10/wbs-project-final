@@ -58,24 +58,31 @@ public class DocumentService {
         return documentMapper.selectByProjectIdAndCategory(projectId, category);
     }
 
+    public List<Document> getDocumentsByReportId(String reportId) {
+        return documentMapper.selectByReportId(reportId);
+    }
+
     @Transactional
     public Document uploadDocument(MultipartFile file, String name, String category,
-                                String projectId, String taskId, String parentId,
+                                String projectId, String taskId, String parentId, String reportId,
                                 String description, String uploadedBy) {
+        log.info("开始上传文档: fileName={}, category={}, projectId={}, taskId={}, reportId={}, uploadedBy={}",
+                file.getOriginalFilename(), category, projectId, taskId, reportId, uploadedBy);
+        
         validateFile(file);
-        foreignKeyValidationService.validateDocumentUpload(projectId, taskId, uploadedBy, parentId);
+        foreignKeyValidationService.validateDocumentUpload(projectId, taskId, uploadedBy, parentId, reportId);
 
         String originalFilename = file.getOriginalFilename();
         String fileExtension = getFileExtension(originalFilename);
         String fileName = (name != null && !name.isEmpty()) ? name : originalFilename;
 
-        String fileId = UUID.randomUUID().toString();
-        String filePath = saveFile(file, fileId, fileExtension);
+        String documentId = UUID.randomUUID().toString();
+        String filePath = saveFile(file, documentId, fileExtension);
 
         int version = calculateVersion(projectId, category);
 
         Document document = new Document();
-        document.setId(UUID.randomUUID().toString());
+        document.setId(documentId);
         document.setProjectId(projectId);
         document.setTaskId(taskId);
         document.setName(fileName);
@@ -87,8 +94,10 @@ public class DocumentService {
         document.setFileExtension(fileExtension);
         document.setVersion(version);
         document.setParentId(parentId);
+        document.setReportId(reportId);
         document.setDescription(description);
-        document.setUploadedBy(uploadedBy);
+        // Use default user ID if uploadedBy is null (for development)
+        document.setUploadedBy(uploadedBy != null && !uploadedBy.isEmpty() ? uploadedBy : "system-default");
         document.setStatus("active");
         document.setDownloadCount(0);
         document.setCreatedAt(LocalDateTime.now());

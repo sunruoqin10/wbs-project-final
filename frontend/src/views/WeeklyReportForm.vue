@@ -125,6 +125,66 @@
             ></textarea>
           </div>
 
+          <div>
+            <label class="mb-2 block text-sm font-medium text-secondary-700">
+              {{ $t('weeklyReports.form.documents') }}
+            </label>
+            <div class="border-2 border-dashed border-secondary-300 rounded-lg p-6 text-center hover:border-primary-500 transition-colors">
+              <input
+                ref="fileInputRef"
+                type="file"
+                class="hidden"
+                multiple
+                @change="handleFileSelect"
+                :disabled="uploading"
+              />
+              <button
+                type="button"
+                @click="fileInputRef?.click()"
+                :disabled="uploading"
+                class="inline-flex items-center gap-2 rounded-lg bg-secondary-100 px-4 py-2 text-sm font-medium text-secondary-700 hover:bg-secondary-200 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+              >
+                <svg class="h-5 w-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4" />
+                </svg>
+                {{ uploading ? '上传中...' : $t('weeklyReports.form.selectFiles') }}
+              </button>
+              <p class="mt-2 text-xs text-secondary-500">{{ $t('weeklyReports.form.filesHint') }}</p>
+
+              <div v-if="tempDocuments.length > 0" class="mt-4 grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3">
+                <div
+                  v-for="(doc, index) in tempDocuments"
+                  :key="index"
+                  class="flex items-center gap-2 rounded-lg border border-secondary-200 bg-secondary-50 p-3"
+                >
+                  <div class="flex-shrink-0">
+                    <div v-if="doc.fileType?.startsWith('image/')" class="h-10 w-10 rounded bg-white flex items-center justify-center overflow-hidden">
+                      <img :src="doc.previewUrl" :alt="doc.name" class="h-full w-full object-cover" />
+                    </div>
+                    <div v-else class="h-10 w-10 rounded bg-white flex items-center justify-center text-secondary-400">
+                      <svg class="h-5 w-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
+                      </svg>
+                    </div>
+                  </div>
+                  <div class="flex-1 min-w-0">
+                    <p class="text-sm font-medium text-secondary-900 truncate">{{ doc.name }}</p>
+                    <p class="text-xs text-secondary-500">{{ formatFileSize(doc.size) }}</p>
+                  </div>
+                  <button
+                    type="button"
+                    @click="removeTempDocument(index)"
+                    class="flex-shrink-0 p-1 rounded hover:bg-secondary-200 text-secondary-400 hover:text-danger-600 transition-colors"
+                  >
+                    <svg class="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" />
+                    </svg>
+                  </button>
+                </div>
+              </div>
+            </div>
+          </div>
+
           <div class="flex gap-3 pt-4 border-t border-secondary-200">
             <Button variant="secondary" @click="goBack">
               {{ $t('common.cancel') }}
@@ -152,7 +212,8 @@ import Button from '@/components/common/Button.vue';
 import { useWeeklyReportStore } from '@/stores/weeklyReport';
 import { useProjectStore } from '@/stores/project';
 import { useUserStore } from '@/stores/user';
-import type { WeeklyReport } from '@/types';
+import type { WeeklyReport, Document } from '@/types';
+import { apiService } from '@/services/api';
 import dayjs from 'dayjs';
 import 'dayjs/locale/zh-cn';
 
@@ -168,11 +229,18 @@ const userStore = useUserStore();
 const reportId = computed(() => route.params.id as string);
 const isEditing = computed(() => !!reportId.value && route.path.includes('/edit'));
 const saving = ref(false);
+const uploading = ref(false);
+const tempDocuments = ref<Document[]>([]);
+const fileInputRef = ref<HTMLInputElement | null>(null);
 
 const currentUserId = computed(() => userStore.currentUser?.id || userStore.currentUserId);
 
+const permissionStore = computed(() => ({
+  currentRole: userStore.currentUser?.role || 'member'
+}));
+
 const availableProjects = computed(() => {
-  if (permissionStore.currentRole === 'admin' || permissionStore.currentRole === 'project-manager') {
+  if (permissionStore.value.currentRole === 'admin' || permissionStore.value.currentRole === 'project-manager') {
     return projectStore.projects;
   }
   return projectStore.projects.filter(p => {
@@ -190,10 +258,6 @@ const formData = reactive({
   nextWeekPlan: '',
   problems: ''
 });
-
-const permissionStore = computed(() => ({
-  currentRole: userStore.currentUser?.role || 'member'
-}));
 
 const resetForm = () => {
   formData.projectId = '';
@@ -215,10 +279,32 @@ const loadReportData = async () => {
       formData.completedWork = report.completedWork;
       formData.nextWeekPlan = report.nextWeekPlan;
       formData.problems = report.problems || '';
+      await loadExistingDocuments(reportId.value);
     }
   } else {
     resetForm();
     setDefaultWeekRange();
+  }
+};
+
+const loadExistingDocuments = async (id: string) => {
+  try {
+    console.log('[表单页] 开始加载现有文档，reportId:', id);
+    const existingDocs = await apiService.getReportDocuments(id);
+    console.log('[表单页] 加载到的现有文档:', existingDocs);
+    existingDocs.forEach(doc => {
+      const previewUrl = doc.fileType?.startsWith('image/')
+        ? `/documents/${doc.id}/preview`
+        : undefined;
+      tempDocuments.value.push({
+        ...doc,
+        previewUrl,
+        size: doc.fileSize
+      } as any);
+    });
+    console.log('[表单页] tempDocuments 数量:', tempDocuments.value.length);
+  } catch (error) {
+    console.error('Failed to load existing documents:', error);
   }
 };
 
@@ -237,6 +323,117 @@ const updateWeekEnd = () => {
     const end = start.add(6, 'day');
     formData.weekEnd = end.format('YYYY-MM-DD');
   }
+};
+
+const handleFileSelect = async (event: Event) => {
+  const input = event.target as HTMLInputElement;
+  const files = input.files;
+  if (!files || files.length === 0) return;
+
+  uploading.value = true;
+  try {
+    for (let i = 0; i < files.length; i++) {
+      const file = files[i];
+      const previewUrl = file.type.startsWith('image/')
+        ? URL.createObjectURL(file)
+        : undefined;
+
+      tempDocuments.value.push({
+        id: '',
+        name: file.name,
+        fileName: file.name,
+        category: 'other',
+        filePath: '',
+        fileSize: file.size,
+        fileType: file.type,
+        fileExtension: file.name.split('.').pop() || '',
+        version: 1,
+        uploadedBy: currentUserId.value || '',
+        status: 'active',
+        downloadCount: 0,
+        createdAt: new Date().toISOString(),
+        updatedAt: new Date().toISOString(),
+        previewUrl,
+        size: file.size,
+        file
+      } as any);
+    }
+    input.value = '';
+  } catch (error) {
+    console.error('Failed to process files:', error);
+    alert('文件处理失败');
+  } finally {
+    uploading.value = false;
+  }
+};
+
+const removeTempDocument = async (index: number) => {
+  const doc = tempDocuments.value[index] as any;
+
+  if (doc?.id) {
+    try {
+      if (!confirm('确定要删除这个文档吗？')) {
+        return;
+      }
+      await apiService.deleteDocument(doc.id);
+    } catch (error) {
+      console.error('Failed to delete document:', error);
+      alert('删除文档失败');
+      return;
+    }
+  } else if (doc?.previewUrl) {
+    URL.revokeObjectURL(doc.previewUrl);
+  }
+
+  tempDocuments.value.splice(index, 1);
+};
+
+const uploadDocuments = async (reportId: string): Promise<void> => {
+  console.log('[表单页] 开始上传文档，reportId:', reportId, '文档数量:', tempDocuments.value.length);
+  console.log('[表单页] 文档列表:', tempDocuments.value.map(d => ({
+    id: d.id,
+    name: d.name,
+    hasFile: !!d.file,
+    fileType: d.fileType
+  })));
+
+  if (tempDocuments.value.length === 0) {
+    console.log('[表单页] 没有文档需要上传');
+    return;
+  }
+
+  let uploadCount = 0;
+  for (const doc of tempDocuments.value) {
+    if (doc.file) {
+      console.log('[表单页] 上传文档:', doc.name, 'fileType:', doc.file?.type);
+      const formData = new FormData();
+      formData.append('file', doc.file);
+      formData.append('name', doc.name);
+      formData.append('category', 'other');
+      formData.append('reportId', reportId);
+
+      console.log('[表单页] FormData 内容:', Object.fromEntries(formData.entries()));
+
+      try {
+        const uploadedDoc = await apiService.uploadDocument(formData);
+        console.log('[表单页] 文档上传成功:', uploadedDoc);
+        uploadCount++;
+      } catch (error) {
+        console.error('[表单页] Failed to upload document:', doc.name, error);
+      }
+    }
+  }
+
+  console.log('[表单页] 上传完成，成功上传:', uploadCount, '个文档');
+  tempDocuments.value = [];
+};
+
+const formatFileSize = (bytes: number): string => {
+  if (!bytes) return '0 B';
+  const k = 1024;
+  const sizes = ['B', 'KB', 'MB', 'GB'];
+  const i = Math.floor(Math.log(bytes) / Math.log(k));
+  return Math.round((bytes / Math.pow(k, i)) * 100) / 100 + ' ' + sizes[i];
 };
 
 const validateForm = (isDraft: boolean = false): boolean => {
@@ -281,10 +478,13 @@ const handleSaveDraft = async () => {
 
     if (isEditing.value) {
       await weeklyReportStore.updateReport(reportId.value, reportData);
+      await uploadDocuments(reportId.value);
       alert(t('messages.success.save'));
+      router.push('/weekly-reports');
     } else {
       const newReport = await weeklyReportStore.createReport(reportData);
       if (newReport) {
+        await uploadDocuments(newReport.id);
         alert(t('messages.success.save'));
         router.push('/weekly-reports');
       }
@@ -313,10 +513,12 @@ const handleSubmit = async () => {
     if (isEditing.value) {
       await weeklyReportStore.updateReport(reportId.value, reportData);
       await weeklyReportStore.submitReport(reportId.value);
+      await uploadDocuments(reportId.value);
       alert(t('messages.success.submit'));
     } else {
       const newReport = await weeklyReportStore.createReport(reportData);
       if (newReport) {
+        await uploadDocuments(newReport.id);
         await weeklyReportStore.submitReport(newReport.id);
         alert(t('messages.success.submit'));
       }

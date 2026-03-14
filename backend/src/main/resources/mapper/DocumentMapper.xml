@@ -76,11 +76,18 @@
         ORDER BY created_at DESC
     </select>
 
+    <select id="selectByReportId" resultMap="BaseResultMap">
+        SELECT <include refid="Base_Column_List"/>
+        FROM sys_document
+        WHERE report_id = #{reportId}
+        ORDER BY created_at DESC
+    </select>
+
     <insert id="insert" parameterType="com.wbs.project.entity.Document">
         INSERT INTO sys_document (id, project_id, task_id, name, category, file_name, file_path, file_size, file_type, file_extension,
-            version, parent_id, description, uploaded_by, status, download_count, created_at, updated_at)
+            version, parent_id, report_id, description, uploaded_by, status, download_count, created_at, updated_at)
         VALUES (#{id}, #{projectId}, #{taskId}, #{name}, #{category}, #{fileName}, #{filePath}, #{fileSize}, #{fileType}, #{fileExtension},
-            #{version}, #{parentId}, #{description}, #{uploadedBy}, #{status}, #{downloadCount}, #{createdAt}, #{updatedAt})
+            #{version}, #{parentId}, #{reportId}, #{description}, #{uploadedBy}, #{status}, #{downloadCount}, #{createdAt}, #{updatedAt})
     </insert>
 
     <update id="update" parameterType="com.wbs.project.entity.Document">
@@ -92,6 +99,7 @@
             <if test="category != null">category = #{category},</if>
             <if test="description != null">description = #{description},</if>
             <if test="parentId != null">parent_id = #{parentId},</if>
+            <if test="reportId != null">report_id = #{reportId},</if>
             updated_at = NOW()
         </set>
         WHERE id = #{id}

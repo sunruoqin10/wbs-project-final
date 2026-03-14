@@ -54,6 +54,12 @@ public class DocumentController {
         return Result.success(documents);
     }
 
+    @GetMapping("/report/{reportId}")
+    public Result<List<Document>> getDocumentsByReportId(@PathVariable String reportId) {
+        List<Document> documents = documentService.getDocumentsByReportId(reportId);
+        return Result.success(documents);
+    }
+
     @PostMapping("/upload")
     public Result<Document> uploadDocument(
             @RequestParam("file") MultipartFile file,
@@ -62,18 +68,21 @@ public class DocumentController {
             @RequestParam(value = "projectId", required = false) String projectId,
             @RequestParam(value = "taskId", required = false) String taskId,
             @RequestParam(value = "parentId", required = false) String parentId,
+            @RequestParam(value = "reportId", required = false) String reportId,
             @RequestParam(value = "description", required = false) String description,
             @RequestHeader(value = "X-User-Id", required = false) String userId) {
-        log.info("文档上传请求: file={}, name={}, category={}, projectId={}, taskId={}, userId={}",
-                file.getOriginalFilename(), name, category, projectId, userId);
+        log.info("文档上传请求: file={}, name={}, category={}, projectId={}, taskId={}, reportId={}, userId={}",
+                file.getOriginalFilename(), name, category, projectId, taskId, reportId, userId);
         try {
-            Document document = documentService.uploadDocument(file, name, category, projectId, taskId, parentId, description, userId);
+            Document document = documentService.uploadDocument(file, name, category, projectId, taskId, parentId, reportId, description, userId);
+            log.info("文档上传成功: documentId={}, fileName={}", document.getId(), document.getFileName());
             return Result.success("文档上传成功", document);
         } catch (IllegalArgumentException e) {
-            log.warn("文档上传失败: {}", e.getMessage(), e);
+            log.warn("文档上传失败(参数验证): {}", e.getMessage(), e);
             return Result.error(e.getMessage());
         } catch (Exception e) {
-            log.error("文档上传异常", e);
+            log.error("文档上传异常: ", e);
+            log.error("异常类型: {}, 消息: {}", e.getClass().getSimpleName(), e.getMessage());
             return Result.error("文档上传失败: " + e.getMessage());
         }
     }

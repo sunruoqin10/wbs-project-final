@@ -232,6 +232,7 @@ export interface Document {
   fileExtension: string;
   version: number;
   parentId?: string;
+  reportId?: string;
   description?: string;
   uploadedBy: string;
   status: string;

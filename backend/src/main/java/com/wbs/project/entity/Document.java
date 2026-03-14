@@ -17,6 +17,7 @@ public class Document {
     private String fileExtension;
     private Integer version;
     private String parentId;
+    private String reportId;
     private String description;
     private String uploadedBy;
     private String status;

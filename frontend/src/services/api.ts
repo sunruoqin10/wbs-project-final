@@ -630,6 +630,10 @@ class ApiService {
     return request<Document[]>(`/documents/category/${category}`);
   }
 
+  async getReportDocuments(reportId: string | number): Promise<Document[]> {
+    return request<Document[]>(`/documents/report/${reportId}`);
+  }
+
   async uploadDocument(formData: FormData): Promise<Document> {
     console.log('上传文档表单数据:', Object.fromEntries(formData.entries()));
     const url = `${API_BASE_URL}/documents/upload`;
