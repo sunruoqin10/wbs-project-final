@@ -979,6 +979,7 @@ export default {
 
   // 문서 관리
   documents: {
+    title: '문서 관리',
     subtitle: '모든 프로젝트 문서 관리 및 보기',
     search: '검색',
     searchPlaceholder: '문서 검색...',
@@ -987,6 +988,7 @@ export default {
     noDocuments: '문서 없음',
     clearFilters: '필터 지우기',
     activeFilters: '현재 필터',
+    upload: '문서 업로드',
     download: '다운로드',
     preview: '미리보기',
     edit: '편집',
@@ -1021,14 +1023,37 @@ export default {
     fileSize: '파일 크기',
     createdAt: '생성 시간',
     actions: '작업',
+    total: '총계',
+    documents: '개 문서',
+    totalSize: '총 크기',
+    viewModes: {
+      grid: '그리드 보기',
+      list: '목록 보기'
+    },
+    tabs: {
+      projectDocuments: '프로젝트 문서',
+      reportDocuments: '주간 보고서 문서',
+      reports: '주간 보고서 문서',
+      list: '문서 목록',
+      categories: '분류 보기'
+    },
+    selectReport: '주간 보고서 선택',
+    allReports: '전체 주간 보고서',
+    relatedReport: '关联 주간 보고서',
+    noReports: '주간 보고서 없음',
     categories: {
-      requirements: '요구사항 문서',
+      screenshot: '작업 캡처',
       design: '디자인 문서',
+      meeting: '회의록',
+      progress: '진행 보고서',
+      code: '코드 관련',
+      document: '일반 문서',
+      other: '기타',
+      requirements: '요구사항 문서',
       development: '개발 문서',
       testing: '테스트 문서',
       deployment: '배포 문서',
-      documentation: '사용자 매뉴얼',
-      other: '기타'
+      documentation: '사용자 매뉴얼'
     }
   }
 };

@@ -896,18 +896,12 @@ export default {
       memberDelayRate: '延期率',
       totalTasks: '任务总数',
       delayedTasks: '延期任务'
-    },
-    tooltip: {
-      projectDelay: '延期任务数',
-      cumulativeDelayedDays: '累计延期天数',
-      memberDelayRate: '延期率',
-      totalTasks: '任务总数',
-      delayedTasks: '延期任务'
     }
   },
 
   // 文档管理
   documents: {
+    title: '文档管理',
     subtitle: '管理和查看所有项目文档',
     search: '搜索',
     searchPlaceholder: '搜索文档...',
@@ -951,14 +945,37 @@ export default {
     fileSize: '文件大小',
     createdAt: '创建时间',
     actions: '操作',
+    total: '总计',
+    documents: '个文档',
+    totalSize: '总大小',
+    viewModes: {
+      grid: '网格视图',
+      list: '列表视图'
+    },
+    tabs: {
+      projectDocuments: '项目文档',
+      reportDocuments: '周报文档',
+      reports: '周报文档',
+      list: '文档列表',
+      categories: '分类浏览'
+    },
+    selectReport: '选择周报',
+    allReports: '全部周报',
+    relatedReport: '关联周报',
+    noReports: '暂无周报',
     categories: {
-      requirements: '需求文档',
+      screenshot: '工作截图',
       design: '设计文档',
+      meeting: '会议记录',
+      progress: '进度报告',
+      code: '代码相关',
+      document: '一般文档',
+      other: '其他',
+      requirements: '需求文档',
       development: '开发文档',
       testing: '测试文档',
       deployment: '部署文档',
-      documentation: '用户手册',
-      other: '其他'
+      documentation: '用户手册'
     }
   },
 

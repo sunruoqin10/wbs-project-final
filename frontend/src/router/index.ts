@@ -102,8 +102,20 @@ const routes: RouteRecordRaw[] = [
   {
     path: '/documents',
     name: 'Documents',
-    component: () => import('@/views/Documents.vue'),
+    component: () => import('@/views/DocumentManagement.vue'),
     meta: { titleKey: 'routes.documents' }
+  },
+  {
+    path: '/documents-test',
+    name: 'DocumentsTest',
+    component: () => import('@/views/DocumentTest.vue'),
+    meta: { title: '文档测试页面' }
+  },
+  {
+    path: '/documents-debug',
+    name: 'DocumentsDebug',
+    component: () => import('@/views/DocumentManagementDebug.vue'),
+    meta: { title: '文档调试页面' }
   },
   {
     path: '/team',

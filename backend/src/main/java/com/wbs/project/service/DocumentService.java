@@ -16,7 +16,9 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.time.LocalDateTime;
+import java.util.LinkedHashMap;
 import java.util.List;
+import java.util.Map;
 import java.util.UUID;
 
 @Slf4j
@@ -54,6 +56,10 @@ public class DocumentService {
         return documentMapper.selectByCategory(category);
     }
 
+    public List<Document> getDocumentsByUserId(String userId) {
+        return documentMapper.selectByUserId(userId);
+    }
+
     public List<Document> getDocumentsByProjectIdAndCategory(String projectId, String category) {
         return documentMapper.selectByProjectIdAndCategory(projectId, category);
     }
@@ -62,13 +68,44 @@ public class DocumentService {
         return documentMapper.selectByReportId(reportId);
     }
 
+    public List<Document> getDocumentsByReportIdAndCategory(String reportId, String category) {
+        return documentMapper.selectByReportIdAndCategory(reportId, category);
+    }
+
+    public Map<String, Object> getReportDocumentStats(String reportId) {
+        List<Document> documents = documentMapper.selectByReportId(reportId);
+
+        Map<String, Integer> categoryCount = new LinkedHashMap<>();
+        categoryCount.put("requirements", 0);
+        categoryCount.put("design", 0);
+        categoryCount.put("development", 0);
+        categoryCount.put("testing", 0);
+        categoryCount.put("deployment", 0);
+        categoryCount.put("documentation", 0);
+        categoryCount.put("other", 0);
+
+        long totalSize = 0;
+        for (Document doc : documents) {
+            String cat = doc.getCategory() != null ? doc.getCategory() : "other";
+            categoryCount.put(cat, categoryCount.getOrDefault(cat, 0) + 1);
+            totalSize += doc.getFileSize();
+        }
+
+        Map<String, Object> stats = new LinkedHashMap<>();
+        stats.put("total", documents.size());
+        stats.put("categories", categoryCount);
+        stats.put("totalSize", totalSize);
+
+        return stats;
+    }
+
     @Transactional
     public Document uploadDocument(MultipartFile file, String name, String category,
                                 String projectId, String taskId, String parentId, String reportId,
                                 String description, String uploadedBy) {
-        log.info("开始上传文档: fileName={}, category={}, projectId={}, taskId={}, reportId={}, uploadedBy={}",
+        log.info("开始上传文档: fileName={}, category='{}', projectId={}, taskId={}, reportId={}, uploadedBy={}",
                 file.getOriginalFilename(), category, projectId, taskId, reportId, uploadedBy);
-        
+
         validateFile(file);
         foreignKeyValidationService.validateDocumentUpload(projectId, taskId, uploadedBy, parentId, reportId);
 
@@ -77,7 +114,7 @@ public class DocumentService {
         String fileName = (name != null && !name.isEmpty()) ? name : originalFilename;
 
         String documentId = UUID.randomUUID().toString();
-        String filePath = saveFile(file, documentId, fileExtension);
+        String filePath = saveFile(file, documentId, fileExtension, reportId, category);
 
         int version = calculateVersion(projectId, category);
 
@@ -96,7 +133,6 @@ public class DocumentService {
         document.setParentId(parentId);
         document.setReportId(reportId);
         document.setDescription(description);
-        // Use default user ID if uploadedBy is null (for development)
         document.setUploadedBy(uploadedBy != null && !uploadedBy.isEmpty() ? uploadedBy : "system-default");
         document.setStatus("active");
         document.setDownloadCount(0);
@@ -210,9 +246,17 @@ public class DocumentService {
         return (dotIndex == -1) ? "" : filename.substring(dotIndex + 1).toLowerCase();
     }
 
-    private String saveFile(MultipartFile file, String fileId, String extension) {
+    private String saveFile(MultipartFile file, String fileId, String extension, String reportId, String category) {
         try {
-            Path uploadDir = Paths.get(uploadPath);
+            Path uploadDir;
+
+            if (reportId != null && !reportId.isEmpty()) {
+                String categoryFolder = (category != null && !category.isEmpty()) ? category : "other";
+                uploadDir = Paths.get(uploadPath, "reports", reportId, categoryFolder);
+            } else {
+                uploadDir = Paths.get(uploadPath, "general", category != null ? category : "other");
+            }
+
             if (!Files.exists(uploadDir)) {
                 Files.createDirectories(uploadDir);
             }
@@ -221,6 +265,7 @@ public class DocumentService {
             Path filePath = uploadDir.resolve(fileName);
             Files.copy(file.getInputStream(), filePath);
 
+            log.info("文件保存成功: path={}", filePath);
             return filePath.toString();
         } catch (IOException e) {
             log.error("文件保存失败: fileName={}", file.getOriginalFilename(), e);

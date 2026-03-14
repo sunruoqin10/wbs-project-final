@@ -12,6 +12,7 @@ import org.springframework.web.bind.annotation.*;
 import org.springframework.web.multipart.MultipartFile;
 
 import java.util.List;
+import java.util.Map;
 
 @Slf4j
 @RestController
@@ -58,6 +59,26 @@ public class DocumentController {
     public Result<List<Document>> getDocumentsByReportId(@PathVariable String reportId) {
         List<Document> documents = documentService.getDocumentsByReportId(reportId);
         return Result.success(documents);
+    }
+
+    @GetMapping("/report/{reportId}/category/{category}")
+    public Result<List<Document>> getDocumentsByReportIdAndCategory(
+            @PathVariable String reportId,
+            @PathVariable String category) {
+        List<Document> documents = documentService.getDocumentsByReportIdAndCategory(reportId, category);
+        return Result.success(documents);
+    }
+
+    @GetMapping("/user/{userId}")
+    public Result<List<Document>> getDocumentsByUserId(@PathVariable String userId) {
+        List<Document> documents = documentService.getDocumentsByUserId(userId);
+        return Result.success(documents);
+    }
+
+    @GetMapping("/report/{reportId}/stats")
+    public Result<Map<String, Object>> getReportDocumentStats(@PathVariable String reportId) {
+        Map<String, Object> stats = documentService.getReportDocumentStats(reportId);
+        return Result.success(stats);
     }
 
     @PostMapping("/upload")

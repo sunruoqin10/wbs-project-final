@@ -16,6 +16,7 @@
         <result column="file_extension" property="fileExtension"/>
         <result column="version" property="version"/>
         <result column="parent_id" property="parentId"/>
+        <result column="report_id" property="reportId"/>
         <result column="description" property="description"/>
         <result column="uploaded_by" property="uploadedBy"/>
         <result column="status" property="status"/>
@@ -26,7 +27,7 @@
 
     <sql id="Base_Column_List">
         id, project_id, task_id, name, category, file_name, file_path, file_size, file_type, file_extension,
-        version, parent_id, description, uploaded_by, status, download_count, created_at, updated_at
+        version, parent_id, report_id, description, uploaded_by, status, download_count, created_at, updated_at
     </sql>
 
     <select id="selectAll" resultMap="BaseResultMap">
@@ -80,6 +81,24 @@
         SELECT <include refid="Base_Column_List"/>
         FROM sys_document
         WHERE report_id = #{reportId}
+          AND status = 'active'
+        ORDER BY created_at DESC
+    </select>
+
+    <select id="selectByReportIdAndCategory" resultMap="BaseResultMap">
+        SELECT <include refid="Base_Column_List"/>
+        FROM sys_document
+        WHERE report_id = #{reportId}
+          AND category = #{category}
+          AND status = 'active'
+        ORDER BY created_at DESC
+    </select>
+
+    <select id="selectByUserId" resultMap="BaseResultMap">
+        SELECT <include refid="Base_Column_List"/>
+        FROM sys_document
+        WHERE uploaded_by = #{userId}
+          AND status = 'active'
         ORDER BY created_at DESC
     </select>
 

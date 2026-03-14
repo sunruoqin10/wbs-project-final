@@ -19,6 +19,8 @@ public interface DocumentMapper {
 
     List<Document> selectByCategory(@Param("category") String category);
 
+    List<Document> selectByUserId(@Param("userId") String userId);
+
     List<Document> selectByProjectIdAndCategory(@Param("projectId") String projectId, @Param("category") String category);
 
     int insert(Document document);
@@ -34,4 +36,6 @@ public interface DocumentMapper {
     List<Document> selectByParentId(@Param("parentId") String parentId);
 
     List<Document> selectByReportId(@Param("reportId") String reportId);
+
+    List<Document> selectByReportIdAndCategory(@Param("reportId") String reportId, @Param("category") String category);
 }

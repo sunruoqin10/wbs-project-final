@@ -388,7 +388,7 @@ const removeTempDocument = async (index: number) => {
   tempDocuments.value.splice(index, 1);
 };
 
-const uploadDocuments = async (reportId: string): Promise<void> => {
+const uploadDocuments = async (reportId: string, projectIdOverride?: string): Promise<void> => {
   console.log('[表单页] 开始上传文档，reportId:', reportId, '文档数量:', tempDocuments.value.length);
   console.log('[表单页] 文档列表:', tempDocuments.value.map(d => ({
     id: d.id,
@@ -403,19 +403,25 @@ const uploadDocuments = async (reportId: string): Promise<void> => {
   }
 
   let uploadCount = 0;
+  const projectId = projectIdOverride || weeklyReportStore.currentReport?.projectId || formData.projectId;
+  console.log('[表单页] 上传文档时获取的 projectId:', projectId);
+  
   for (const doc of tempDocuments.value) {
     if (doc.file) {
       console.log('[表单页] 上传文档:', doc.name, 'fileType:', doc.file?.type);
-      const formData = new FormData();
-      formData.append('file', doc.file);
-      formData.append('name', doc.name);
-      formData.append('category', 'other');
-      formData.append('reportId', reportId);
+      const uploadFormData = new FormData();
+      uploadFormData.append('file', doc.file);
+      uploadFormData.append('name', doc.name);
+      uploadFormData.append('category', 'other');
+      uploadFormData.append('reportId', reportId);
+      if (projectId) {
+        uploadFormData.append('projectId', projectId);
+      }
 
-      console.log('[表单页] FormData 内容:', Object.fromEntries(formData.entries()));
+      console.log('[表单页] FormData 内容:', Object.fromEntries(uploadFormData.entries()));
 
       try {
-        const uploadedDoc = await apiService.uploadDocument(formData);
+        const uploadedDoc = await apiService.uploadDocument(uploadFormData);
         console.log('[表单页] 文档上传成功:', uploadedDoc);
         uploadCount++;
       } catch (error) {
@@ -484,7 +490,7 @@ const handleSaveDraft = async () => {
     } else {
       const newReport = await weeklyReportStore.createReport(reportData);
       if (newReport) {
-        await uploadDocuments(newReport.id);
+        await uploadDocuments(newReport.id, formData.projectId);
         alert(t('messages.success.save'));
         router.push('/weekly-reports');
       }
@@ -518,7 +524,7 @@ const handleSubmit = async () => {
     } else {
       const newReport = await weeklyReportStore.createReport(reportData);
       if (newReport) {
-        await uploadDocuments(newReport.id);
+        await uploadDocuments(newReport.id, formData.projectId);
         await weeklyReportStore.submitReport(newReport.id);
         alert(t('messages.success.submit'));
       }
