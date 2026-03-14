@@ -68,7 +68,7 @@ const activeTab = ref(props.modelValue);
 const tabRefs = ref<(HTMLElement | null)[]>([]);
 
 const tabClasses = (index: number) => {
-  const base = 'px-4 py-2 text-sm font-medium transition-colors duration-200 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-primary-500';
+  const base = 'px-4 py-2 text-sm font-medium transition-colors duration-200 outline-none';
   
   if (props.variant === 'pills') {
     return [

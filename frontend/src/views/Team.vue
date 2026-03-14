@@ -819,7 +819,12 @@ const getStatusBadgeVariant = (status: Task['status']) => {
 
 // 状态标签文本
 const getStatusLabel = (status: Task['status']) => {
-  return t(`taskStatus.${status.replace('-', '')}`);
+  const statusMap: Record<string, string> = {
+    'todo': t('taskStatus.todo'),
+    'in-progress': t('taskStatus.inProgress'),
+    'done': t('taskStatus.done')
+  };
+  return statusMap[status] || status;
 };
 
 // 优先级标签样式

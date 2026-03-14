@@ -495,9 +495,10 @@ const handleSaveDraft = async () => {
         router.push('/weekly-reports');
       }
     }
-  } catch (error) {
+  } catch (error: any) {
     console.error('Failed to save draft:', error);
-    alert(t('messages.error.save'));
+    const errorMessage = error?.message || t('messages.error.save');
+    alert(errorMessage);
   } finally {
     saving.value = false;
   }
@@ -530,9 +531,10 @@ const handleSubmit = async () => {
       }
     }
     router.push('/weekly-reports');
-  } catch (error) {
+  } catch (error: any) {
     console.error('Failed to submit report:', error);
-    alert(t('messages.error.submit'));
+    const errorMessage = error?.message || t('messages.error.submit');
+    alert(errorMessage);
   } finally {
     saving.value = false;
   }
