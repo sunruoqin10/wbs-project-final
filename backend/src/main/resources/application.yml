@@ -7,6 +7,12 @@ spring:
   application:
     name: wbs-project
 
+  servlet:
+    multipart:
+      enabled: true
+      max-file-size: 10MB
+      max-request-size: 50MB
+
   mail:
     host: smtp.qq.com
     port: 587
@@ -42,9 +48,9 @@ spring:
 
   datasource:
     driver-class-name: com.mysql.cj.jdbc.Driver
-    url: jdbc:mysql://8.140.210.133:3306/db_webwbs?useUnicode=true&characterEncoding=utf8&useSSL=false&serverTimezone=Asia/Shanghai&allowPublicKeyRetrieval=true
+    url: jdbc:mysql://localhost:3306/db_webwbs?useUnicode=true&characterEncoding=utf8&useSSL=false&serverTimezone=Asia/Shanghai&allowPublicKeyRetrieval=true
     username: root
-    password: newsip@45
+    password: root
 
   jackson:
     date-format: yyyy-MM-dd HH:mm:ss
@@ -65,3 +71,19 @@ logging:
   level:
     com.wbs.project: debug
     org.springframework.web: info
+
+document:
+  upload:
+    path: ./uploads/documents
+    max-size: 10485760
+    allowed-types:
+      - image/jpeg
+      - image/png
+      - image/gif
+      - application/pdf
+      - application/msword
+      - application/vnd.openxmlformats-officedocument.wordprocessingml.document
+      - application/vnd.ms-excel
+      - application/vnd.openxmlformats-officedocument.spreadsheetml.sheet
+      - application/vnd.ms-powerpoint
+      - application/vnd.openxmlformats-officedocument.presentationml.presentation

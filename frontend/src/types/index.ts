@@ -218,3 +218,40 @@ export interface WeeklyReportComment {
   content: string;
   createdAt: string;
 }
+
+export interface Document {
+  id: string;
+  projectId?: string;
+  taskId?: string;
+  name: string;
+  category: string;
+  fileName: string;
+  filePath: string;
+  fileSize: number;
+  fileType: string;
+  fileExtension: string;
+  version: number;
+  parentId?: string;
+  description?: string;
+  uploadedBy: string;
+  status: string;
+  downloadCount: number;
+  createdAt: string;
+  updatedAt: string;
+}
+
+export interface DocumentAccessLog {
+  id: string;
+  documentId: string;
+  userId: string;
+  action: string;
+  ipAddress?: string;
+  userAgent?: string;
+  createdAt: string;
+}
+
+export type DocumentCategory = 'requirements' | 'design' | 'development' | 'testing' | 'deployment' | 'documentation' | 'other';
+
+export type DocumentStatus = 'active' | 'deleted';
+
+export type DocumentAction = 'upload' | 'download' | 'update' | 'delete' | 'preview';

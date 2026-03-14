@@ -72,6 +72,14 @@ public class WeeklyReportService {
             !ReportStatus.REJECTED.getCode().equals(existing.getStatus())) {
             throw new RuntimeException("只能编辑草稿或已拒绝状态的周报");
         }
+        
+        report.setUserId(existing.getUserId());
+        report.setStatus(existing.getStatus());
+        report.setSubmitTime(existing.getSubmitTime());
+        report.setApproveTime(existing.getApproveTime());
+        report.setApproverId(existing.getApproverId());
+        report.setApproveComment(existing.getApproveComment());
+        report.setCreatedAt(existing.getCreatedAt());
         report.setUpdatedAt(LocalDateTime.now());
         weeklyReportMapper.update(report);
         return report;

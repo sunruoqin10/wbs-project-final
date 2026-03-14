@@ -52,7 +52,7 @@ public class GlobalExceptionHandler {
     @ExceptionHandler(Exception.class)
     @ResponseStatus(HttpStatus.INTERNAL_SERVER_ERROR)
     public Result<Void> handleException(Exception e) {
-        log.error("系统异常", e);
+        log.error("系统异常: {}", e.getMessage(), e);
         return Result.error(500, "系统内部错误，请联系管理员");
     }
 }

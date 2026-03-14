@@ -1,6 +1,6 @@
 // API Service Layer - Connects to Spring Boot backend
 
-import type { Project, Task, User, DelayStats, OvertimeRecord, OvertimeStats, Permission, TaskOvertimeStats, WeeklyReport, WeeklyReportComment } from '@/types';
+import type { Project, Task, User, DelayStats, OvertimeRecord, OvertimeStats, Permission, TaskOvertimeStats, WeeklyReport, WeeklyReportComment, Document } from '@/types';
 import { useUserStore } from '@/stores/user';
 
 const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || '/api';
@@ -607,6 +607,151 @@ class ApiService {
     return request<void>(`/weekly-reports/comments/${commentId}`, {
       method: 'DELETE',
     });
+  }
+
+  // Documents API
+  async getAllDocuments(): Promise<Document[]> {
+    return request<Document[]>('/documents');
+  }
+
+  async getDocument(id: string | number): Promise<Document> {
+    return request<Document>(`/documents/${id}`);
+  }
+
+  async getProjectDocuments(projectId: string | number): Promise<Document[]> {
+    return request<Document[]>(`/documents/project/${projectId}`);
+  }
+
+  async getTaskDocuments(taskId: string | number): Promise<Document[]> {
+    return request<Document[]>(`/documents/task/${taskId}`);
+  }
+
+  async getDocumentsByCategory(category: string): Promise<Document[]> {
+    return request<Document[]>(`/documents/category/${category}`);
+  }
+
+  async uploadDocument(formData: FormData): Promise<Document> {
+    console.log('上传文档表单数据:', Object.fromEntries(formData.entries()));
+    const url = `${API_BASE_URL}/documents/upload`;
+
+    const userStore = useUserStore();
+    const headers: Record<string, string> = {};
+
+    if (userStore.currentUserId) {
+      headers['X-User-Id'] = userStore.currentUserId;
+    }
+
+    if (userStore.token) {
+      headers['Authorization'] = `Bearer ${userStore.token}`;
+    }
+
+    try {
+      const response = await fetch(url, {
+        method: 'POST',
+        body: formData,
+        headers: headers,
+      });
+
+      if (!response.ok) {
+        let errorMessage = `HTTP error! status: ${response.status}`;
+        try {
+          const errorData = await response.json();
+          errorMessage = errorData.message || errorData.error || errorMessage;
+        } catch (e) {
+        }
+        console.error('上传失败:', errorMessage);
+        throw new Error(errorMessage);
+      }
+
+      const result: Result<Document> = await response.json();
+      if (result.code !== 200) {
+        throw new Error(result.message || 'API request failed');
+      }
+
+      return result.data;
+    } catch (error) {
+      console.error('上传文档异常:', error);
+      throw error;
+    }
+  }
+
+  async downloadDocument(id: string | number): Promise<Blob> {
+    const userStore = useUserStore();
+    const url = `${API_BASE_URL}/documents/${id}/download`;
+    const headers: Record<string, string> = {};
+
+    if (userStore.currentUserId) {
+      headers['X-User-Id'] = userStore.currentUserId;
+    }
+
+    if (userStore.token) {
+      headers['Authorization'] = `Bearer ${userStore.token}`;
+    }
+
+    const response = await fetch(url, {
+      headers: headers,
+    });
+
+    if (!response.ok) {
+      let errorMessage = `HTTP error! status: ${response.status}`;
+      try {
+        const errorData = await response.json();
+        errorMessage = errorData.message || errorMessage;
+      } catch (e) {
+        console.error('Failed to parse error response:', e);
+      }
+      throw new Error(errorMessage);
+    }
+
+    return response.blob();
+  }
+
+  async previewDocument(id: string | number): Promise<Blob> {
+    const userStore = useUserStore();
+    const url = `${API_BASE_URL}/documents/${id}/preview`;
+    const headers: Record<string, string> = {};
+
+    if (userStore.currentUserId) {
+      headers['X-User-Id'] = userStore.currentUserId;
+    }
+
+    if (userStore.token) {
+      headers['Authorization'] = `Bearer ${userStore.token}`;
+    }
+
+    const response = await fetch(url, {
+      headers: headers,
+    });
+
+    if (!response.ok) {
+      let errorMessage = `HTTP error! status: ${response.status}`;
+      try {
+        const errorData = await response.json();
+        errorMessage = errorData.message || errorMessage;
+      } catch (e) {
+        console.error('Failed to parse error response:', e);
+      }
+      throw new Error(errorMessage);
+    }
+
+    return response.blob();
+  }
+
+  async updateDocument(id: string | number, data: Partial<Document>): Promise<Document> {
+    return request<Document>(`/documents/${id}`, {
+      method: 'PUT',
+      body: JSON.stringify(data),
+    });
+  }
+
+  async deleteDocument(id: string | number): Promise<void> {
+    return request<void>(`/documents/${id}`, {
+      method: 'DELETE',
+    });
+  }
+
+  async getDocumentCountByProject(projectId: string | number): Promise<number> {
+    return request<number>(`/documents/project/${projectId}/count`);
   }
 }
 

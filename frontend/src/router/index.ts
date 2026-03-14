@@ -100,6 +100,12 @@ const routes: RouteRecordRaw[] = [
     meta: { titleKey: 'routes.weeklyReportEdit', permission: 'weekly-report:edit' }
   },
   {
+    path: '/documents',
+    name: 'Documents',
+    component: () => import('@/views/Documents.vue'),
+    meta: { titleKey: 'routes.documents' }
+  },
+  {
     path: '/team',
     name: 'Team',
     component: () => import('@/views/Team.vue'),

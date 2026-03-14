@@ -20,7 +20,8 @@ export const usePermissionStore = defineStore('permission', () => {
       'project:edit', 'project:manage_members',
       'task:create', 'task:edit', 'task:delete', 'task:assign',
       'overtime:create', 'overtime:approve', 'overtime:view',
-      'weekly-report:create', 'weekly-report:edit', 'weekly-report:delete', 'weekly-report:view', 'weekly-report:approve'
+      'weekly-report:create', 'weekly-report:edit', 'weekly-report:delete', 'weekly-report:view', 'weekly-report:approve',
+      'document:create', 'document:edit', 'document:delete', 'document:view'
     ],
     'project-manager': [
       'user:view',
@@ -28,13 +29,15 @@ export const usePermissionStore = defineStore('permission', () => {
       'project:edit', 'project:manage_members',
       'task:create', 'task:edit', 'task:delete', 'task:assign',
       'overtime:create', 'overtime:approve', 'overtime:view',
-      'weekly-report:create', 'weekly-report:edit', 'weekly-report:delete', 'weekly-report:view', 'weekly-report:approve'
+      'weekly-report:create', 'weekly-report:edit', 'weekly-report:delete', 'weekly-report:view', 'weekly-report:approve',
+      'document:create', 'document:edit', 'document:delete', 'document:view'
     ],
     'member': [
       'project:view',
       'task:create', 'task:edit',
       'overtime:create', 'overtime:view',
-      'weekly-report:create', 'weekly-report:edit', 'weekly-report:delete', 'weekly-report:view'
+      'weekly-report:create', 'weekly-report:edit', 'weekly-report:delete', 'weekly-report:view',
+      'document:create', 'document:view'
     ]
   };
 
@@ -141,6 +144,22 @@ export const usePermissionStore = defineStore('permission', () => {
     return currentRole.value === 'admin';
   };
 
+  const canCreateDocument = (): boolean => {
+    return hasPermission('document:create');
+  };
+
+  const canEditDocument = (documentOwnerId?: string): boolean => {
+    if (currentRole.value === 'admin') return true;
+    if (documentOwnerId && documentOwnerId === userStore.currentUserId) return true;
+    return hasPermission('document:edit');
+  };
+
+  const canDeleteDocument = (documentOwnerId?: string): boolean => {
+    if (currentRole.value === 'admin') return true;
+    if (documentOwnerId && documentOwnerId === userStore.currentUserId) return true;
+    return hasPermission('document:delete');
+  };
+
   const loadPermissions = async () => {
     try {
       loading.value = true;
@@ -174,6 +193,9 @@ export const usePermissionStore = defineStore('permission', () => {
     canApproveOvertime,
     canEditUser,
     canDeleteUser,
+    canCreateDocument,
+    canEditDocument,
+    canDeleteDocument,
     loadPermissions
   };
 });
