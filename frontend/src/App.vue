@@ -6,10 +6,8 @@
 
 <script setup lang="ts">
 import { onMounted } from 'vue';
-import { useProjectStore } from './stores/project';
 import { useUserStore } from './stores/user';
 
-const projectStore = useProjectStore();
 const userStore = useUserStore();
 
 onMounted(async () => {

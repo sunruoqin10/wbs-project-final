@@ -22,7 +22,8 @@
       "Bash(c:\\\\PcApp\\\\nginx-1.28.2\\\\nginx.exe:*)",
       "mcp__zai-mcp-server__extract_text_from_screenshot",
       "Bash(vite build:*)",
-      "Bash(python:*)"
+      "Bash(python:*)",
+      "Bash(git add *)"
     ]
   }
 }

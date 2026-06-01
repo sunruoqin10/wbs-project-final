@@ -128,7 +128,6 @@
 import { ref } from 'vue';
 import apiService from '@/services/api';
 import type { Document } from '@/types';
-import { useUserStore } from '@/stores/user';
 import Button from '@/components/common/Button.vue';
 
 defineProps<{
@@ -140,7 +139,6 @@ const emit = defineEmits<{
   uploaded: [document: Document];
 }>();
 
-const userStore = useUserStore();
 const fileInput = ref<HTMLInputElement | null>(null);
 const selectedFile = ref<File | null>(null);
 const isDragging = ref(false);

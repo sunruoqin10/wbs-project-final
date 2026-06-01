@@ -15,7 +15,7 @@ public class ProjectApplication {
         SpringApplication.run(ProjectApplication.class, args);
         System.out.println("=================================");
         System.out.println("WBS项目管理系统启动成功！");
-        System.out.println("访问地址: http://localhost:8080/api");
+        System.out.println("访问地址: http://localhost:8084/api");
         System.out.println("=================================");
     }
 }

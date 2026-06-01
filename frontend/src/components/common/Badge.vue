@@ -8,7 +8,7 @@
 import { computed } from 'vue';
 
 interface Props {
-  variant?: 'default' | 'primary' | 'success' | 'warning' | 'danger' | 'info';
+  variant?: 'default' | 'primary' | 'secondary' | 'accent' | 'success' | 'warning' | 'danger' | 'info';
   size?: 'sm' | 'md';
 }
 
@@ -21,6 +21,8 @@ const badgeClasses = computed(() => {
   const variants = {
     default: 'bg-secondary-100 text-secondary-700',
     primary: 'bg-primary-100 text-primary-700',
+    secondary: 'bg-secondary-200 text-secondary-800',
+    accent: 'bg-accent-100 text-accent-700',
     success: 'bg-accent-100 text-accent-700',
     warning: 'bg-warning-100 text-warning-700',
     danger: 'bg-danger-100 text-danger-700',

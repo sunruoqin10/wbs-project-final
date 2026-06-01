@@ -369,7 +369,7 @@ async function loadData() {
   }
 }
 
-function getProjectName(projectId: string): string {
+function getProjectName(projectId: string | undefined): string {
   if (!projects.value || !projectId) return '';
   const project = projects.value.find(p => p.id === projectId);
   return project?.name || '';

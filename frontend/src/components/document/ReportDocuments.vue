@@ -331,7 +331,7 @@ async function loadData() {
   }
 }
 
-function getProjectName(projectId: string): string {
+function getProjectName(projectId: string | undefined): string {
   if (!projectId) return '未知项目';
   const project = projectStore.projects.find(p => p.id === projectId);
   return project?.name || '未知项目';

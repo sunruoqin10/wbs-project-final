@@ -9,11 +9,30 @@ import { ref, onMounted, watch, onBeforeUnmount } from 'vue';
 import { useI18n } from 'vue-i18n';
 import { gantt } from 'dhtmlx-gantt';
 import 'dhtmlx-gantt/codebase/skins/dhtmlxgantt_meadow.css';
-import type { Task as GanttTask } from 'dhtmlx-gantt';
 import type { Task } from '@/types';
 import type { Project } from '@/types';
 import { useUserStore } from '@/stores/user';
-import { useTaskStore } from '@/stores/task';
+
+interface GanttTask {
+  id: string | number;
+  text: string;
+  start_date: string;
+  duration: number;
+  progress: number;
+  parent: string | number;
+  priority?: string;
+  assigneeId?: string;
+  color?: string;
+  description?: string;
+  status?: string;
+  estimatedHours?: number;
+  actualHours?: number;
+  delayedDays?: number;
+  isDelayed?: boolean;
+  hasSubtasks?: boolean;
+  childrenDelayedCount?: number;
+  childrenTotalDelayedDays?: number;
+}
 
 interface Props {
   tasks: Task[];
@@ -24,7 +43,6 @@ interface Props {
 const props = defineProps<Props>();
 const { t } = useI18n();
 const userStore = useUserStore();
-const taskStore = useTaskStore();
 const isInitialized = ref(false);
 
 const ganttContainer = ref<HTMLElement>();
@@ -151,10 +169,6 @@ const updateScale = () => {
   gantt.parse({ data: ganttTasks });
 };
 
-const updateTaskInStore = (taskId: string, updates: Partial<Task>) => {
-  taskStore.updateTask(taskId, updates);
-};
-
 const initGantt = () => {
   if (!ganttContainer.value) return;
 
@@ -216,8 +230,7 @@ const initGantt = () => {
 
   gantt.config.scales = getScaleConfig();
 
-  // Task template
-  gantt.templates.task_class = (start, end, task) => {
+  gantt.templates.task_class = (_start: Date, _end: Date, task: any) => {
     const ganttTask = task as any;
     let classes = ['gantt_task'];
 
@@ -237,7 +250,7 @@ const initGantt = () => {
   };
 
   // 设置任务条文本颜色为白色并显示进度百分比
-  gantt.templates.task_text = (start, end, task) => {
+  gantt.templates.task_text = (_start: Date, _end: Date, task: any) => {
     const progress = Math.round(task.progress * 100);
     return `<div style="color: #ffffff; display: flex; justify-content: center; align-items: center; gap: 12px; width: 100%; padding: 0 8px;">
       <span style="font-weight: bold;">${progress}%</span>
@@ -246,7 +259,7 @@ const initGantt = () => {
   };
 
   // 自定义任务工具提示
-  gantt.templates.tooltip_text = function(start, end, task) {
+  gantt.templates.tooltip_text = function(start: Date, end: Date, task: any) {
     const ganttTask = task as any;
 
     // 获取负责人信息
@@ -389,7 +402,7 @@ const initGantt = () => {
   };
 
   // 高亮周末
-  gantt.templates.timeline_cell_class = (task, date) => {
+  gantt.templates.timeline_cell_class = (_task: any, date: Date) => {
     const dayOfWeek = date.getDay();
     // 0 = 周日, 6 = 周六
     if (dayOfWeek === 0 || dayOfWeek === 6) {

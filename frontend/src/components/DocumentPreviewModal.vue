@@ -81,7 +81,7 @@ const props = defineProps<{
   document: Document;
 }>();
 
-const emit = defineEmits<{
+defineEmits<{
   close: [];
 }>();
 
