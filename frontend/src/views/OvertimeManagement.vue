@@ -275,8 +275,7 @@
             </div>
             <div class="flex items-center gap-2">
               <select 
-                v-model="personalPagination.pageSize" 
-                @change="handlePersonalPageSizeChange(personalPagination.pageSize)"
+                v-model="personalPagination.pageSize"
                 class="rounded border border-secondary-300 px-2 py-1 text-sm"
               >
                 <option :value="10">10{{ $t('overtime.pagination.perPage') }}</option>
@@ -569,8 +568,7 @@
             </div>
             <div class="flex items-center gap-2">
               <select 
-                v-model="teamPagination.pageSize" 
-                @change="handleTeamPageSizeChange(teamPagination.pageSize)"
+                v-model="teamPagination.pageSize"
                 class="rounded border border-secondary-300 px-2 py-1 text-sm"
               >
                 <option :value="10">10{{ $t('overtime.pagination.perPage') }}</option>
@@ -1427,16 +1425,6 @@ const handleTeamPageChange = (page: number) => {
   teamPagination.value.currentPage = page;
 };
 
-const handlePersonalPageSizeChange = (size: number) => {
-  personalPagination.value.pageSize = size;
-  personalPagination.value.currentPage = 1;
-};
-
-const handleTeamPageSizeChange = (size: number) => {
-  teamPagination.value.pageSize = size;
-  teamPagination.value.currentPage = 1;
-};
-
 const handleEdit = (record: OvertimeRecord) => {
   if (record.status === 'approved') {
     alert('已审批通过的加班记录不能编辑');
@@ -1610,6 +1598,14 @@ watch(() => personalFilters.value, () => {
 watch(() => teamFilters.value, () => {
   teamPagination.value.currentPage = 1;
 }, { deep: true });
+
+watch(() => personalPagination.value.pageSize, () => {
+  personalPagination.value.currentPage = 1;
+});
+
+watch(() => teamPagination.value.pageSize, () => {
+  teamPagination.value.currentPage = 1;
+});
 
 watch(() => personalSort.value, () => {
   personalPagination.value.currentPage = 1;

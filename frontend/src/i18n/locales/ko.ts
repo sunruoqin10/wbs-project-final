@@ -51,7 +51,11 @@ export default {
     empty: '데이터 없음',
     total: '합계',
     selectAll: '모두 선택',
-    deselectAll: '선택 해제'
+    deselectAll: '선택 해제',
+    pagination: {
+      previous: '이전',
+      next: '다음'
+    }
   },
 
   // 라우트/페이지 제목
@@ -70,6 +74,7 @@ export default {
     weeklyReportNew: '주간 보고서 생성',
     weeklyReportDetail: '주간 보고서 상세',
     weeklyReportEdit: '주간 보고서 편집',
+    documents: '문서 관리',
     team: '팀 구성원',
     reports: '보고서',
     settings: '설정',
