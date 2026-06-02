@@ -1,7 +1,7 @@
 package com.wbs.project.controller;
 
 import com.wbs.project.common.Result;
-import com.wbs.project.scheduler.DelayNotificationScheduler;
+import com.wbs.project.scheduler.SchedulerManager;
 import lombok.RequiredArgsConstructor;
 import org.springframework.web.bind.annotation.*;
 
@@ -10,11 +10,11 @@ import org.springframework.web.bind.annotation.*;
 @RequiredArgsConstructor
 public class DelayNotificationController {
 
-    private final DelayNotificationScheduler delayNotificationScheduler;
+    private final SchedulerManager schedulerManager;
 
     @PostMapping("/trigger")
     public Result<String> triggerDelayCheck() {
-        delayNotificationScheduler.checkAndSendDelayNotificationsManual();
+        schedulerManager.triggerNow("delay-notification");
         return Result.success("延期检查已触发");
     }
 }

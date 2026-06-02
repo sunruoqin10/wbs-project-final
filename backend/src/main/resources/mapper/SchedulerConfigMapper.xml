@@ -1,0 +1,47 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+        "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.wbs.project.mapper.SchedulerConfigMapper">
+
+    <resultMap id="SchedulerConfigMap" type="com.wbs.project.entity.SchedulerConfig">
+        <id column="id" property="id"/>
+        <result column="name" property="name"/>
+        <result column="description" property="description"/>
+        <result column="cron_expression" property="cronExpression"/>
+        <result column="enabled" property="enabled"/>
+        <result column="last_run_time" property="lastRunTime"/>
+        <result column="next_run_time" property="nextRunTime"/>
+        <result column="created_at" property="createdAt"/>
+        <result column="updated_at" property="updatedAt"/>
+    </resultMap>
+
+    <select id="selectAll" resultMap="SchedulerConfigMap">
+        SELECT * FROM sys_scheduler_config ORDER BY id
+    </select>
+
+    <select id="selectById" resultMap="SchedulerConfigMap">
+        SELECT * FROM sys_scheduler_config WHERE id = #{id}
+    </select>
+
+    <insert id="insert">
+        INSERT INTO sys_scheduler_config (id, name, description, cron_expression, enabled, created_at, updated_at)
+        VALUES (#{id}, #{name}, #{description}, #{cronExpression}, #{enabled}, NOW(), NOW())
+    </insert>
+
+    <update id="update">
+        UPDATE sys_scheduler_config
+        SET name = #{name},
+            description = #{description},
+            cron_expression = #{cronExpression},
+            enabled = #{enabled},
+            updated_at = NOW()
+        WHERE id = #{id}
+    </update>
+
+    <update id="updateRunTime">
+        UPDATE sys_scheduler_config
+        SET last_run_time = #{lastRunTime},
+            next_run_time = #{nextRunTime}
+        WHERE id = #{id}
+    </update>
+</mapper>

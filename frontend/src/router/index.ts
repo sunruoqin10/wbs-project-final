@@ -136,6 +136,12 @@ const routes: RouteRecordRaw[] = [
     meta: { titleKey: 'routes.settings', permission: 'settings:view' }
   },
   {
+    path: '/scheduler-management',
+    name: 'SchedulerManagement',
+    component: () => import('@/views/SchedulerManagement.vue'),
+    meta: { titleKey: 'routes.schedulerManagement', permission: 'settings:edit' }
+  },
+  {
     path: '/weekly-reports/debug',
     name: 'WeeklyReportDebug',
     component: () => import('@/views/WeeklyReportDebug.vue'),

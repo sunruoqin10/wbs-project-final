@@ -192,7 +192,8 @@ const pageTitle = computed(() => {
     OvertimeManagement: 'routes.overtime',
     Team: 'routes.team',
     Reports: 'routes.reports',
-    Settings: 'routes.settings'
+    Settings: 'routes.settings',
+    SchedulerManagement: 'routes.schedulerManagement'
   };
   const titleKey = routeKeyMap[routeName] || 'app.name';
   return t(titleKey);

@@ -78,6 +78,7 @@ export default {
     team: '团队成员',
     reports: '报表统计',
     settings: '设置',
+    schedulerManagement: '定时任务管理',
     test: '测试页面'
   },
 
@@ -1102,5 +1103,39 @@ export default {
       createFirst: '开始创建您的第一份周报吧',
       createButton: '创建周报'
     }
+  },
+
+  scheduler: {
+    title: '定时任务管理',
+    subtitle: '管理系统定时任务的调度周期和启停状态',
+    running: '运行中',
+    stopped: '已停止',
+    lastRun: '上次执行',
+    nextRun: '下次执行',
+    never: '从未执行',
+    start: '启动',
+    stop: '停止',
+    triggerNow: '手动触发',
+    edit: '编辑配置',
+    cronExpression: 'Cron 表达式',
+    empty: '暂无定时任务',
+    frequency: '频率',
+    daily: '每天',
+    weekly: '每周',
+    monthly: '每月',
+    custom: '自定义',
+    execTime: '执行时间',
+    sun: '日',
+    mon: '一',
+    tue: '二',
+    wed: '三',
+    thu: '四',
+    fri: '五',
+    sat: '六',
+    everyDay: '每天',
+    everyWeek: '每周',
+    everyMonth: '每月',
+    dayOfMonth: '日',
+    customCronDesc: '自定义 Cron 表达式'
   }
 };

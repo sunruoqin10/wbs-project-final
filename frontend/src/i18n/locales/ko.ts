@@ -78,6 +78,7 @@ export default {
     team: '팀 구성원',
     reports: '보고서',
     settings: '설정',
+    schedulerManagement: '스케줄러 관리',
     test: '테스트 페이지'
   },
 
@@ -1094,5 +1095,39 @@ export default {
       deployment: '배포 문서',
       documentation: '사용자 매뉴얼'
     }
+  },
+
+  scheduler: {
+    title: '스케줄러 관리',
+    subtitle: '시스템 스케줄러의 주기와 상태를 관리합니다',
+    running: '실행 중',
+    stopped: '중지됨',
+    lastRun: '마지막 실행',
+    nextRun: '다음 실행',
+    never: '실행 기록 없음',
+    start: '시작',
+    stop: '중지',
+    triggerNow: '수동 실행',
+    edit: '설정 편집',
+    cronExpression: 'Cron 표현식',
+    empty: '스케줄러가 없습니다',
+    frequency: '빈도',
+    daily: '매일',
+    weekly: '매주',
+    monthly: '매월',
+    custom: '사용자 정의',
+    execTime: '실행 시간',
+    sun: '일',
+    mon: '월',
+    tue: '화',
+    wed: '수',
+    thu: '목',
+    fri: '금',
+    sat: '토',
+    everyDay: '매일',
+    everyWeek: '매주',
+    everyMonth: '매월',
+    dayOfMonth: '일',
+    customCronDesc: '사용자 정의 Cron 표현식'
   }
 };

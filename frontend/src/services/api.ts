@@ -1,6 +1,7 @@
 // API Service Layer - Connects to Spring Boot backend
 
 import type { Project, Task, User, DelayStats, OvertimeRecord, OvertimeStats, Permission, TaskOvertimeStats, WeeklyReport, WeeklyReportComment, Document } from '@/types';
+import type { SchedulerConfig } from '@/types/scheduler';
 import { useUserStore } from '@/stores/user';
 
 const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || '/api';
@@ -780,6 +781,39 @@ class ApiService {
 
   async getDocumentCountByProject(projectId: string | number): Promise<number> {
     return request<number>(`/documents/project/${projectId}/count`);
+  }
+
+  async getSchedulerConfigs(): Promise<SchedulerConfig[]> {
+    return request<SchedulerConfig[]>('/scheduler/configs');
+  }
+
+  async getSchedulerConfig(id: string): Promise<SchedulerConfig> {
+    return request<SchedulerConfig>(`/scheduler/configs/${id}`);
+  }
+
+  async updateSchedulerConfig(id: string, data: Partial<SchedulerConfig>): Promise<SchedulerConfig> {
+    return request<SchedulerConfig>(`/scheduler/configs/${id}`, {
+      method: 'PUT',
+      body: JSON.stringify(data),
+    });
+  }
+
+  async startScheduler(id: string): Promise<string> {
+    return request<string>(`/scheduler/${id}/start`, {
+      method: 'POST',
+    });
+  }
+
+  async stopScheduler(id: string): Promise<string> {
+    return request<string>(`/scheduler/${id}/stop`, {
+      method: 'POST',
+    });
+  }
+
+  async triggerScheduler(id: string): Promise<string> {
+    return request<string>(`/scheduler/${id}/trigger`, {
+      method: 'POST',
+    });
   }
 }
 

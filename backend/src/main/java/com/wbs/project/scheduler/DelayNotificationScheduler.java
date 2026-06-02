@@ -11,7 +11,6 @@ import com.wbs.project.service.TaskService;
 import com.wbs.project.service.UserService;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
-import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.stereotype.Component;
 
 import java.time.LocalDate;
@@ -21,9 +20,9 @@ import java.util.List;
 import java.util.UUID;
 
 @Slf4j
-@Component
+@Component("delayNotificationScheduler")
 @RequiredArgsConstructor
-public class DelayNotificationScheduler {
+public class DelayNotificationScheduler implements Runnable {
 
     private final TaskService taskService;
     private final ProjectService projectService;
@@ -31,7 +30,6 @@ public class DelayNotificationScheduler {
     private final EmailNotificationService emailNotificationService;
     private final DelayNotificationRecordMapper delayNotificationRecordMapper;
 
-    @Scheduled(cron = "0 0 9 * * ?")
     public void checkAndSendDelayNotifications() {
         log.info("========== 开始检查延期任务 ==========");
         try {
@@ -186,6 +184,11 @@ public class DelayNotificationScheduler {
         } catch (Exception e) {
             log.error("延期检查过程中发生错误", e);
         }
+    }
+
+    @Override
+    public void run() {
+        checkAndSendDelayNotifications();
     }
 
     private void recordNotification(Task task, String projectId, User user, LocalDate date) {
