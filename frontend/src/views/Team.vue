@@ -424,8 +424,6 @@
 import { ref, computed, onMounted, reactive, watch } from 'vue';
 import { useI18n } from 'vue-i18n';
 import * as echarts from 'echarts';
-import { createAvatar } from '@dicebear/core';
-import { avataaars } from '@dicebear/collection';
 import MainLayout from '@/components/layout/MainLayout.vue';
 import Card from '@/components/common/Card.vue';
 import Button from '@/components/common/Button.vue';
@@ -664,7 +662,7 @@ const handleSaveMember = async () => {
       alert(t('team.messages.updateSuccess'));
     } else {
       // Add new user
-      const avatar = createAvatar(avataaars, { seed: newMember.name }).toDataUri();
+      const avatar = newMember.name;
       await userStore.addUser({
         ...newMember,
         skills: skillsArray,
