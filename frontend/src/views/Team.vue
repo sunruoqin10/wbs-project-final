@@ -71,6 +71,9 @@
                         {{ $t('team.name') }}
                       </th>
                       <th class="px-6 py-3 text-left text-xs font-medium uppercase tracking-wider text-secondary-500">
+                        {{ $t('team.userId') }}
+                      </th>
+                      <th class="px-6 py-3 text-left text-xs font-medium uppercase tracking-wider text-secondary-500">
                         {{ $t('team.role') }}
                       </th>
                       <th class="px-6 py-3 text-left text-xs font-medium uppercase tracking-wider text-secondary-500">
@@ -97,6 +100,9 @@
                             <div class="text-sm text-secondary-600">{{ user.email }}</div>
                           </div>
                         </div>
+                      </td>
+                      <td class="whitespace-nowrap px-6 py-4 text-sm font-mono text-secondary-900">
+                        {{ user.id }}
                       </td>
                       <td class="whitespace-nowrap px-6 py-4">
                         <Badge :variant="getRoleBadgeVariant(user.role)">
@@ -192,6 +198,9 @@
                         {{ $t('team.taskAssignment.memberName') }}
                       </th>
                       <th class="px-6 py-3 text-left text-xs font-medium uppercase tracking-wider text-secondary-500">
+                        {{ $t('team.taskAssignment.userId') }}
+                      </th>
+                      <th class="px-6 py-3 text-left text-xs font-medium uppercase tracking-wider text-secondary-500">
                         {{ $t('team.taskAssignment.taskName') }}
                       </th>
                       <th class="px-6 py-3 text-left text-xs font-medium uppercase tracking-wider text-secondary-500">
@@ -217,6 +226,9 @@
                             <div class="text-sm font-medium text-secondary-900">{{ item.userName }}</div>
                           </div>
                         </div>
+                      </td>
+                      <td class="whitespace-nowrap px-6 py-4 text-sm font-mono text-secondary-900">
+                        {{ item.userId }}
                       </td>
                       <td class="px-6 py-4 text-sm text-secondary-900">
                         {{ item.taskName }}
@@ -249,7 +261,7 @@
                       </td>
                     </tr>
                     <tr v-if="sortedTaskAssignments.length === 0">
-                      <td colspan="6" class="px-6 py-12 text-center text-sm text-secondary-500">
+                      <td colspan="7" class="px-6 py-12 text-center text-sm text-secondary-500">
                         {{ $t('team.taskAssignment.noData') }}
                       </td>
                     </tr>

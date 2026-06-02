@@ -453,6 +453,7 @@ export default {
     addMember: '구성원 추가',
     searchPlaceholder: '구성원 검색...',
     name: '이름',
+    userId: '사용자 ID',
     email: '이메일',
     role: '역할',
     department: '부서',
@@ -496,6 +497,22 @@ export default {
     emptyState: {
       title: '구성원 없음',
       message: '아직 팀 구성원이 없습니다'
+    },
+    taskAssignment: {
+      title: '작업 할당 현황',
+      memberName: '구성원 이름',
+      userId: '사용자 ID',
+      taskName: '작업 이름',
+      projectName: '프로젝트 이름',
+      status: '상태',
+      priority: '우선순위',
+      progress: '진행률',
+      noData: '작업 할당 데이터가 없습니다',
+      previous: '이전 페이지',
+      next: '다음 페이지',
+      page: '{current} / {total} 페이지',
+      itemsPerPage: '페이지당 항목 수',
+      sort: '정렬'
     }
   },
 

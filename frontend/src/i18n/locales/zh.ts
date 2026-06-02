@@ -454,6 +454,7 @@ export default {
     addMember: '添加成员',
     searchPlaceholder: '搜索成员...',
     name: '姓名',
+    userId: '用户ID',
     email: '邮箱',
     role: '角色',
     department: '部门',
@@ -501,6 +502,7 @@ export default {
     taskAssignment: {
       title: '任务分配情况',
       memberName: '成员姓名',
+      userId: '用户ID',
       taskName: '任务名称',
       projectName: '项目名称',
       status: '状态',
