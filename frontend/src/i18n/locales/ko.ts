@@ -640,7 +640,15 @@ export default {
       updatePassword: '비밀번호 업데이트',
       twoFactor: '2단계 인증',
       twoFactorDesc: '계정 보호를 위한 추가 보안 레이어',
-      enableTwoFactor: '2단계 인증 사용'
+      enableTwoFactor: '2단계 인증 사용',
+      msg: {
+        currentPasswordRequired: '현재 비밀번호를 입력해주세요',
+        newPasswordRequired: '새 비밀번호를 입력해주세요',
+        passwordMismatch: '비밀번호가 일치하지 않습니다',
+        notLoggedIn: '먼저 로그인해주세요',
+        updateSuccess: '비밀번호가 변경되었습니다',
+        updateFailed: '비밀번호 변경 실패'
+      }
     },
     // 공통
     logout: '로그아웃'

@@ -1,6 +1,7 @@
 package com.wbs.project.controller;
 
 import com.wbs.project.common.Result;
+import com.wbs.project.entity.ChangePasswordRequest;
 import com.wbs.project.entity.LoginRequest;
 import com.wbs.project.entity.LoginResponse;
 import com.wbs.project.entity.User;
@@ -71,5 +72,11 @@ public class UserController {
     public Result<Integer> getTotalUsers() {
         int count = userService.getTotalUsers();
         return Result.success(count);
+    }
+
+    @PutMapping("/{id}/password")
+    public Result<String> changePassword(@PathVariable String id, @RequestBody ChangePasswordRequest request) {
+        userService.changePassword(id, request.getCurrentPassword(), request.getNewPassword());
+        return Result.success("密码修改成功");
     }
 }

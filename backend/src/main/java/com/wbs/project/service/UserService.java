@@ -161,6 +161,23 @@ public class UserService {
     }
 
     /**
+     * 修改密码
+     */
+    @Transactional
+    public void changePassword(String id, String currentPassword, String newPassword) {
+        User user = userMapper.selectById(id);
+        if (user == null) {
+            throw new RuntimeException("用户不存在");
+        }
+        if (!currentPassword.equals(user.getPassword())) {
+            throw new RuntimeException("当前密码错误");
+        }
+        user.setPassword(newPassword);
+        user.setUpdatedAt(LocalDateTime.now());
+        userMapper.update(user);
+    }
+
+    /**
      * 获取所有项目经理
      */
     public List<User> getManagers() {

@@ -371,6 +371,13 @@ class ApiService {
     });
   }
 
+  async changePassword(id: string, currentPassword: string, newPassword: string): Promise<void> {
+    return request<void>(`/users/${id}/password`, {
+      method: 'PUT',
+      body: JSON.stringify({ currentPassword, newPassword }),
+    });
+  }
+
   async getBatchUsers(ids: (string | number)[]): Promise<User[]> {
     return request<User[]>('/users/batch', {
       method: 'POST',

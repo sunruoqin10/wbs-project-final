@@ -641,7 +641,15 @@ export default {
       updatePassword: '更新密码',
       twoFactor: '两步验证',
       twoFactorDesc: '添加额外的安全层来保护您的账户',
-      enableTwoFactor: '启用两步验证'
+      enableTwoFactor: '启用两步验证',
+      msg: {
+        currentPasswordRequired: '请输入当前密码',
+        newPasswordRequired: '请输入新密码',
+        passwordMismatch: '两次密码输入不一致',
+        notLoggedIn: '请先登录',
+        updateSuccess: '密码修改成功',
+        updateFailed: '密码修改失败'
+      }
     },
     // 通用
     logout: '退出系统'

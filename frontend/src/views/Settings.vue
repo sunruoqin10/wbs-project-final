@@ -192,13 +192,13 @@
                 <h4 class="text-sm font-medium text-secondary-900">{{ t('settings.security.changePassword') }}</h4>
                 <p class="text-sm text-secondary-600">{{ t('settings.security.changePasswordDesc') }}</p>
                 <div class="mt-4 space-y-4">
-                  <Input :label="t('settings.security.currentPassword')" type="password" />
-                  <Input :label="t('settings.security.newPassword')" type="password" />
-                  <Input :label="t('settings.security.confirmPassword')" type="password" />
-                </div>
-                <div class="mt-4">
-                  <Button variant="primary">{{ t('settings.security.updatePassword') }}</Button>
-                </div>
+                <Input :label="t('settings.security.currentPassword')" type="password" v-model="passwordForm.currentPassword" />
+                <Input :label="t('settings.security.newPassword')" type="password" v-model="passwordForm.newPassword" />
+                <Input :label="t('settings.security.confirmPassword')" type="password" v-model="passwordForm.confirmPassword" />
+              </div>
+              <div class="mt-4">
+                <Button variant="primary" @click="handleUpdatePassword">{{ t('settings.security.updatePassword') }}</Button>
+              </div>
               </div>
 
               <hr class="border-secondary-200" />
@@ -228,6 +228,7 @@ import Input from '@/components/common/Input.vue';
 import Select from '@/components/common/Select.vue';
 import UserAvatar from '@/components/common/UserAvatar.vue';
 import { useUserStore } from '@/stores/user';
+import apiService from '@/services/api';
 
 const { t } = useI18n();
 const userStore = useUserStore();
@@ -276,6 +277,44 @@ const displaySettings = ref({
   language: 'zh-CN',
   dateFormat: 'YYYY-MM-DD'
 });
+
+const passwordForm = ref({
+  currentPassword: '',
+  newPassword: '',
+  confirmPassword: ''
+});
+
+const handleUpdatePassword = async () => {
+  const { currentPassword, newPassword, confirmPassword } = passwordForm.value;
+
+  if (!currentPassword) {
+    alert(t('settings.security.msg.currentPasswordRequired'));
+    return;
+  }
+  if (!newPassword) {
+    alert(t('settings.security.msg.newPasswordRequired'));
+    return;
+  }
+  if (newPassword !== confirmPassword) {
+    alert(t('settings.security.msg.passwordMismatch'));
+    return;
+  }
+
+  const userId = currentUser.value?.id;
+  if (!userId) {
+    alert(t('settings.security.msg.notLoggedIn'));
+    return;
+  }
+
+  try {
+    await apiService.changePassword(userId, currentPassword, newPassword);
+    alert(t('settings.security.msg.updateSuccess'));
+    passwordForm.value = { currentPassword: '', newPassword: '', confirmPassword: '' };
+  } catch (error: any) {
+    const message = error?.message || t('settings.security.msg.updateFailed');
+    alert(message);
+  }
+};
 
 const themes = computed(() => [
   { label: t('settings.display.themes.light'), value: 'light', color: '#f8fafc' },
