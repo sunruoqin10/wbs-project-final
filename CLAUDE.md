@@ -255,6 +255,17 @@ npx vue-tsc
 - Use composables for reusable logic
 - Maintain type safety between frontend and backend
 
+## Git Workflow
+
+- **Never run `git commit` or `git push` without explicit user confirmation.** Always show the proposed commit message(s) and the list of files to be staged, then wait for the user to approve before executing. Same rule for `git push` — confirm the target branch and that the user wants to publish.
+- This applies to destructive variants too: do not run `git commit --amend`, `git push --force`, `git reset --hard`, or `git rebase` without confirmation.
+
+## Platform Notes (Windows)
+
+- This project is developed on **Windows**. The default shell in this environment is **bash** (use Unix syntax: forward slashes in paths, `/dev/null` not `NUL`).
+- **PowerShell does not support `&&` or `||` operators.** When chaining commands, use `;` instead. Example: `git add .; git commit -m "msg"` — not `git add . && git commit -m "msg"`.
+- File paths and `cd` should still use forward slashes (e.g. `cd backend`, not `cd backend\`).
+
 ## Troubleshooting
 
 **Backend fails to start**:
