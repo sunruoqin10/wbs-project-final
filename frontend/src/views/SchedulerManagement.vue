@@ -91,7 +91,7 @@
       <div class="space-y-4">
         <div>
           <label class="block text-sm font-medium text-secondary-700 mb-1">{{ $t('scheduler.cronExpression') }}</label>
-          <CronBuilder v-model="editForm.cronExpression!" />
+          <CronBuilder v-model="editCronExpression" />
         </div>
         <div class="flex justify-end gap-2">
           <Button variant="secondary" @click="editModalOpen = false">{{ $t('common.cancel') }}</Button>
@@ -123,6 +123,7 @@ const actionLoading = ref<string | null>(null);
 const editModalOpen = ref(false);
 const saving = ref(false);
 const editForm = ref<Partial<SchedulerConfig>>({});
+const editCronExpression = ref('');
 const currentEditId = ref('');
 
 function formatTime(time?: string) {
@@ -173,8 +174,10 @@ async function handleTrigger(id: string) {
 
 function openEdit(config: SchedulerConfig) {
   currentEditId.value = config.id;
+  editCronExpression.value = config.cronExpression;
   editForm.value = {
-    cronExpression: config.cronExpression,
+    name: config.name,
+    description: config.description,
     enabled: config.enabled,
   };
   editModalOpen.value = true;
@@ -183,7 +186,10 @@ function openEdit(config: SchedulerConfig) {
 async function handleSave() {
   saving.value = true;
   try {
-    await apiService.updateSchedulerConfig(currentEditId.value, editForm.value);
+    await apiService.updateSchedulerConfig(currentEditId.value, {
+      ...editForm.value,
+      cronExpression: editCronExpression.value,
+    });
     editModalOpen.value = false;
     await loadConfigs();
   } finally {

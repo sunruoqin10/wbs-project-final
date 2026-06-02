@@ -180,18 +180,18 @@ function parseCron(cron: string) {
     customCron.value = cron;
     return;
   }
-  const [, m, h, , month, dayOfWeek] = parts;
+  const [, m, h, dayOfMonth, monthField, dayOfWeek] = parts;
   minute.value = parseInt(m) || 0;
   hour.value = parseInt(h) || 0;
 
-  if (dayOfWeek === '?' && month === '*') {
+  if (dayOfWeek === '?' && monthField === '*' && dayOfMonth === '*') {
     frequency.value = 'daily';
-  } else if (month === '?' && dayOfWeek !== '*') {
+  } else if (dayOfMonth === '?' && dayOfWeek !== '*') {
     frequency.value = 'weekly';
     weekDays.value = dayOfWeek.split(',').map(Number).filter(n => !isNaN(n));
-  } else if (dayOfWeek === '?') {
+  } else if (dayOfWeek === '?' && dayOfMonth !== '*' && dayOfMonth !== '?') {
     frequency.value = 'monthly';
-    monthDay.value = parseInt(month) || 1;
+    monthDay.value = parseInt(dayOfMonth) || 1;
   } else {
     frequency.value = 'custom';
     customCron.value = cron;

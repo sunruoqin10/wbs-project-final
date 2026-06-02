@@ -30,11 +30,13 @@
 
     <update id="update">
         UPDATE sys_scheduler_config
-        SET name = #{name},
-            description = #{description},
-            cron_expression = #{cronExpression},
-            enabled = #{enabled},
+        <set>
+            <if test="name != null">name = #{name},</if>
+            <if test="description != null">description = #{description},</if>
+            <if test="cronExpression != null">cron_expression = #{cronExpression},</if>
+            <if test="enabled != null">enabled = #{enabled},</if>
             updated_at = NOW()
+        </set>
         WHERE id = #{id}
     </update>
 
