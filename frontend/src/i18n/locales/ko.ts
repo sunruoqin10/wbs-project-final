@@ -492,7 +492,12 @@ export default {
       deleteConfirm: '정말 "{name}" 구성원을 삭제하시겠습니까? 이 작업은 되돌릴 수 없습니다.',
       deleteSuccess: '구성원이 삭제되었습니다!',
       operationFailed: '작업에 실패했습니다. 다시 시도해주세요.',
-      deleteFailed: '삭제에 실패했습니다. 다시 시도해주세요.'
+      deleteFailed: '삭제에 실패했습니다. 다시 시도해주세요.',
+      emailAlreadyRegistered: '해당 이메일은 이미 등록되어 있습니다. 다른 이메일을 사용해주세요',
+      emailInvalid: '유효한 이메일 주소를 입력해주세요',
+      userNotFound: '사용자가 존재하지 않습니다',
+      serverError: '서버가 혼잡합니다. 잠시 후 다시 시도해주세요',
+      networkError: '네트워크 오류가 발생했습니다. 네트워크 연결을 확인 후 다시 시도해주세요'
     },
     emptyState: {
       title: '구성원 없음',

@@ -12,6 +12,19 @@ interface Result<T> {
   data: T;
 }
 
+// API 错误：携带 HTTP 状态码和后端 data，便于上层做精细化错误映射
+export class ApiError extends Error {
+  status: number;
+  data: unknown;
+
+  constructor(message: string, status: number, data: unknown = null) {
+    super(message);
+    this.name = 'ApiError';
+    this.status = status;
+    this.data = data;
+  }
+}
+
 // Helper function for API calls
 async function request<T>(
   endpoint: string,
@@ -53,22 +66,24 @@ async function request<T>(
 
     if (!response.ok) {
       let errorMessage = `HTTP error! status: ${response.status}`;
+      let errorData: unknown = null;
       try {
         const text = await response.text();
         try {
-          const errorData = JSON.parse(text);
-          errorMessage = errorData.message || errorData.error || errorMessage;
+          const parsed = JSON.parse(text);
+          errorData = parsed;
+          errorMessage = parsed?.message || parsed?.error || errorMessage;
         } catch (_) {
           console.warn('API error response (non-JSON):', text.substring(0, 200));
         }
       } catch (_) {}
-      throw new Error(errorMessage);
+      throw new ApiError(errorMessage, response.status, errorData);
     }
 
     const result: Result<T> = await response.json();
 
     if (result.code !== 200) {
-      throw new Error(result.message || 'API request failed');
+      throw new ApiError(result.message || 'API request failed', response.status, result.data);
     }
 
     return result.data;

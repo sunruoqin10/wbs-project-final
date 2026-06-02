@@ -493,7 +493,12 @@ export default {
       deleteConfirm: '确定要删除成员 "{name}" 吗？此操作不可恢复。',
       deleteSuccess: '成员删除成功！',
       operationFailed: '操作失败，请稍后重试。',
-      deleteFailed: '删除失败，请稍后重试。'
+      deleteFailed: '删除失败，请稍后重试。',
+      emailAlreadyRegistered: '该邮箱已被注册，请使用其他邮箱',
+      emailInvalid: '请输入有效的邮箱地址',
+      userNotFound: '用户不存在',
+      serverError: '服务器繁忙，请稍后再试',
+      networkError: '网络异常，请检查网络连接后重试'
     },
     emptyState: {
       title: '暂无成员',

@@ -7,7 +7,7 @@
           <h1 class="text-2xl font-bold text-secondary-900">{{ $t('team.title') }}</h1>
           <p class="mt-1 text-sm text-secondary-600">{{ $t('team.subtitle') }}</p>
         </div>
-        <Button v-permission="'user:create'" variant="primary" @click="showAddMemberModal = true">
+        <Button v-permission="'user:create'" variant="primary" @click="openAddMemberModal">
           <svg class="mr-2 h-5 w-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4" />
           </svg>
@@ -321,6 +321,27 @@
       @close="closeModal"
     >
       <form @submit.prevent="handleSaveMember" class="space-y-4">
+        <div
+          v-if="formError"
+          class="flex items-start gap-2 rounded-lg border border-red-200 bg-red-50 p-3 text-sm text-red-700"
+          role="alert"
+        >
+          <svg class="mt-0.5 h-5 w-5 flex-shrink-0" fill="currentColor" viewBox="0 0 20 20" aria-hidden="true">
+            <path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zM8.28 7.22a.75.75 0 00-1.06 1.06L8.94 10l-1.72 1.72a.75.75 0 101.06 1.06L10 11.06l1.72 1.72a.75.75 0 101.06-1.06L11.06 10l1.72-1.72a.75.75 0 00-1.06-1.06L10 8.94 8.28 7.22z" clip-rule="evenodd" />
+          </svg>
+          <span class="flex-1">{{ formError }}</span>
+          <button
+            type="button"
+            class="rounded p-0.5 text-red-500 transition-colors hover:bg-red-100 hover:text-red-700"
+            :aria-label="$t('common.close')"
+            @click="formError = ''"
+          >
+            <svg class="h-4 w-4" fill="currentColor" viewBox="0 0 20 20" aria-hidden="true">
+              <path fill-rule="evenodd" d="M4.293 4.293a1 1 0 011.414 0L10 8.586l4.293-4.293a1 1 0 111.414 1.414L11.414 10l4.293 4.293a1 1 0 01-1.414 1.414L10 11.414l-4.293 4.293a1 1 0 01-1.414-1.414L8.586 10 4.293 5.707a1 1 0 010-1.414z" clip-rule="evenodd" />
+            </svg>
+          </button>
+        </div>
+
         <div>
           <label class="block text-sm font-medium text-secondary-700 mb-1">{{ $t('team.form.nameLabel') }} *</label>
           <input
@@ -338,8 +359,15 @@
             v-model="newMember.email"
             type="email"
             required
-            class="w-full rounded-lg border border-secondary-300 px-3 py-2 text-sm focus:border-primary-500 focus:outline-none focus:ring-1 focus:ring-primary-500"
+            :class="[
+              'w-full rounded-lg border px-3 py-2 text-sm focus:outline-none focus:ring-1',
+              isEmailError
+                ? 'border-red-400 bg-red-50 text-red-900 focus:border-red-500 focus:ring-red-500'
+                : 'border-secondary-300 focus:border-primary-500 focus:ring-primary-500'
+            ]"
             :placeholder="$t('team.form.emailPlaceholder')"
+            :aria-invalid="isEmailError"
+            @input="onEmailInput"
           />
         </div>
 
@@ -382,8 +410,8 @@
 
       <template #footer>
         <div class="flex justify-end gap-3">
-          <Button variant="secondary" @click="closeModal">{{ $t('common.cancel') }}</Button>
-          <Button variant="primary" @click="submitForm">
+          <Button variant="secondary" :disabled="submitting" @click="closeModal">{{ $t('common.cancel') }}</Button>
+          <Button variant="primary" :loading="submitting" :disabled="submitting" @click="submitForm">
             {{ isEditMode ? $t('team.buttons.saveChanges') : $t('team.buttons.addMember') }}
           </Button>
         </div>
@@ -396,6 +424,8 @@
 import { ref, computed, onMounted, reactive, watch } from 'vue';
 import { useI18n } from 'vue-i18n';
 import * as echarts from 'echarts';
+import { createAvatar } from '@dicebear/core';
+import { avataaars } from '@dicebear/collection';
 import MainLayout from '@/components/layout/MainLayout.vue';
 import Card from '@/components/common/Card.vue';
 import Button from '@/components/common/Button.vue';
@@ -408,6 +438,7 @@ import { useUserStore } from '@/stores/user';
 import { useTaskStore } from '@/stores/task';
 import { useProjectStore } from '@/stores/project';
 import { usePermissionStore } from '@/stores/permission';
+import { ApiError } from '@/services/api';
 import type { User, Task, Project } from '@/types';
 import dayjs from 'dayjs';
 
@@ -453,6 +484,27 @@ const showAddMemberModal = ref(false);
 const isEditMode = ref(false);
 const editingUserId = ref<string | null>(null);
 const skillsInput = ref('');
+const formError = ref<string>('');
+const submitting = ref(false);
+
+// 当前错误是否与邮箱相关，用于在邮箱输入框上呈现红色高亮
+const isEmailError = computed(() => {
+  const msg = formError.value;
+  if (!msg) return false;
+  return (
+    msg.includes('邮箱') ||
+    /email/i.test(msg) ||
+    msg === t('team.messages.emailAlreadyRegistered') ||
+    msg === t('team.messages.emailInvalid')
+  );
+});
+
+// 用户在邮箱输入框中输入时，自动清除已有的邮箱相关错误
+const onEmailInput = () => {
+  if (isEmailError.value) {
+    formError.value = '';
+  }
+};
 
 const newMember = reactive<Omit<User, 'id' | 'avatar' | 'joinedAt'>>({
   name: '',
@@ -471,11 +523,22 @@ const resetNewMember = () => {
   skillsInput.value = '';
 };
 
+const openAddMemberModal = () => {
+  isEditMode.value = false;
+  editingUserId.value = null;
+  resetNewMember();
+  formError.value = '';
+  submitting.value = false;
+  showAddMemberModal.value = true;
+};
+
 const closeModal = () => {
   showAddMemberModal.value = false;
   isEditMode.value = false;
   editingUserId.value = null;
   resetNewMember();
+  formError.value = '';
+  submitting.value = false;
 };
 
 const openEditModal = (user: User) => {
@@ -490,21 +553,97 @@ const openEditModal = (user: User) => {
   // 确保 skills 是数组
   newMember.skills = Array.isArray(user.skills) ? [...user.skills] : [];
   skillsInput.value = Array.isArray(user.skills) ? user.skills.join(', ') : '';
+  formError.value = '';
+  submitting.value = false;
   showAddMemberModal.value = true;
 };
 
+// 将后端错误信息映射为友好提示
+const mapSaveMemberError = (error: unknown): string => {
+  const isApiError = error instanceof ApiError;
+  const rawMessage = isApiError
+    ? error.message
+    : (error instanceof Error ? error.message : String(error || ''));
+  const message = (rawMessage || '').trim();
+  const status = isApiError ? error.status : undefined;
+
+  // 邮箱重复（中英文关键词都覆盖）
+  if (
+    message.includes('邮箱已被注册') ||
+    message.includes('邮箱已被使用') ||
+    message.includes('邮箱已存在') ||
+    /email.{0,10}(already|exists|registered|been used)/i.test(message)
+  ) {
+    return t('team.messages.emailAlreadyRegistered');
+  }
+
+  // 邮箱格式无效
+  if (
+    message.includes('邮箱格式') ||
+    message.includes('合法邮箱') ||
+    /invalid email/i.test(message)
+  ) {
+    return t('team.messages.emailInvalid');
+  }
+
+  // 用户不存在
+  if (message.includes('用户不存在') || /user not found/i.test(message)) {
+    return t('team.messages.userNotFound');
+  }
+
+  // 网络异常
+  if (
+    message.includes('Failed to fetch') ||
+    message.includes('NetworkError') ||
+    message.includes('Network request failed') ||
+    message.includes('网络')
+  ) {
+    return t('team.messages.networkError');
+  }
+
+  // 仅当后端没有返回可读消息时，再根据状态码做兜底
+  const isGenericHttpError = /^HTTP error! status:\s*\d+$/.test(message) || message === '';
+  if (isGenericHttpError) {
+    if (status === 400) {
+      // 400 但没有可读消息：通常是参数错误或唯一性冲突，按最常见情况提示
+      return t('team.messages.emailAlreadyRegistered');
+    }
+    if (status === 401 || status === 403) {
+      return t('team.messages.userNotFound');
+    }
+    if (typeof status === 'number' && status >= 500) {
+      return t('team.messages.serverError');
+    }
+    return t('team.messages.operationFailed');
+  }
+
+  // 如果后端返回了中文消息，直接使用
+  if (/[\u4e00-\u9fa5]/.test(message)) {
+    return message;
+  }
+
+  return t('team.messages.operationFailed');
+};
+
 const handleSaveMember = async () => {
+  // 重置错误信息
+  formError.value = '';
+
   // 验证必填字段
   if (!newMember.name || !newMember.email || !newMember.department) {
-    alert(t('team.messages.requiredFields'));
+    formError.value = t('team.messages.requiredFields');
     return;
   }
 
   // 验证角色已选择
   if (!newMember.role) {
-    alert('请选择角色');
+    formError.value = t('team.form.rolePlaceholder');
     return;
   }
+
+  // 防止重复提交
+  if (submitting.value) return;
+  submitting.value = true;
 
   // Parse skills from comma-separated input
   const skillsArray = skillsInput.value
@@ -525,7 +664,7 @@ const handleSaveMember = async () => {
       alert(t('team.messages.updateSuccess'));
     } else {
       // Add new user
-      const avatar = `https://api.dicebear.com/7.x/avataaars/svg?seed=${encodeURIComponent(newMember.name)}`;
+      const avatar = createAvatar(avataaars, { seed: newMember.name }).toDataUri();
       await userStore.addUser({
         ...newMember,
         skills: skillsArray,
@@ -544,8 +683,9 @@ const handleSaveMember = async () => {
     }, 200);
   } catch (error) {
     console.error('Failed to save member:', error);
-    const msg = error instanceof Error ? error.message : String(error);
-    alert(msg || t('team.messages.operationFailed'));
+    formError.value = mapSaveMemberError(error);
+  } finally {
+    submitting.value = false;
   }
 };
 
