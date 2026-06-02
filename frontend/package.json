@@ -9,6 +9,8 @@
     "preview": "vite preview"
   },
   "dependencies": {
+    "@dicebear/collection": "^9.4.2",
+    "@dicebear/core": "^9.4.2",
     "@vueuse/core": "^11.0.0",
     "dayjs": "^1.11.10",
     "dhtmlx-gantt": "^8.0.0",

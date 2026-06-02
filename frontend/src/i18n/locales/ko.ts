@@ -471,7 +471,7 @@ export default {
       nameLabel: '이름',
       namePlaceholder: '구성원 이름을 입력하세요',
       emailLabel: '이메일',
-      emailPlaceholder: 'example@company.com',
+      emailPlaceholder: "example{'@'}company.com",
       roleLabel: '역할',
       rolePlaceholder: '역할을 선택하세요',
       departmentLabel: '부서',

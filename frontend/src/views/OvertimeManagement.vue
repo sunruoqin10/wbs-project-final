@@ -506,10 +506,10 @@
                 <tr v-for="record in filteredTeamRecords" :key="record.id" class="hover:bg-secondary-50">
                   <td class="whitespace-nowrap px-4 py-3 text-sm text-secondary-900">
                     <div class="flex items-center">
-                      <img
-                        :src="getUserAvatar(record.userId)"
-                        :alt="getUserName(record.userId)"
-                        class="mr-2 h-8 w-8 rounded-full"
+                      <UserAvatar
+                        :name="getUserName(record.userId)"
+                        size="md"
+                        class="mr-2"
                       />
                       {{ getUserName(record.userId) }}
                     </div>
@@ -637,6 +637,7 @@ import Card from '@/components/common/Card.vue';
 import Button from '@/components/common/Button.vue';
 import OvertimeModal from '@/components/overtime/OvertimeModal.vue';
 import ApprovalModal from '@/components/overtime/ApprovalModal.vue';
+import UserAvatar from '@/components/common/UserAvatar.vue';
 import { useOvertimeStore } from '@/stores/overtime';
 import { useProjectStore } from '@/stores/project';
 import { useUserStore } from '@/stores/user';
@@ -1000,11 +1001,6 @@ const accessibleProjects = computed(() => {
 const getUserName = (userId: string) => {
   const user = userStore.userById(userId);
   return user?.name || '未知';
-};
-
-const getUserAvatar = (userId: string) => {
-  const user = userStore.userById(userId);
-  return user?.avatar || 'https://ui-avatars.com/api/?name=User&background=6366f1&color=fff';
 };
 
 const getProjectName = (projectId: string) => {

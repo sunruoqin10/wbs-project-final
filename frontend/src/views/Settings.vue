@@ -40,10 +40,10 @@
             <div class="space-y-6">
               <!-- Avatar -->
               <div class="flex items-center gap-6">
-                <img
-                  :src="currentUser?.avatar"
-                  :alt="currentUser?.name"
-                  class="h-20 w-20 rounded-full border-4 border-secondary-200"
+              <UserAvatar
+                  :name="currentUser?.name"
+                  size="2xl"
+                  class="border-4 border-secondary-200"
                 />
                 <div>
                   <Button variant="secondary" size="sm">{{ t('settings.profile.changeAvatar') }}</Button>
@@ -226,6 +226,7 @@ import Card from '@/components/common/Card.vue';
 import Button from '@/components/common/Button.vue';
 import Input from '@/components/common/Input.vue';
 import Select from '@/components/common/Select.vue';
+import UserAvatar from '@/components/common/UserAvatar.vue';
 import { useUserStore } from '@/stores/user';
 
 const { t } = useI18n();

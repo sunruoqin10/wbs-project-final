@@ -301,10 +301,10 @@
                   <tr v-for="member in teamMemberStats" :key="member.userId" class="hover:bg-secondary-50">
                     <td class="whitespace-nowrap px-4 py-3 text-sm">
                       <div class="flex items-center">
-                        <img
-                          :src="getUserAvatar(member.userId)"
-                          :alt="getUserName(member.userId)"
-                          class="mr-2 h-8 w-8 rounded-full"
+                        <UserAvatar
+                          :name="getUserName(member.userId)"
+                          size="md"
+                          class="mr-2"
                         />
                         {{ getUserName(member.userId) }}
                       </div>
@@ -404,6 +404,7 @@ import MainLayout from '@/components/layout/MainLayout.vue';
 import Card from '@/components/common/Card.vue';
 import Button from '@/components/common/Button.vue';
 import Modal from '@/components/common/Modal.vue';
+import UserAvatar from '@/components/common/UserAvatar.vue';
 import { useProjectStore } from '@/stores/project';
 import { useTaskStore } from '@/stores/task';
 import { useUserStore } from '@/stores/user';
@@ -593,12 +594,6 @@ const getUserName = (userId?: string) => {
   if (!userId) return '-';
   const user = userStore.userById(userId);
   return user?.name || $t('delayStats.common.unknown');
-};
-
-const getUserAvatar = (userId?: string) => {
-  if (!userId) return 'https://via.placeholder.com/32';
-  const user = userStore.userById(userId);
-  return user?.avatar || 'https://via.placeholder.com/32';
 };
 
 const formatDate = (dateStr: string) => {

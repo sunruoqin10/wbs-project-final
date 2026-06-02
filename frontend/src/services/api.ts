@@ -52,14 +52,16 @@ async function request<T>(
     const response = await fetch(url, config);
 
     if (!response.ok) {
-      // 尝试读取错误响应体
       let errorMessage = `HTTP error! status: ${response.status}`;
       try {
-        const errorData = await response.json();
-        errorMessage = errorData.message || errorData.error || errorMessage;
-      } catch (e) {
-        // 如果无法解析 JSON，使用默认错误消息
-      }
+        const text = await response.text();
+        try {
+          const errorData = JSON.parse(text);
+          errorMessage = errorData.message || errorData.error || errorMessage;
+        } catch (_) {
+          console.warn('API error response (non-JSON):', text.substring(0, 200));
+        }
+      } catch (_) {}
       throw new Error(errorMessage);
     }
 

@@ -68,10 +68,9 @@
 
       <!-- Assignee -->
       <div v-if="assignee" class="flex items-center gap-2">
-        <img
-          :src="assignee.avatar"
-          :alt="assignee.name"
-          class="h-6 w-6 rounded-full border-2 border-white"
+        <UserAvatar
+          :name="assignee.name"
+          size="sm"
           :title="assignee.name"
         />
         <span class="text-xs text-secondary-600">{{ assignee.name }}</span>
@@ -149,6 +148,7 @@
 import { computed } from 'vue';
 import Badge from '@/components/common/Badge.vue';
 import ProgressBar from '@/components/common/ProgressBar.vue';
+import UserAvatar from '@/components/common/UserAvatar.vue';
 import type { Task, SubtaskSummary } from '@/types';
 import { useUserStore } from '@/stores/user';
 import { useTaskStore } from '@/stores/task';

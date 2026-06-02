@@ -54,10 +54,9 @@
       <div v-if="assignee">
         <h4 class="mb-2 text-sm font-medium text-secondary-700">{{ t('common.owner') }}</h4>
         <div class="flex items-center gap-3">
-          <img
-            :src="assignee.avatar"
-            :alt="assignee.name"
-            class="h-10 w-10 rounded-full"
+          <UserAvatar
+            :name="assignee.name"
+            size="xl"
           />
           <div>
             <p class="font-medium text-secondary-900">{{ assignee.name }}</p>
@@ -295,11 +294,10 @@
           :key="comment.id"
           class="flex gap-3"
         >
-          <img
+          <UserAvatar
             v-if="commentUser(comment)"
-            :src="commentUser(comment)?.avatar"
-            :alt="commentUser(comment)?.name"
-            class="h-8 w-8 rounded-full"
+            :name="commentUser(comment)?.name"
+            size="md"
           />
           <div class="flex-1 rounded-lg bg-secondary-50 p-3">
             <div class="mb-1 flex items-center justify-between">
@@ -336,6 +334,7 @@ import { useI18n } from 'vue-i18n';
 import Badge from '@/components/common/Badge.vue';
 import ProgressBar from '@/components/common/ProgressBar.vue';
 import Button from '@/components/common/Button.vue';
+import UserAvatar from '@/components/common/UserAvatar.vue';
 import type { Task } from '@/types';
 import { useUserStore } from '@/stores/user';
 import { useTaskStore } from '@/stores/task';

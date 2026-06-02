@@ -60,10 +60,10 @@
             @click="toggleUserMenu"
             class="flex items-center gap-3 rounded-lg p-1 transition-colors hover:bg-secondary-100"
           >
-            <img
-              :src="currentUser?.avatar || 'https://api.dicebear.com/7.x/avataaars/svg?seed=default'"
-              :alt="currentUser?.name || '用户头像'"
-              class="h-9 w-9 rounded-full border-2 border-secondary-200 object-cover"
+            <UserAvatar
+              :name="currentUser?.name || '用户'"
+              size="lg"
+              class="border-2 border-secondary-200"
             />
             <div class="hidden lg:block text-left">
               <p class="text-sm font-medium text-secondary-800">
@@ -182,6 +182,7 @@ import { useUserStore } from '@/stores/user';
 import { useUiStore } from '@/stores/ui';
 import { useI18n } from 'vue-i18n';
 import LanguageSwitcher from '@/components/common/LanguageSwitcher.vue';
+import UserAvatar from '@/components/common/UserAvatar.vue';
 
 const router = useRouter();
 const userStore = useUserStore();

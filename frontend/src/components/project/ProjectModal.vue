@@ -142,7 +142,7 @@
               v-model="formData.memberIds"
               class="rounded border-secondary-300 text-primary-600 focus:ring-primary-500 h-4 w-4"
             />
-            <img :src="user.avatar" :alt="user.name" class="h-5 w-5 rounded-full" />
+            <UserAvatar :name="user.name" size="xs" />
             <span class="text-xs text-secondary-700 truncate">{{ user.name }}</span>
           </label>
         </div>
@@ -228,6 +228,7 @@ import Modal from '@/components/common/Modal.vue';
 import Button from '@/components/common/Button.vue';
 import Input from '@/components/common/Input.vue';
 import Select from '@/components/common/Select.vue';
+import UserAvatar from '@/components/common/UserAvatar.vue';
 import type { Project } from '@/types';
 import { useUserStore } from '@/stores/user';
 import { useProjectStore } from '@/stores/project';

@@ -91,7 +91,7 @@
                     <tr v-for="user in users" :key="user.id" class="hover:bg-secondary-50">
                       <td class="whitespace-nowrap px-6 py-4">
                         <div class="flex items-center">
-                          <img :src="user.avatar" :alt="user.name" class="h-10 w-10 rounded-full" />
+                          <UserAvatar :name="user.name" size="xl" />
                           <div class="ml-4">
                             <div class="text-sm font-medium text-secondary-900">{{ user.name }}</div>
                             <div class="text-sm text-secondary-600">{{ user.email }}</div>
@@ -212,7 +212,7 @@
                     <tr v-for="item in paginatedTaskAssignments" :key="item.id" class="hover:bg-secondary-50">
                       <td class="whitespace-nowrap px-6 py-4">
                         <div class="flex items-center">
-                          <img :src="item.userAvatar" :alt="item.userName" class="h-8 w-8 rounded-full" />
+                          <UserAvatar :name="item.userName" size="md" />
                           <div class="ml-3">
                             <div class="text-sm font-medium text-secondary-900">{{ item.userName }}</div>
                           </div>
@@ -391,6 +391,7 @@ import Badge from '@/components/common/Badge.vue';
 import Modal from '@/components/common/Modal.vue';
 import Tabs from '@/components/common/Tabs.vue';
 import type { Tab } from '@/components/common/Tabs.vue';
+import UserAvatar from '@/components/common/UserAvatar.vue';
 import { useUserStore } from '@/stores/user';
 import { useTaskStore } from '@/stores/task';
 import { useProjectStore } from '@/stores/project';
@@ -531,7 +532,8 @@ const handleSaveMember = async () => {
     }, 200);
   } catch (error) {
     console.error('Failed to save member:', error);
-    alert(t('team.messages.operationFailed'));
+    const msg = error instanceof Error ? error.message : String(error);
+    alert(msg || t('team.messages.operationFailed'));
   }
 };
 

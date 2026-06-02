@@ -41,10 +41,9 @@
           <span v-if="totalActualHours > 0" class="text-secondary-500">/ {{ formatHoursToDays(totalActualHours) }}</span>
         </span>
         <div v-if="task.assigneeId" class="meta-item assignee-info">
-          <img
-            :src="getAssigneeAvatar(task.assigneeId)"
-            :alt="getAssigneeName(task.assigneeId)"
-            class="h-5 w-5 rounded-full"
+          <UserAvatar
+            :name="getAssigneeName(task.assigneeId)"
+            size="xs"
           />
           <span>{{ getAssigneeName(task.assigneeId) }}</span>
         </div>
@@ -88,6 +87,7 @@
 import { computed } from 'vue';
 import Badge from '@/components/common/Badge.vue';
 import ProgressBar from '@/components/common/ProgressBar.vue';
+import UserAvatar from '@/components/common/UserAvatar.vue';
 import type { Task } from '@/types';
 import { useTaskStore } from '@/stores/task';
 import { useUserStore } from '@/stores/user';
@@ -163,11 +163,6 @@ const getStatusVariant = (status: Task['status']): 'default' | 'primary' | 'succ
 const getAssigneeName = (assigneeId: string) => {
   const user = userStore.userById(assigneeId);
   return user?.name || '';
-};
-
-const getAssigneeAvatar = (assigneeId: string) => {
-  const user = userStore.userById(assigneeId);
-  return user?.avatar || '';
 };
 
 const formatStartDate = computed(() => {

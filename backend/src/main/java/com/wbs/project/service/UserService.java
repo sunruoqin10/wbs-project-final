@@ -59,6 +59,9 @@ public class UserService {
         }
 
         user.setId("u" + UUID.randomUUID().toString().substring(0, 8));
+        if (user.getPassword() == null || user.getPassword().isEmpty()) {
+            user.setPassword("123456");
+        }
         user.setJoinedAt(LocalDateTime.now());
         user.setCreatedAt(LocalDateTime.now());
         user.setUpdatedAt(LocalDateTime.now());

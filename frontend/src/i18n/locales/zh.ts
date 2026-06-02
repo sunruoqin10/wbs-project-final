@@ -472,7 +472,7 @@ export default {
       nameLabel: '姓名',
       namePlaceholder: '请输入成员姓名',
       emailLabel: '邮箱',
-      emailPlaceholder: 'example@company.com',
+      emailPlaceholder: "example{'@'}company.com",
       roleLabel: '角色',
       rolePlaceholder: '请选择角色',
       departmentLabel: '部门',

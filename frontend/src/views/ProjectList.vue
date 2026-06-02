@@ -166,12 +166,11 @@
             <!-- Members -->
             <div class="col-span-2 mt-2 flex items-center md:mt-0">
               <div class="flex -space-x-2">
-                <img
+                <UserAvatar
                   v-for="member in getMembers(project).slice(0, 3)"
                   :key="member.id"
-                  :src="member.avatar"
-                  :alt="member.name"
-                  class="h-7 w-7 rounded-full border-2 border-white"
+                  :name="member.name"
+                  size="sm"
                   :title="member.name"
                 />
                 <div
@@ -257,6 +256,7 @@ import Button from '@/components/common/Button.vue';
 import Input from '@/components/common/Input.vue';
 import Badge from '@/components/common/Badge.vue';
 import ProgressBar from '@/components/common/ProgressBar.vue';
+import UserAvatar from '@/components/common/UserAvatar.vue';
 import { useProjectStore } from '@/stores/project';
 import { usePermissionStore } from '@/stores/permission';
 import { useUserStore } from '@/stores/user';

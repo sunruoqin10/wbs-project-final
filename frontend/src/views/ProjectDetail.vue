@@ -102,7 +102,7 @@
               :key="member.id"
               class="flex items-center gap-3 rounded-lg border border-secondary-200 p-3"
             >
-              <img :src="member.avatar" :alt="member.name" class="h-10 w-10 rounded-full" />
+              <UserAvatar :name="member.name" size="xl" />
               <div class="flex-1">
                 <div class="flex items-center gap-2">
                   <p class="font-medium text-secondary-900">{{ member.name }}</p>
@@ -241,6 +241,7 @@ import Button from '@/components/common/Button.vue';
 import ProgressBar from '@/components/common/ProgressBar.vue';
 import Badge from '@/components/common/Badge.vue';
 import ProjectModal from '@/components/project/ProjectModal.vue';
+import UserAvatar from '@/components/common/UserAvatar.vue';
 import { useProjectStore } from '@/stores/project';
 import { useTaskStore } from '@/stores/task';
 import { usePermissionStore } from '@/stores/permission';
