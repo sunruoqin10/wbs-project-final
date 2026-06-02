@@ -23,7 +23,11 @@
       "mcp__zai-mcp-server__extract_text_from_screenshot",
       "Bash(vite build:*)",
       "Bash(python:*)",
-      "Bash(git add *)"
+      "Bash(git add *)",
+      "Bash(git commit -m '🔧 config: update port to 8084 and vue-tsc to v2.2.12 *)",
+      "Bash(pnpm lint *)",
+      "Bash(git commit -m '✨ feat: add UserAvatar component with DiceBear avatars *)",
+      "Bash(git commit *)"
     ]
   }
 }
