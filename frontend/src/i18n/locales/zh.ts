@@ -605,7 +605,8 @@ export default {
       email: '邮箱',
       department: '部门',
       role: '角色',
-      saveChanges: '保存更改'
+      saveChanges: '保存更改',
+      saveSuccess: '个人资料已保存'
     },
     // 通知设置
     notifications: {
@@ -616,7 +617,8 @@ export default {
       browserNotificationsDesc: '在浏览器中显示桌面通知',
       taskReminders: '任务提醒',
       taskRemindersDesc: '任务截止日期前的提醒通知',
-      saveChanges: '保存更改'
+      saveChanges: '保存更改',
+      saveSuccess: '通知设置已保存'
     },
     // 显示设置
     display: {
@@ -625,6 +627,7 @@ export default {
       language: '语言',
       dateFormat: '日期格式',
       saveChanges: '保存更改',
+      saveSuccess: '显示设置已保存',
       themes: {
         light: '浅色',
         dark: '深色',

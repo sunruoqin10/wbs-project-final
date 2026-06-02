@@ -65,7 +65,7 @@
               </div>
 
               <div class="flex justify-end">
-                <Button variant="primary">{{ t('settings.profile.saveChanges') }}</Button>
+                <Button variant="primary" @click="handleSaveProfile">{{ t('settings.profile.saveChanges') }}</Button>
               </div>
             </div>
           </Card>
@@ -128,7 +128,7 @@
               </div>
 
               <div class="flex justify-end">
-                <Button variant="primary">{{ t('settings.notifications.saveChanges') }}</Button>
+                <Button variant="primary" @click="handleSaveNotifications">{{ t('settings.notifications.saveChanges') }}</Button>
               </div>
             </div>
           </Card>
@@ -178,7 +178,7 @@
               </div>
 
               <div class="flex justify-end">
-                <Button variant="primary">{{ t('settings.display.saveChanges') }}</Button>
+                <Button variant="primary" @click="handleSaveDisplay">{{ t('settings.display.saveChanges') }}</Button>
               </div>
             </div>
           </Card>
@@ -387,6 +387,39 @@ const handleUpdatePassword = async () => {
     const message = error?.message || t('settings.security.msg.updateFailed');
     alert(message);
   }
+};
+
+const handleSaveProfile = async () => {
+  const userId = currentUser.value?.id;
+  if (!userId) {
+    alert(t('settings.security.msg.notLoggedIn'));
+    return;
+  }
+  try {
+    await userStore.updateUser(userId, {
+      name: profileForm.value.name,
+      email: profileForm.value.email,
+      department: profileForm.value.department,
+      role: profileForm.value.role
+    });
+    alert(t('settings.profile.saveSuccess'));
+  } catch (error: any) {
+    const message = error?.message || t('settings.security.msg.updateFailed');
+    alert(message);
+  }
+};
+
+const handleSaveNotifications = () => {
+  localStorage.setItem('notificationSettings', JSON.stringify(notificationSettings.value));
+  alert(t('settings.notifications.saveSuccess'));
+};
+
+const handleSaveDisplay = () => {
+  localStorage.setItem('displaySettings', JSON.stringify(displaySettings.value));
+  if (displaySettings.value.language === 'ko') {
+    location.reload();
+  }
+  alert(t('settings.display.saveSuccess'));
 };
 
 const themes = computed(() => [

@@ -604,7 +604,8 @@ export default {
       email: '이메일',
       department: '부서',
       role: '역할',
-      saveChanges: '변경사항 저장'
+      saveChanges: '변경사항 저장',
+      saveSuccess: '프로필이 저장되었습니다'
     },
     // 알림 설정
     notifications: {
@@ -615,7 +616,8 @@ export default {
       browserNotificationsDesc: '브라우저에서 데스크톱 알림 표시',
       taskReminders: '작업 알림',
       taskRemindersDesc: '작업 마감일 전 알림',
-      saveChanges: '변경사항 저장'
+      saveChanges: '변경사항 저장',
+      saveSuccess: '알림 설정이 저장되었습니다'
     },
     // 디스플레이 설정
     display: {
@@ -624,6 +626,7 @@ export default {
       language: '언어',
       dateFormat: '날짜 형식',
       saveChanges: '변경사항 저장',
+      saveSuccess: '디스플레이 설정이 저장되었습니다',
       themes: {
         light: '라이트',
         dark: '다크',
