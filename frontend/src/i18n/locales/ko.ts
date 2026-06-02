@@ -598,7 +598,8 @@ export default {
     profile: {
       title: '프로필',
       changeAvatar: '아바타 변경',
-      avatarHint: 'JPG, PNG 형식 지원, 최대 2MB',
+      chooseAvatar: '아바타 선택',
+      avatarHint: '아래 목록에서 마음에 드는 아바타를 선택하세요',
       name: '이름',
       email: '이메일',
       department: '부서',

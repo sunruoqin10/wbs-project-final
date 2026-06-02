@@ -10,17 +10,68 @@
 <script setup lang="ts">
 import { computed } from 'vue';
 import { createAvatar } from '@dicebear/core';
-import { avataaars } from '@dicebear/collection';
+import {
+  adventurer,
+  avataaars,
+  bigSmile,
+  bottts,
+  croodles,
+  funEmoji,
+  identicon,
+  lorelei,
+  micah,
+  miniavs,
+  notionists,
+  openPeeps,
+  personas,
+  pixelArt,
+  thumbs
+} from '@dicebear/collection';
+import type { Style } from '@dicebear/core';
 
 interface Props {
   name?: string;
   size?: 'xs' | 'sm' | 'md' | 'lg' | 'xl' | '2xl';
+  seed?: string;
 }
 
 const props = withDefaults(defineProps<Props>(), {
   name: '',
-  size: 'md'
+  size: 'md',
+  seed: ''
 });
+
+const styleMap: Record<string, Style<any>> = {
+  adventurer,
+  avataaars,
+  bigSmile,
+  bottts,
+  croodles,
+  funEmoji,
+  identicon,
+  lorelei,
+  micah,
+  miniavs,
+  notionists,
+  openPeeps,
+  personas,
+  pixelArt,
+  thumbs
+};
+
+const defaultStyle = 'avataaars';
+
+function parseSeed(raw: string): { style: string; seed: string } {
+  const colonIndex = raw.indexOf(':');
+  if (colonIndex > 0) {
+    const styleKey = raw.substring(0, colonIndex);
+    const actualSeed = raw.substring(colonIndex + 1);
+    if (styleMap[styleKey]) {
+      return { style: styleKey, seed: actualSeed };
+    }
+  }
+  return { style: defaultStyle, seed: raw };
+}
 
 const sizeClass = computed(() => {
   const map: Record<string, string> = {
@@ -35,8 +86,10 @@ const sizeClass = computed(() => {
 });
 
 const dataUri = computed(() => {
-  const seed = props.name || 'default';
-  const avatar = createAvatar(avataaars, { seed });
+  const raw = props.seed || props.name || 'default';
+  const { style: styleKey, seed } = parseSeed(raw);
+  const style = styleMap[styleKey] || styleMap[defaultStyle];
+  const avatar = createAvatar(style, { seed });
   return avatar.toDataUri();
 });
 </script>

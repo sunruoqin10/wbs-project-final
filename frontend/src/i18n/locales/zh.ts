@@ -599,7 +599,8 @@ export default {
     profile: {
       title: '个人资料',
       changeAvatar: '更换头像',
-      avatarHint: '支持 JPG、PNG 格式，最大 2MB',
+      chooseAvatar: '选择头像',
+      avatarHint: '从下方列表中选择一个喜欢的头像',
       name: '姓名',
       email: '邮箱',
       department: '部门',

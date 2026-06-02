@@ -42,11 +42,12 @@
               <div class="flex items-center gap-6">
               <UserAvatar
                   :name="currentUser?.name"
+                  :seed="currentUser?.avatar"
                   size="2xl"
                   class="border-4 border-secondary-200"
                 />
                 <div>
-                  <Button variant="secondary" size="sm">{{ t('settings.profile.changeAvatar') }}</Button>
+                  <Button variant="secondary" size="sm" @click="openAvatarPicker">{{ t('settings.profile.changeAvatar') }}</Button>
                   <p class="mt-1 text-xs text-secondary-500">{{ t('settings.profile.avatarHint') }}</p>
                 </div>
               </div>
@@ -215,6 +216,24 @@
         </div>
       </div>
     </div>
+
+    <Modal :open="showAvatarPicker" :title="t('settings.profile.chooseAvatar')" size="2xl" @close="showAvatarPicker = false">
+      <div class="max-h-[65vh] overflow-y-auto space-y-5">
+        <div v-for="group in avatarGroups" :key="group.style">
+          <h4 class="mb-2 text-sm font-semibold text-secondary-500">{{ group.label }}</h4>
+          <div class="grid grid-cols-5 gap-2 sm:grid-cols-6 md:grid-cols-7">
+            <button
+              v-for="seed in group.seeds"
+              :key="seed"
+              @click="selectAvatar(seed)"
+              class="flex flex-col items-center gap-1 rounded-lg p-2 border-2 border-secondary-200 hover:border-primary-400 hover:bg-primary-50 transition-all"
+            >
+              <UserAvatar :seed="seed" size="xl" />
+            </button>
+          </div>
+        </div>
+      </div>
+    </Modal>
   </MainLayout>
 </template>
 
@@ -225,6 +244,7 @@ import MainLayout from '@/components/layout/MainLayout.vue';
 import Card from '@/components/common/Card.vue';
 import Button from '@/components/common/Button.vue';
 import Input from '@/components/common/Input.vue';
+import Modal from '@/components/common/Modal.vue';
 import Select from '@/components/common/Select.vue';
 import UserAvatar from '@/components/common/UserAvatar.vue';
 import { useUserStore } from '@/stores/user';
@@ -265,6 +285,59 @@ const profileForm = ref({
   department: currentUser.value?.department || '',
   role: currentUser.value?.role || 'member'
 });
+
+interface AvatarGroup {
+  style: string;
+  label: string;
+  seeds: string[];
+}
+
+const avatarStyles: { key: string; label: string }[] = [
+  { key: 'avataaars', label: '卡通人物' },
+  { key: 'bottts', label: '机器人' },
+  { key: 'micah', label: '插画风格' },
+  { key: 'lorelei', label: '圆润可爱' },
+  { key: 'pixelArt', label: '像素艺术' },
+  { key: 'identicon', label: '几何图案' },
+  { key: 'thumbs', label: '趣味搞怪' },
+  { key: 'notionists', label: '简约线条' },
+  { key: 'funEmoji', label: '表情符号' },
+  { key: 'bigSmile', label: '笑脸' },
+  { key: 'croodles', label: '涂鸦风格' },
+  { key: 'openPeeps', label: '人物头像' },
+  { key: 'personas', label: '个性肖像' },
+  { key: 'adventurer', label: '冒险角色' },
+  { key: 'miniavs', label: '迷你头像' }
+];
+
+const seedsPerStyle = 7;
+
+function generateSeed(): string {
+  return Math.random().toString(36).substring(2, 10);
+}
+
+const showAvatarPicker = ref(false);
+const avatarGroups = ref<AvatarGroup[]>([]);
+
+const openAvatarPicker = () => {
+  avatarGroups.value = avatarStyles.map(({ key, label }) => ({
+    style: key,
+    label,
+    seeds: Array.from({ length: seedsPerStyle }, () => `${key}:${generateSeed()}`)
+  }));
+  showAvatarPicker.value = true;
+};
+
+const selectAvatar = async (value: string) => {
+  showAvatarPicker.value = false;
+  const userId = currentUser.value?.id;
+  if (!userId) return;
+  try {
+    await userStore.updateUser(userId, { avatar: value });
+  } catch (error) {
+    console.error('Failed to update avatar:', error);
+  }
+};
 
 const notificationSettings = ref({
   email: true,
