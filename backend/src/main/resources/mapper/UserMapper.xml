@@ -96,4 +96,11 @@
         SELECT COUNT(*) FROM sys_user
     </select>
 
+    <select id="selectMaxIdByPrefix" resultType="java.lang.String">
+        SELECT id FROM sys_user
+        WHERE id LIKE CONCAT(#{prefix}, '%')
+        ORDER BY CAST(SUBSTRING(id, LENGTH(#{prefix}) + 1) AS UNSIGNED) DESC
+        LIMIT 1
+    </select>
+
 </mapper>

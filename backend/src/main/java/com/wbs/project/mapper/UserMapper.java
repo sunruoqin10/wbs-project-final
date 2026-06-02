@@ -66,4 +66,10 @@ public interface UserMapper {
      * 统计用户总数
      */
     int countTotal();
+
+    /**
+     * 查询以指定前缀开头的最大用户ID
+     * 用于生成自增的C0000001格式ID
+     */
+    String selectMaxIdByPrefix(@Param("prefix") String prefix);
 }

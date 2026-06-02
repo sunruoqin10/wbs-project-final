@@ -8,7 +8,6 @@ import org.springframework.transaction.annotation.Transactional;
 
 import java.time.LocalDateTime;
 import java.util.List;
-import java.util.UUID;
 
 /**
  * 用户Service
@@ -58,7 +57,7 @@ public class UserService {
             throw new RuntimeException("邮箱已被注册");
         }
 
-        user.setId("u" + UUID.randomUUID().toString().substring(0, 8));
+        user.setId(generateNextUserId());
         if (user.getPassword() == null || user.getPassword().isEmpty()) {
             user.setPassword("123456");
         }
@@ -68,6 +67,25 @@ public class UserService {
 
         userMapper.insert(user);
         return user;
+    }
+
+    /**
+     * 生成下一个用户ID（C0000001, C0000002, ... 格式）
+     */
+    private String generateNextUserId() {
+        final String PREFIX = "C";
+
+        String maxId = userMapper.selectMaxIdByPrefix(PREFIX);
+        long nextNum = 1L;
+        if (maxId != null && maxId.length() > PREFIX.length()) {
+            try {
+                String numPart = maxId.substring(PREFIX.length());
+                nextNum = Long.parseLong(numPart) + 1;
+            } catch (NumberFormatException e) {
+                nextNum = 1L;
+            }
+        }
+        return String.format("%s%07d", PREFIX, nextNum);
     }
 
     /**
