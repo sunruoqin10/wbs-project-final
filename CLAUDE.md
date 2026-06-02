@@ -14,10 +14,11 @@ This is a full-stack WBS (Work Breakdown Structure) Project Management System wi
 - Weekly reports with approval workflow
 - Document management with version control
 - Overtime tracking and approval
-- Delay statistics and notifications
+- Delay statistics and notifications (with scheduled email)
 - Role-based permissions (admin, project-manager, member, viewer)
 - Multi-language support (Chinese, Korean, English)
 - Email notifications (configured for QQ Mail SMTP)
+- User-generated avatars via DiceBear (no avatar upload)
 
 ## Development Commands
 
@@ -65,9 +66,15 @@ npx vue-tsc
 - `service/` - Business logic layer (validation, foreign key handling, cascading operations)
 - `mapper/` - MyBatis data access layer with XML mappings in `resources/mapper/`
 - `entity/` - Domain models (User, Project, Task, Comment, Attachment, WeeklyReport, Document, OvertimeRecord, etc.)
+- `dto/` - Data Transfer Objects (request/response payloads distinct from entities)
 - `enums/` - UserRole, ProjectStatus, TaskStatus, Priority, ReportStatus
 - `common/Result.java` - Unified API response wrapper with `code`, `message`, `data`
 - `config/` - CORS configuration, email templates
+- `exception/` - Custom exception classes and `@ControllerAdvice` global handler
+- `interceptor/` - Handler interceptors (e.g. `AuthInterceptor` for token/role checks)
+- `scheduler/` - `@Scheduled` jobs (e.g. `DelayNotificationScheduler` for delay emails)
+- `annotation/` - Custom annotations (e.g. permission/role checks)
+- `util/` - Static utility helpers
 
 **Key Controllers**:
 - `UserController` - User management
@@ -85,13 +92,16 @@ npx vue-tsc
 - Supports soft deletes via status fields
 - File uploads stored locally in `./uploads/documents/` (configurable in application.yml)
 - Email notifications via FreeMarker templates in `src/main/resources/templates/`
+- **User IDs are auto-generated as `C0000001`, `C0000002`, …** (7-digit zero-padded). The next ID is derived by querying `MAX(id)` with prefix in `UserMapper.selectMaxIdByPrefix`. Don't switch back to UUIDs.
 
 **Configuration**: `src/main/resources/application.yml`
-- Server runs on port 8080 with context path `/api`
+
+- Server runs on port **8084** with context path `/api`
 - Database: MySQL on `localhost:3306/db_webwbs` (username: `root`, password: `root`)
 - File upload: Max 10MB per file, 50MB total request
 - Email: QQ Mail SMTP configured (use environment variables for credentials in production)
 - MyBatis: camelCase mapping, lazy loading enabled
+- **Warning**: SMTP password is currently hardcoded in `application.yml` for the dev account `631955572@qq.com`. Do not commit production credentials — override via env vars.
 
 ## Frontend Architecture
 
@@ -113,7 +123,7 @@ npx vue-tsc
 **Routing**:
 - Lazy-loaded route components
 - Route meta titles used for page titles
-- No authentication guards implemented yet (planned feature)
+- Authentication is enforced server-side via `AuthInterceptor` (registered in a `WebMvcConfigurer`); the frontend has no router guards yet
 
 **Key Libraries**:
 - `dhtmlx-gantt` - Gantt chart visualization with export capabilities
@@ -124,6 +134,9 @@ npx vue-tsc
 - `jspdf` + `jspdf-autotable` - PDF export
 - `vue-i18n` - Internationalization
 - `@vueuse/core` - Vue composition utilities
+- `@dicebear/core` + `@dicebear/collection` - Generated SVG avatars (no upload pipeline)
+- `file-saver` - Client-side file download
+- `xlsx` - Spreadsheet parsing/generation
 
 ## API Integration
 
@@ -250,7 +263,8 @@ npx vue-tsc
 - Check credentials in `application.yml` (default: `root/root`)
 
 **Frontend API calls fail**:
-- Verify backend is running on port 8080
+
+- Verify backend is running on port **8084** (not 8080)
 - Check `VITE_API_BASE_URL` in `.env` or environment
 - Check CORS configuration in `CorsConfig.java`
 
