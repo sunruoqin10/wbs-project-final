@@ -43,6 +43,7 @@
         <div v-if="task.assigneeId" class="meta-item assignee-info">
           <UserAvatar
             :name="getAssigneeName(task.assigneeId)"
+            :seed="getAssigneeAvatar(task.assigneeId)"
             size="xs"
           />
           <span>{{ getAssigneeName(task.assigneeId) }}</span>
@@ -163,6 +164,11 @@ const getStatusVariant = (status: Task['status']): 'default' | 'primary' | 'succ
 const getAssigneeName = (assigneeId: string) => {
   const user = userStore.userById(assigneeId);
   return user?.name || '';
+};
+
+const getAssigneeAvatar = (assigneeId: string) => {
+  const user = userStore.userById(assigneeId);
+  return user?.avatar || '';
 };
 
 const formatStartDate = computed(() => {

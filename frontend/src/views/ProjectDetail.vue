@@ -102,7 +102,7 @@
               :key="member.id"
               class="flex items-center gap-3 rounded-lg border border-secondary-200 p-3"
             >
-              <UserAvatar :name="member.name" size="xl" />
+              <UserAvatar :name="member.name" :seed="member.avatar" size="xl" />
               <div class="flex-1">
                 <div class="flex items-center gap-2">
                   <p class="font-medium text-secondary-900">{{ member.name }}</p>

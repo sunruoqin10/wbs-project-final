@@ -303,6 +303,7 @@
                       <div class="flex items-center">
                         <UserAvatar
                           :name="getUserName(member.userId)"
+                          :seed="getUserAvatar(member.userId)"
                           size="md"
                           class="mr-2"
                         />
@@ -594,6 +595,12 @@ const getUserName = (userId?: string) => {
   if (!userId) return '-';
   const user = userStore.userById(userId);
   return user?.name || $t('delayStats.common.unknown');
+};
+
+const getUserAvatar = (userId?: string) => {
+  if (!userId) return '';
+  const user = userStore.userById(userId);
+  return user?.avatar || '';
 };
 
 const formatDate = (dateStr: string) => {

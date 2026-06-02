@@ -170,6 +170,7 @@
                   v-for="member in getMembers(project).slice(0, 3)"
                   :key="member.id"
                   :name="member.name"
+                  :seed="member.avatar"
                   size="sm"
                   :title="member.name"
                 />

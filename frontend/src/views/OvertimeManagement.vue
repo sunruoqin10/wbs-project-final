@@ -508,6 +508,7 @@
                     <div class="flex items-center">
                       <UserAvatar
                         :name="getUserName(record.userId)"
+                        :seed="getUserAvatar(record.userId)"
                         size="md"
                         class="mr-2"
                       />
@@ -1001,6 +1002,11 @@ const accessibleProjects = computed(() => {
 const getUserName = (userId: string) => {
   const user = userStore.userById(userId);
   return user?.name || '未知';
+};
+
+const getUserAvatar = (userId: string) => {
+  const user = userStore.userById(userId);
+  return user?.avatar || '';
 };
 
 const getProjectName = (projectId: string) => {

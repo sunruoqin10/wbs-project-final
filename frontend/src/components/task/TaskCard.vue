@@ -70,6 +70,7 @@
       <div v-if="assignee" class="flex items-center gap-2">
         <UserAvatar
           :name="assignee.name"
+          :seed="assignee.avatar"
           size="sm"
           :title="assignee.name"
         />

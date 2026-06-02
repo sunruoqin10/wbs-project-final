@@ -56,6 +56,7 @@
         <div class="flex items-center gap-3">
           <UserAvatar
             :name="assignee.name"
+            :seed="assignee.avatar"
             size="xl"
           />
           <div>
@@ -297,6 +298,7 @@
           <UserAvatar
             v-if="commentUser(comment)"
             :name="commentUser(comment)?.name"
+            :seed="commentUser(comment)?.avatar"
             size="md"
           />
           <div class="flex-1 rounded-lg bg-secondary-50 p-3">

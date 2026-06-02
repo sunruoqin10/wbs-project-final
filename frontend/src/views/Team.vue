@@ -94,7 +94,7 @@
                     <tr v-for="user in users" :key="user.id" class="hover:bg-secondary-50">
                       <td class="whitespace-nowrap px-6 py-4">
                         <div class="flex items-center">
-                          <UserAvatar :name="user.name" size="xl" />
+                          <UserAvatar :name="user.name" :seed="user.avatar" size="xl" />
                           <div class="ml-4">
                             <div class="text-sm font-medium text-secondary-900">{{ user.name }}</div>
                             <div class="text-sm text-secondary-600">{{ user.email }}</div>
@@ -221,7 +221,7 @@
                     <tr v-for="item in paginatedTaskAssignments" :key="item.id" class="hover:bg-secondary-50">
                       <td class="whitespace-nowrap px-6 py-4">
                         <div class="flex items-center">
-                          <UserAvatar :name="item.userName" size="md" />
+                          <UserAvatar :name="item.userName" :seed="item.userAvatar" size="md" />
                           <div class="ml-3">
                             <div class="text-sm font-medium text-secondary-900">{{ item.userName }}</div>
                           </div>

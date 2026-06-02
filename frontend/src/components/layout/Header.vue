@@ -62,6 +62,7 @@
           >
             <UserAvatar
               :name="currentUser?.name || '用户'"
+              :seed="currentUser?.avatar"
               size="lg"
               class="border-2 border-secondary-200"
             />
