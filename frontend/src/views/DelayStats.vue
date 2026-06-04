@@ -330,9 +330,9 @@
                 </tbody>
               </table>
             </div>
-            <div v-if="teamMemberStats.length > teamMembersPagination.pageSize" class="mt-4 flex items-center justify-between border-t border-secondary-200 pt-4">
+            <div v-if="teamMembersWithTasks.length > teamMembersPagination.pageSize" class="mt-4 flex items-center justify-between border-t border-secondary-200 pt-4">
               <div class="text-sm text-secondary-600">
-                共 {{ teamMemberStats.length }} 条记录，第 {{ teamMembersPagination.currentPage }} 页
+                共 {{ teamMembersWithTasks.length }} 条记录，第 {{ teamMembersPagination.currentPage }} 页
               </div>
               <div class="flex items-center gap-2">
                 <select 
@@ -614,14 +614,18 @@ const teamStats = computed(() => {
   };
 });
 
+const teamMembersWithTasks = computed(() => {
+  return teamMemberStats.value.filter(m => m.totalTasks > 0);
+});
+
 const teamMembersTotalPages = computed(() => {
-  return Math.ceil(teamMemberStats.value.length / teamMembersPagination.value.pageSize);
+  return Math.ceil(teamMembersWithTasks.value.length / teamMembersPagination.value.pageSize);
 });
 
 const paginatedTeamMemberStats = computed(() => {
   const start = (teamMembersPagination.value.currentPage - 1) * teamMembersPagination.value.pageSize;
   const end = start + teamMembersPagination.value.pageSize;
-  return teamMemberStats.value.slice(start, end);
+  return teamMembersWithTasks.value.slice(start, end);
 });
 
 const getTeamMembersPageNumbers = () => {
@@ -671,13 +675,13 @@ const selectedMemberStats = computed(() => {
 
 const getProjectName = (projectId: string) => {
   const project = projectStore.projectById(projectId);
-  return project?.name || $t('delayStats.common.unknownProject');
+  return project?.name || t('delayStats.common.unknownProject');
 };
 
 const getUserName = (userId?: string) => {
   if (!userId) return '-';
   const user = userStore.userById(userId);
-  return user?.name || $t('delayStats.common.unknown');
+  return user?.name || t('delayStats.common.unknown');
 };
 
 const getUserAvatar = (userId?: string) => {
