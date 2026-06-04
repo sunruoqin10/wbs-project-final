@@ -160,13 +160,19 @@ const getScaleConfig = () => {
 };
 
 const updateScale = () => {
+  if (!ganttContainer.value || !isInitialized.value) return;
+
+  // 更新刻度配置
   gantt.config.scales = getScaleConfig();
   gantt.config.scale_unit = props.scale;
-  gantt.config.duration_unit = props.scale;
 
+  // 重新加载数据
   const ganttTasks = convertToGanttTasks();
   gantt.clearAll();
   gantt.parse({ data: ganttTasks });
+
+  // 强制重绘时间轴
+  gantt.render();
 };
 
 const initGantt = () => {
@@ -179,7 +185,7 @@ const initGantt = () => {
 
   gantt.config.date_format = '%Y-%m-%d';
   gantt.config.scale_unit = props.scale;
-  gantt.config.duration_unit = props.scale;
+  gantt.config.duration_unit = 'day'; // duration 始终以天为单位
 
   gantt.config.auto_scheduling = true;
   gantt.config.auto_scheduling_strict = true;
