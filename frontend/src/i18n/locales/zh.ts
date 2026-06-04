@@ -469,7 +469,6 @@ export default {
     remove: '移除',
     edit: '编辑',
     delete: '删除',
-    allMembers: '所有成员',
     workloadDistribution: '工作负载分布',
     taskCount: '任务数',
     editMember: '编辑成员',
@@ -482,7 +481,7 @@ export default {
       roleLabel: '角色',
       rolePlaceholder: '请选择角色',
       departmentLabel: '部门',
-      departmentPlaceholder: '例如：研发部',
+      departmentPlaceholder: '请选择部门',
       skillsLabel: '技能',
       skillsPlaceholder: '用逗号分隔，例如：Vue, TypeScript, Node.js',
       skillsHint: '多个技能请用逗号分隔'
@@ -508,6 +507,16 @@ export default {
     emptyState: {
       title: '暂无成员',
       message: '还没有团队成员'
+    },
+    allMembers: {
+      title: '所有成员',
+      searchPlaceholder: '搜索ID或姓名...',
+      filterRole: '全部角色',
+      filterDepartment: '全部部门',
+      previous: '上一页',
+      next: '下一页',
+      page: '第 {current} 页 / 共 {total} 页',
+      itemsPerPage: '每页条数'
     },
     taskAssignment: {
       title: '任务分配情况',

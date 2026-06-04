@@ -61,7 +61,36 @@
             <!-- Team Members List -->
             <Card>
               <template #header>
-                <h3 class="text-lg font-semibold text-secondary-900">{{ $t('team.allMembers') }}</h3>
+                <div class="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
+                  <h3 class="text-lg font-semibold text-secondary-900">{{ $t('team.allMembers.title') }}</h3>
+                  <div class="flex items-center gap-3">
+                    <input
+                      v-model="memberSearch"
+                      type="text"
+                      :placeholder="$t('team.allMembers.searchPlaceholder')"
+                      @input="memberPage = 1"
+                      class="w-48 rounded-lg border border-secondary-300 px-3 py-1.5 text-sm focus:border-primary-500 focus:outline-none focus:ring-1 focus:ring-primary-500"
+                    />
+                    <select
+                      v-model="memberRoleFilter"
+                      @change="memberPage = 1"
+                      class="rounded-lg border border-secondary-300 px-3 py-1.5 text-sm focus:border-primary-500 focus:outline-none focus:ring-1 focus:ring-primary-500"
+                    >
+                      <option value="">{{ $t('team.allMembers.filterRole') }}</option>
+                      <option value="admin">{{ $t('roles.admin') }}</option>
+                      <option value="project-manager">{{ $t('roles.projectManager') }}</option>
+                      <option value="member">{{ $t('roles.member') }}</option>
+                    </select>
+                    <select
+                      v-model="memberDepartmentFilter"
+                      @change="memberPage = 1"
+                      class="rounded-lg border border-secondary-300 px-3 py-1.5 text-sm focus:border-primary-500 focus:outline-none focus:ring-1 focus:ring-primary-500"
+                    >
+                      <option value="">{{ $t('team.allMembers.filterDepartment') }}</option>
+                      <option v-for="dept in allDepartments" :key="dept" :value="dept">{{ dept }}</option>
+                    </select>
+                  </div>
+                </div>
               </template>
               <div class="overflow-x-auto">
                 <table class="min-w-full divide-y divide-secondary-200">
@@ -91,7 +120,7 @@
                     </tr>
                   </thead>
                   <tbody class="divide-y divide-secondary-200 bg-white">
-                    <tr v-for="user in users" :key="user.id" class="hover:bg-secondary-50">
+                    <tr v-for="user in paginatedMembers" :key="user.id" class="hover:bg-secondary-50">
                       <td class="whitespace-nowrap px-6 py-4">
                         <div class="flex items-center">
                           <UserAvatar :name="user.name" :seed="user.avatar" size="xl" />
@@ -157,6 +186,45 @@
                     </tr>
                   </tbody>
                 </table>
+              </div>
+              <!-- Members Pagination -->
+              <div v-if="filteredMembers.length > memberPageSize" class="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 border-t border-secondary-200 px-6 py-4">
+                <div class="flex items-center gap-2">
+                  <span class="text-sm text-secondary-600">{{ $t('team.allMembers.itemsPerPage') }}</span>
+                  <select 
+                    v-model="memberPageSize" 
+                    @change="memberPage = 1"
+                    class="rounded-lg border border-secondary-300 px-2 py-1 text-sm focus:border-primary-500 focus:outline-none focus:ring-1 focus:ring-primary-500"
+                  >
+                    <option :value="10">10</option>
+                    <option :value="20">20</option>
+                    <option :value="50">50</option>
+                    <option :value="100">100</option>
+                  </select>
+                </div>
+                <div class="flex items-center gap-4">
+                  <span class="text-sm text-secondary-600">
+                    {{ $t('team.allMembers.page', { current: memberPage, total: totalMemberPages }) }}
+                  </span>
+                  <div class="flex gap-2">
+                    <Button 
+                      variant="secondary" 
+                      size="sm" 
+                      :disabled="memberPage === 1"
+                      @click="memberPage--"
+                    >
+                      {{ $t('team.allMembers.previous') }}
+                    </Button>
+                    <Button 
+                      variant="secondary" 
+                      size="sm" 
+                      :disabled="memberPage === totalMemberPages"
+                      @click="memberPage++"
+                    >
+                      {{ $t('team.allMembers.next') }}
+                    </Button>
+                  </div>
+                </div>
               </div>
             </Card>
           </div>
@@ -387,13 +455,14 @@
 
         <div>
           <label class="block text-sm font-medium text-secondary-700 mb-1">{{ $t('team.form.departmentLabel') }} *</label>
-          <input
+          <select
             v-model="newMember.department"
-            type="text"
             required
             class="w-full rounded-lg border border-secondary-300 px-3 py-2 text-sm focus:border-primary-500 focus:outline-none focus:ring-1 focus:ring-primary-500"
-            :placeholder="$t('team.form.departmentPlaceholder')"
-          />
+          >
+            <option value="">{{ $t('team.form.departmentPlaceholder') }}</option>
+            <option v-for="dept in allDepartments" :key="dept" :value="dept">{{ dept }}</option>
+          </select>
         </div>
 
         <div>
@@ -466,7 +535,7 @@ const activeTab = ref(0);
 
 const tabs = computed<Tab[]>(() => [
   {
-    label: t('team.allMembers'),
+    label: t('team.allMembers.title'),
     badge: users.value.length,
     value: 'members'
   },
@@ -815,6 +884,40 @@ const initWorkloadChart = () => {
   chart.setOption(option);
 };
 
+// Members Pagination
+const memberPage = ref<number>(1);
+const memberPageSize = ref<number>(20);
+
+// 筛选
+const memberSearch = ref<string>('');
+const memberRoleFilter = ref<string>('');
+const memberDepartmentFilter = ref<string>('');
+
+const allDepartments = computed(() => {
+  const depts = new Set(users.value.map(u => u.department).filter(Boolean));
+  return [...depts].sort();
+});
+
+const filteredMembers = computed(() => {
+  const search = memberSearch.value.trim().toLowerCase();
+  return users.value.filter(user => {
+    if (search && !user.id.toLowerCase().includes(search) && !user.name.toLowerCase().includes(search)) return false;
+    const normalizedRole = user.role?.replace(/_/g, '-');
+    if (memberRoleFilter.value && normalizedRole !== memberRoleFilter.value) return false;
+    if (memberDepartmentFilter.value && user.department !== memberDepartmentFilter.value) return false;
+    return true;
+  });
+});
+
+const paginatedMembers = computed(() => {
+  const start = (memberPage.value - 1) * memberPageSize.value;
+  return filteredMembers.value.slice(start, start + memberPageSize.value);
+});
+
+const totalMemberPages = computed(() => {
+  return Math.ceil(filteredMembers.value.length / memberPageSize.value) || 1;
+});
+
 // Task Assignment Table
 const sortBy = ref<string>('memberName');
 const sortOrder = ref<'asc' | 'desc'>('asc');
@@ -998,6 +1101,7 @@ const getPriorityLabel = (priority: Task['priority']) => {
 // 监听任务、用户、项目数据变化，重置当前页
 watch([() => taskStore.tasks, () => userStore.users, () => projectStore.projects], () => {
   currentPage.value = 1;
+  memberPage.value = 1;
 });
 
 onMounted(async () => {

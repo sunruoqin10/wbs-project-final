@@ -469,7 +469,6 @@ export default {
     remove: '제거',
     edit: '편집',
     delete: '삭제',
-    allMembers: '모든 구성원',
     workloadDistribution: '작업 부하 분포',
     taskCount: '작업 수',
     editMember: '구성원 편집',
@@ -482,7 +481,7 @@ export default {
       roleLabel: '역할',
       rolePlaceholder: '역할을 선택하세요',
       departmentLabel: '부서',
-      departmentPlaceholder: '예: 개발팀',
+      departmentPlaceholder: '부서 선택',
       skillsLabel: '기술',
       skillsPlaceholder: '쉼표로 구분, 예: Vue, TypeScript, Node.js',
       skillsHint: '여러 기술은 쉼표로 구분하세요'
@@ -508,6 +507,16 @@ export default {
     emptyState: {
       title: '구성원 없음',
       message: '아직 팀 구성원이 없습니다'
+    },
+    allMembers: {
+      title: '모든 구성원',
+      searchPlaceholder: 'ID 또는 이름 검색...',
+      filterRole: '전체 역할',
+      filterDepartment: '전체 부서',
+      previous: '이전 페이지',
+      next: '다음 페이지',
+      page: '{current} / {total} 페이지',
+      itemsPerPage: '페이지당 항목 수'
     },
     taskAssignment: {
       title: '작업 할당 현황',
