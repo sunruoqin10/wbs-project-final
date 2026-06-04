@@ -130,22 +130,7 @@
 
       <div>
         <label class="mb-2 block text-sm font-medium text-secondary-700">团队成员</label>
-        <div class="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-2 rounded-lg border border-secondary-200 p-3 max-h-40 overflow-y-auto">
-          <label
-            v-for="user in users"
-            :key="user.id"
-            class="flex items-center gap-2 rounded-md px-2 py-2 hover:bg-secondary-50 cursor-pointer transition-colors"
-          >
-            <input
-              type="checkbox"
-              :value="user.id"
-              v-model="formData.memberIds"
-              class="rounded border-secondary-300 text-primary-600 focus:ring-primary-500 h-4 w-4"
-            />
-            <UserAvatar :name="user.name" size="xs" />
-            <span class="text-xs text-secondary-700 truncate">{{ user.name }}</span>
-          </label>
-        </div>
+        <SearchableMultiSelect v-model="formData.memberIds" />
       </div>
 
       <div class="grid grid-cols-1 lg:grid-cols-2 gap-4">
@@ -228,7 +213,7 @@ import Modal from '@/components/common/Modal.vue';
 import Button from '@/components/common/Button.vue';
 import Input from '@/components/common/Input.vue';
 import Select from '@/components/common/Select.vue';
-import UserAvatar from '@/components/common/UserAvatar.vue';
+import SearchableMultiSelect from '@/components/common/SearchableMultiSelect.vue';
 import type { Project } from '@/types';
 import { useUserStore } from '@/stores/user';
 import { useProjectStore } from '@/stores/project';

@@ -183,4 +183,17 @@ public class UserService {
     public List<User> getManagers() {
         return userMapper.selectByRole("project-manager");
     }
+
+    /**
+     * 关键词搜索用户（支持分页）
+     */
+    public java.util.Map<String, Object> searchUsers(String keyword, int page, int pageSize) {
+        int offset = (page - 1) * pageSize;
+        List<User> records = userMapper.searchUsers(keyword, offset, pageSize);
+        int total = userMapper.countSearchUsers(keyword);
+        java.util.Map<String, Object> result = new java.util.HashMap<>();
+        result.put("records", records);
+        result.put("total", total);
+        return result;
+    }
 }

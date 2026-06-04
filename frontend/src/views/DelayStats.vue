@@ -298,7 +298,7 @@
                   </tr>
                 </thead>
                 <tbody class="divide-y divide-secondary-200 bg-white">
-                  <tr v-for="member in teamMemberStats" :key="member.userId" class="hover:bg-secondary-50">
+                  <tr v-for="member in paginatedTeamMemberStats" :key="member.userId" class="hover:bg-secondary-50">
                     <td class="whitespace-nowrap px-4 py-3 text-sm">
                       <div class="flex items-center">
                         <UserAvatar
@@ -329,6 +329,49 @@
                   </tr>
                 </tbody>
               </table>
+            </div>
+            <div v-if="teamMemberStats.length > teamMembersPagination.pageSize" class="mt-4 flex items-center justify-between border-t border-secondary-200 pt-4">
+              <div class="text-sm text-secondary-600">
+                共 {{ teamMemberStats.length }} 条记录，第 {{ teamMembersPagination.currentPage }} 页
+              </div>
+              <div class="flex items-center gap-2">
+                <select 
+                  v-model="teamMembersPagination.pageSize"
+                  class="rounded border border-secondary-300 px-2 py-1 text-sm"
+                  @change="teamMembersPagination.currentPage = 1"
+                >
+                  <option :value="10">10 {{ $t('common.pagination.perPage') }}</option>
+                  <option :value="20">20 {{ $t('common.pagination.perPage') }}</option>
+                  <option :value="50">50 {{ $t('common.pagination.perPage') }}</option>
+                </select>
+                <button
+                  @click="handleTeamMembersPageChange(teamMembersPagination.currentPage - 1)"
+                  :disabled="teamMembersPagination.currentPage === 1"
+                  class="rounded border border-secondary-300 px-3 py-1 text-sm hover:bg-secondary-50 disabled:opacity-50 disabled:cursor-not-allowed"
+                >
+                  {{ $t('common.pagination.previous') }}
+                </button>
+                <button
+                  v-for="page in getTeamMembersPageNumbers()"
+                  :key="page"
+                  @click="handleTeamMembersPageChange(page)"
+                  :class="[
+                    'rounded px-3 py-1 text-sm',
+                    page === teamMembersPagination.currentPage 
+                      ? 'bg-primary-500 text-white' 
+                      : 'border border-secondary-300 hover:bg-secondary-50'
+                  ]"
+                >
+                  {{ page }}
+                </button>
+                <button
+                  @click="handleTeamMembersPageChange(teamMembersPagination.currentPage + 1)"
+                  :disabled="teamMembersPagination.currentPage === teamMembersTotalPages"
+                  class="rounded border border-secondary-300 px-3 py-1 text-sm hover:bg-secondary-50 disabled:opacity-50 disabled:cursor-not-allowed"
+                >
+                  {{ $t('common.pagination.next') }}
+                </button>
+              </div>
             </div>
           </Card>
         </div>
@@ -423,6 +466,11 @@ const activeTab = ref<'personal' | 'team'>('personal');
 const loading = ref(false);
 const showMemberDetailModal = ref(false);
 const selectedMemberId = ref<string>('');
+
+const teamMembersPagination = ref({
+  currentPage: 1,
+  pageSize: 10
+});
 
 const personalDelayDistributionChartRef = ref<HTMLElement>();
 const personalProjectDelayChartRef = ref<HTMLElement>();
@@ -565,6 +613,41 @@ const teamStats = computed(() => {
     totalDelayedDays
   };
 });
+
+const teamMembersTotalPages = computed(() => {
+  return Math.ceil(teamMemberStats.value.length / teamMembersPagination.value.pageSize);
+});
+
+const paginatedTeamMemberStats = computed(() => {
+  const start = (teamMembersPagination.value.currentPage - 1) * teamMembersPagination.value.pageSize;
+  const end = start + teamMembersPagination.value.pageSize;
+  return teamMemberStats.value.slice(start, end);
+});
+
+const getTeamMembersPageNumbers = () => {
+  const pages: number[] = [];
+  const maxVisiblePages = 5;
+  const currentPage = teamMembersPagination.value.currentPage;
+  const total = teamMembersTotalPages.value;
+
+  if (total <= maxVisiblePages) {
+    for (let i = 1; i <= total; i++) pages.push(i);
+  } else {
+    let startPage = Math.max(1, currentPage - 2);
+    let endPage = Math.min(total, startPage + maxVisiblePages - 1);
+    if (endPage - startPage < maxVisiblePages - 1) {
+      startPage = Math.max(1, endPage - maxVisiblePages + 1);
+    }
+    for (let i = startPage; i <= endPage; i++) pages.push(i);
+  }
+  return pages;
+};
+
+const handleTeamMembersPageChange = (page: number) => {
+  if (page >= 1 && page <= teamMembersTotalPages.value) {
+    teamMembersPagination.value.currentPage = page;
+  }
+};
 
 const selectedMemberTasks = computed(() => {
   if (!selectedMemberId.value) return [];
@@ -982,6 +1065,7 @@ const initCharts = () => {
 };
 
 watch(activeTab, () => {
+  teamMembersPagination.value.currentPage = 1;
   initCharts();
 });
 

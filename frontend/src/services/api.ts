@@ -336,6 +336,14 @@ class ApiService {
     return request<User[]>('/users');
   }
 
+  async searchUsers(keyword: string, page: number = 1, pageSize: number = 20): Promise<{ records: User[]; total: number }> {
+    const params = new URLSearchParams();
+    if (keyword) params.set('keyword', keyword);
+    params.set('page', String(page));
+    params.set('pageSize', String(pageSize));
+    return request<{ records: User[]; total: number }>(`/users?${params.toString()}`);
+  }
+
   async getUser(id: string | number): Promise<User> {
     return request<User>(`/users/${id}`);
   }

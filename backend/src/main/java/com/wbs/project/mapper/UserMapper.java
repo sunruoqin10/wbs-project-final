@@ -72,4 +72,16 @@ public interface UserMapper {
      * 用于生成自增的C0000001格式ID
      */
     String selectMaxIdByPrefix(@Param("prefix") String prefix);
+
+    /**
+     * 关键词搜索用户（支持分页）
+     */
+    List<User> searchUsers(@Param("keyword") String keyword,
+                           @Param("offset") int offset,
+                           @Param("pageSize") int pageSize);
+
+    /**
+     * 关键词搜索用户总数
+     */
+    int countSearchUsers(@Param("keyword") String keyword);
 }

@@ -54,7 +54,8 @@ export default {
     deselectAll: '取消全选',
     pagination: {
       previous: '上一页',
-      next: '下一页'
+      next: '下一页',
+      perPage: '条/页'
     }
   },
 

@@ -30,7 +30,15 @@ public class UserController {
     }
 
     @GetMapping
-    public Result<List<User>> getAllUsers() {
+    public Result<?> getAllUsers(
+            @RequestParam(required = false) String keyword,
+            @RequestParam(required = false, defaultValue = "1") int page,
+            @RequestParam(required = false, defaultValue = "20") int pageSize) {
+        if (keyword != null && !keyword.isEmpty()) {
+            // 带关键词搜索，返回分页结果
+            return Result.success(userService.searchUsers(keyword, page, pageSize));
+        }
+        // 无关键词时返回全部（兼容旧逻辑）
         List<User> users = userService.getAllUsers();
         return Result.success(users);
     }
