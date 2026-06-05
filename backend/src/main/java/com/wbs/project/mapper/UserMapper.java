@@ -84,4 +84,16 @@ public interface UserMapper {
      * 关键词搜索用户总数
      */
     int countSearchUsers(@Param("keyword") String keyword);
+
+    /**
+     * 同步人事数据：插入新用户
+     * @return 插入行数
+     */
+    int syncHrInsert();
+
+    /**
+     * 同步人事数据：更新已有用户
+     * @return 更新行数
+     */
+    int syncHrUpdate();
 }

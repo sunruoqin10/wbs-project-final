@@ -398,6 +398,13 @@ class ApiService {
     return request<number>('/users/count');
   }
 
+  // HR Sync API
+  async syncHrUsers(): Promise<{ inserted: number; updated: number }> {
+    return request<{ inserted: number; updated: number }>('/users/sync-hr', {
+      method: 'POST',
+    });
+  }
+
   // Statistics API
   async getStatistics() {
     const [projectStats, taskStats, userCount] = await Promise.all([

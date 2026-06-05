@@ -87,4 +87,10 @@ public class UserController {
         userService.changePassword(id, request.getCurrentPassword(), request.getNewPassword());
         return Result.success("密码修改成功");
     }
+
+    @PostMapping("/sync-hr")
+    public Result<java.util.Map<String, Integer>> syncHrData() {
+        java.util.Map<String, Integer> result = userService.syncHrData();
+        return Result.success("人事数据同步完成", result);
+    }
 }

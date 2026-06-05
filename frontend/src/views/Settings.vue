@@ -213,6 +213,49 @@
               </div>
             </div>
           </Card>
+
+          <!-- HR Sync Settings -->
+          <Card v-if="activeSection === 'hrSync'">
+            <template #header>
+              <h3 class="text-lg font-semibold text-secondary-900">{{ t('settings.hrSync.title') }}</h3>
+            </template>
+            <div class="space-y-4">
+              <p class="text-sm text-secondary-600">{{ t('settings.hrSync.description') }}</p>
+
+              <div class="rounded-lg border border-secondary-200 p-4 bg-secondary-50">
+                <p class="text-sm text-secondary-700">{{ t('settings.hrSync.syncNote') }}</p>
+              </div>
+
+              <div v-if="syncResult !== null" :class="[
+                'rounded-lg border p-4',
+                syncResult.success ? 'border-green-300 bg-green-50' : 'border-red-300 bg-red-50'
+              ]">
+                <p :class="[
+                  'text-sm font-medium',
+                  syncResult.success ? 'text-green-700' : 'text-red-700'
+                ]">
+                  {{ syncResult.message }}
+                </p>
+              </div>
+
+              <div class="flex justify-end">
+                <Button
+                  variant="primary"
+                  :disabled="syncing"
+                  @click="handleSyncHr"
+                >
+                  <span v-if="syncing" class="flex items-center gap-2">
+                    <svg class="animate-spin h-4 w-4" fill="none" viewBox="0 0 24 24">
+                      <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
+                      <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z"></path>
+                    </svg>
+                    {{ t('settings.hrSync.syncing') }}
+                  </span>
+                  <span v-else>{{ t('settings.hrSync.syncButton') }}</span>
+                </Button>
+              </div>
+            </div>
+          </Card>
         </div>
       </div>
     </div>
@@ -276,6 +319,11 @@ const settingsNav = computed(() => [
     id: 'security',
     label: t('settings.navigation.security'),
     icon: '<svg class="h-5 w-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z" /></svg>'
+  },
+  {
+    id: 'hrSync',
+    label: t('settings.navigation.hrSync'),
+    icon: '<svg class="h-5 w-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" /></svg>'
   }
 ]);
 
@@ -427,4 +475,27 @@ const themes = computed(() => [
   { label: t('settings.display.themes.dark'), value: 'dark', color: '#1e293b' },
   { label: t('settings.display.themes.auto'), value: 'auto', color: '#64748b' }
 ]);
+
+// HR Sync
+const syncing = ref(false);
+const syncResult = ref<{ success: boolean; message: string } | null>(null);
+
+const handleSyncHr = async () => {
+  syncing.value = true;
+  syncResult.value = null;
+  try {
+    const result = await apiService.syncHrUsers();
+    syncResult.value = {
+      success: true,
+      message: t('settings.hrSync.syncSuccessWithCount', { inserted: result.inserted, updated: result.updated })
+    };
+  } catch (error: any) {
+    syncResult.value = {
+      success: false,
+      message: error?.message || t('settings.hrSync.syncFailed')
+    };
+  } finally {
+    syncing.value = false;
+  }
+};
 </script>

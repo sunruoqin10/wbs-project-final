@@ -607,6 +607,7 @@ export default {
       notifications: '通知设置',
       display: '显示设置',
       security: '安全设置',
+      hrSync: '人事同步',
       account: '账号设置',
       preferences: '偏好设置'
     },
@@ -669,6 +670,17 @@ export default {
         updateSuccess: '密码修改成功',
         updateFailed: '密码修改失败'
       }
+    },
+    // 人事同步
+    hrSync: {
+      title: '人事信息同步',
+      description: '从人事系统同步员工信息到本系统。已存在的用户将更新信息，新用户将自动创建。',
+      syncNote: '同步数据来源：mdm_if_pa_a（人员表）和 mdm_if_or_a（组织表）。仅同步姓名和邮箱均不为空的记录。',
+      syncButton: '开始同步',
+      syncing: '同步中...',
+      syncSuccess: '人事数据同步成功',
+      syncSuccessWithCount: '同步完成：新增 {inserted} 人，更新 {updated} 人',
+      syncFailed: '人事数据同步失败',
     },
     // 通用
     logout: '退出系统'

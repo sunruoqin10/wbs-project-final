@@ -607,6 +607,7 @@ export default {
       notifications: '알림 설정',
       display: '디스플레이 설정',
       security: '보안 설정',
+      hrSync: '인사 동기화',
       account: '계정 설정',
       preferences: '환경 설정'
     },
@@ -669,6 +670,17 @@ export default {
         updateSuccess: '비밀번호가 변경되었습니다',
         updateFailed: '비밀번호 변경 실패'
       }
+    },
+    // 인사 동기화
+    hrSync: {
+      title: '인사 정보 동기화',
+      description: '인사 시스템에서 직원 정보를 동기화합니다. 기존 사용자는 정보가 업데이트되고, 신규 사용자는 자동으로 생성됩니다.',
+      syncNote: '동기화 데이터 소스: mdm_if_pa_a(직원 테이블) 및 mdm_if_or_a(조직 테이블). 이름과 이메일이 모두 있는 레코드만 동기화됩니다.',
+      syncButton: '동기화 시작',
+      syncing: '동기화 중...',
+      syncSuccess: '인사 데이터 동기화 성공',
+      syncSuccessWithCount: '동기화 완료: {inserted}명 추가, {updated}명 업데이트',
+      syncFailed: '인사 데이터 동기화 실패',
     },
     // 공통
     logout: '로그아웃'

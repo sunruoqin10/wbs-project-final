@@ -196,4 +196,20 @@ public class UserService {
         result.put("total", total);
         return result;
     }
+
+    /**
+     * 同步人事数据
+     * 从 mdm_if_pa_a 和 mdm_if_or_a 表同步数据到 sys_user
+     * 先插入新用户，再更新已有用户
+     * @return 包含 inserted 和 updated 数量的 Map
+     */
+    @Transactional
+    public java.util.Map<String, Integer> syncHrData() {
+        int inserted = userMapper.syncHrInsert();
+        int updated = userMapper.syncHrUpdate();
+        java.util.Map<String, Integer> result = new java.util.HashMap<>();
+        result.put("inserted", inserted);
+        result.put("updated", updated);
+        return result;
+    }
 }
