@@ -144,7 +144,7 @@
     <!-- 人事数据同步：更新已有用户 -->
     <update id="syncHrUpdate">
         UPDATE sys_user u
-        INNER JOIN mdm_if_pa_a p ON u.id COLLATE utf8mb4_0900_ai_ci = p.EMP_NUM
+        INNER JOIN mdm_if_pa_a p ON u.id = p.EMP_NUM COLLATE utf8mb4_unicode_ci
         LEFT JOIN mdm_if_or_a o ON p.ORG_CD = o.ORG_CD
         SET u.name = p.EMP_NAM,
             u.email = p.EMAIL_ADDR,
