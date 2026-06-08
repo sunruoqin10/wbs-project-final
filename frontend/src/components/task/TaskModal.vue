@@ -555,6 +555,16 @@ const validateForm = (): boolean => {
     }
   }
 
+  // 验证任务结束日期不能超过项目结束日期
+  const projectId = props.projectId || props.task?.projectId;
+  if (formData.endDate && projectId) {
+    const project = projectStore.projectById(projectId);
+    if (project?.endDate && new Date(formData.endDate) > new Date(project.endDate)) {
+      errors.endDate = '任务结束日期不能超过项目结束日期 (' + project.endDate + ')';
+      isValid = false;
+    }
+  }
+
   // 验证延期原因（如果检测到延期）
   if (showDelayReasonInput.value && !formData.delayReason.trim()) {
     errors.delayReason = '请说明延期原因';

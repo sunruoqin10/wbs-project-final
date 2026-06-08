@@ -103,8 +103,16 @@ public class TaskService {
         task.setCreatedAt(LocalDateTime.now());
         task.setUpdatedAt(LocalDateTime.now());
 
+        // 验证任务结束时间不能超过项目结束时间
+        if (task.getEndDate() != null && task.getProjectId() != null) {
+            Project project = projectMapper.selectById(task.getProjectId());
+            if (project != null && project.getEndDate() != null && task.getEndDate().isAfter(project.getEndDate())) {
+                throw new RuntimeException("任务结束时间不能超过项目结束时间 (" + project.getEndDate() + ")");
+            }
+        }
+
         taskMapper.insert(task);
-        
+
         // 获取项目负责人
         User projectOwner = null;
         if (task.getProjectId() != null) {
@@ -146,6 +154,17 @@ public class TaskService {
 
         task.setId(id);
         task.setUpdatedAt(LocalDateTime.now());
+
+        // 验证任务结束时间不能超过项目结束时间
+        String taskProjectId = task.getProjectId() != null ? task.getProjectId() : existingTask.getProjectId();
+        LocalDate taskEndDate = task.getEndDate() != null ? task.getEndDate() : existingTask.getEndDate();
+        if (taskEndDate != null && taskProjectId != null) {
+            Project project = projectMapper.selectById(taskProjectId);
+            if (project != null && project.getEndDate() != null && taskEndDate.isAfter(project.getEndDate())) {
+                throw new RuntimeException("任务结束时间不能超过项目结束时间 (" + project.getEndDate() + ")");
+            }
+        }
+
         taskMapper.update(task);
         
         Task updatedTask = taskMapper.selectById(id);
@@ -585,6 +604,14 @@ public class TaskService {
 
         if (newEndDate.isBefore(oldEndDate)) {
             throw new RuntimeException("新的结束日期不能早于原结束日期");
+        }
+
+        // 验证任务结束时间不能超过项目结束时间
+        if (task.getProjectId() != null) {
+            Project project = projectMapper.selectById(task.getProjectId());
+            if (project != null && project.getEndDate() != null && newEndDate.isAfter(project.getEndDate())) {
+                throw new RuntimeException("任务结束时间不能超过项目结束时间 (" + project.getEndDate() + ")");
+            }
         }
 
         int delayDays = (int) ChronoUnit.DAYS.between(oldEndDate, newEndDate);
