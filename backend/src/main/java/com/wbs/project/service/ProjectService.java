@@ -378,12 +378,25 @@ public class ProjectService {
 
         int totalLeafTasks = 0;
         int completedLeafTasks = 0;
+        boolean hasInProgress = false;
+        boolean hasTodo = false;
 
         for (Task task : allTasks) {
             if (taskService.isLeafTask(task.getId())) {
                 totalLeafTasks++;
                 if ("done".equals(task.getStatus())) {
                     completedLeafTasks++;
+                } else if ("in-progress".equals(task.getStatus())) {
+                    hasInProgress = true;
+                } else {
+                    hasTodo = true;
+                }
+            } else {
+                // 非叶子任务也参与状态判断
+                if ("in-progress".equals(task.getStatus())) {
+                    hasInProgress = true;
+                } else if ("todo".equals(task.getStatus())) {
+                    hasTodo = true;
                 }
             }
         }
@@ -394,6 +407,10 @@ public class ProjectService {
             for (Task task : allTasks) {
                 if ("done".equals(task.getStatus())) {
                     completedLeafTasks++;
+                } else if ("in-progress".equals(task.getStatus())) {
+                    hasInProgress = true;
+                } else {
+                    hasTodo = true;
                 }
             }
         }
@@ -404,14 +421,21 @@ public class ProjectService {
 
             if (completedLeafTasks == totalLeafTasks) {
                 project.setStatus("completed");
-            } else if (completedLeafTasks > 0) {
+            } else if (hasInProgress) {
                 project.setStatus("active");
             } else {
                 project.setStatus("planning");
             }
         } else {
-            // 如果没有任何任务，保持进度为0
             project.setProgress(0);
+            // 没有任务时，根据任务状态判断项目状态
+            if (hasInProgress) {
+                project.setStatus("active");
+            } else if (!allTasks.isEmpty() && !hasTodo) {
+                project.setStatus("completed");
+            } else {
+                project.setStatus("planning");
+            }
         }
 
         project.setUpdatedAt(LocalDateTime.now());

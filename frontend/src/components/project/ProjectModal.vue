@@ -26,7 +26,7 @@
       </div>
 
       <div class="grid grid-cols-2 lg:grid-cols-4 gap-3">
-        <Select v-model="formData.status" :label="$t('projectForm.status')" required :disabled="!isEditing">
+        <Select v-model="formData.status" :label="$t('projectForm.status')" required disabled>
           <option value="planning">{{ $t('projectForm.statusOptions.planning') }}</option>
           <option value="active">{{ $t('projectForm.statusOptions.active') }}</option>
           <option value="completed">{{ $t('projectForm.statusOptions.completed') }}</option>
