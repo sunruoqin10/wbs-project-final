@@ -17,6 +17,7 @@ export const usePermissionStore = defineStore('permission', () => {
       'user:view', 'user:create', 'user:edit', 'user:delete',
       'project:create', 'project:view', 'project:delete',
       'settings:view', 'settings:edit',
+      'hr-sync:view', 'hr-sync:execute',
       'project:edit', 'project:manage_members',
       'task:create', 'task:edit', 'task:delete', 'task:assign',
       'overtime:create', 'overtime:approve', 'overtime:view',
@@ -26,6 +27,7 @@ export const usePermissionStore = defineStore('permission', () => {
     'project-manager': [
       'user:view',
       'project:create', 'project:view',
+      'settings:view',
       'project:edit', 'project:manage_members',
       'task:create', 'task:edit', 'task:delete', 'task:assign',
       'overtime:create', 'overtime:approve', 'overtime:view',
@@ -34,6 +36,7 @@ export const usePermissionStore = defineStore('permission', () => {
     ],
     'member': [
       'project:view',
+      'settings:view',
       'task:create', 'task:edit',
       'overtime:create', 'overtime:view',
       'weekly-report:create', 'weekly-report:edit', 'weekly-report:delete', 'weekly-report:view',
@@ -160,6 +163,10 @@ export const usePermissionStore = defineStore('permission', () => {
     return hasPermission('document:delete');
   };
 
+  const canAccessHrSync = (): boolean => {
+    return currentRole.value === 'admin';
+  };
+
   const loadPermissions = async () => {
     try {
       loading.value = true;
@@ -196,6 +203,7 @@ export const usePermissionStore = defineStore('permission', () => {
     canCreateDocument,
     canEditDocument,
     canDeleteDocument,
+    canAccessHrSync,
     loadPermissions
   };
 });

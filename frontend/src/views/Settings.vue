@@ -15,7 +15,7 @@
               <button
                 v-for="item in settingsNav"
                 :key="item.id"
-                @click="activeSection = item.id"
+                @click="handleSectionChange(item.id)"
                 :class="[
                   'w-full flex items-center gap-3 rounded-lg px-4 py-3 text-left transition-colors',
                   activeSection === item.id
@@ -215,7 +215,7 @@
           </Card>
 
           <!-- HR Sync Settings -->
-          <Card v-if="activeSection === 'hrSync'">
+          <Card v-if="activeSection === 'hrSync' && canAccessHrSync">
             <template #header>
               <h3 class="text-lg font-semibold text-secondary-900">{{ t('settings.hrSync.title') }}</h3>
             </template>
@@ -281,8 +281,9 @@
 </template>
 
 <script setup lang="ts">
-import { ref, computed } from 'vue';
+import { ref, computed, onMounted, watch } from 'vue';
 import { useI18n } from 'vue-i18n';
+import { useRoute, useRouter } from 'vue-router';
 import MainLayout from '@/components/layout/MainLayout.vue';
 import Card from '@/components/common/Card.vue';
 import Button from '@/components/common/Button.vue';
@@ -291,41 +292,98 @@ import Modal from '@/components/common/Modal.vue';
 import Select from '@/components/common/Select.vue';
 import UserAvatar from '@/components/common/UserAvatar.vue';
 import { useUserStore } from '@/stores/user';
+import { usePermissionStore } from '@/stores/permission';
 import apiService from '@/services/api';
 
 const { t } = useI18n();
 const userStore = useUserStore();
+const permissionStore = usePermissionStore();
 const currentUser = computed(() => userStore.currentUser);
+const route = useRoute();
+const router = useRouter();
 
+const canAccessHrSync = computed(() => permissionStore.canAccessHrSync());
 const activeSection = ref('profile');
 
-const settingsNav = computed(() => [
-  {
-    id: 'profile',
-    label: t('settings.navigation.profile'),
-    icon: '<svg class="h-5 w-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" /></svg>'
-  },
-  {
-    id: 'notifications',
-    label: t('settings.navigation.notifications'),
-    icon: '<svg class="h-5 w-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 17h5l-1.405-1.405A2.032 2.032 0 0118 14.158V11a6.002 6.002 0 00-4-5.659V5a2 2 0 10-4 0v.341C7.67 6.165 6 8.388 6 11v3.159c0 .538-.214 1.055-.595 1.436L4 17h5m6 0v1a3 3 0 11-6 0v-1m6 0H9" /></svg>'
-  },
-  {
-    id: 'display',
-    label: t('settings.navigation.display'),
-    icon: '<svg class="h-5 w-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9.75 17L9 20l-1 1h8l-1-1-.75-3M3 13h18M5 17h14a2 2 0 002-2V5a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z" /></svg>'
-  },
-  {
-    id: 'security',
-    label: t('settings.navigation.security'),
-    icon: '<svg class="h-5 w-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z" /></svg>'
-  },
-  {
-    id: 'hrSync',
-    label: t('settings.navigation.hrSync'),
-    icon: '<svg class="h-5 w-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" /></svg>'
+// 处理 URL 参数并设置相应的选项卡
+const setActiveSectionFromRoute = () => {
+  const tab = route.query.tab as string;
+  // 根据权限筛选可用的选项卡
+  const allowedTabs = ['profile', 'notifications', 'display', 'security'];
+  if (canAccessHrSync.value) {
+    allowedTabs.push('hrSync');
   }
-]);
+  // 只在允许的选项卡中设置
+  if (tab && allowedTabs.includes(tab)) {
+    activeSection.value = tab;
+  }
+};
+
+// 组件挂载时检查 URL 参数并设置默认选项卡
+onMounted(() => {
+  setActiveSectionFromRoute();
+});
+
+// 监听路由参数变化，当用户通过Header组件导航时更新选项卡
+watch(
+  () => route.query.tab,
+  () => {
+    setActiveSectionFromRoute();
+  }
+);
+
+// 切换选项卡，同时更新URL
+const handleSectionChange = (sectionId: string) => {
+  activeSection.value = sectionId;
+  // 更新URL，使用replace避免添加新的历史记录
+  router.replace({
+    name: 'Settings',
+    query: { tab: sectionId }
+  });
+};
+
+// 监听权限变化，如果用户切换到无权访问的选项卡，自动切回默认选项卡
+watch(() => [canAccessHrSync.value, activeSection.value], ([hasHrAccess, section]) => {
+  if (section === 'hrSync' && !hasHrAccess) {
+    activeSection.value = 'profile';
+  }
+});
+
+const settingsNav = computed(() => {
+  const navItems = [
+    {
+      id: 'profile',
+      label: t('settings.navigation.profile'),
+      icon: '<svg class="h-5 w-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" /></svg>'
+    },
+    {
+      id: 'notifications',
+      label: t('settings.navigation.notifications'),
+      icon: '<svg class="h-5 w-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 17h5l-1.405-1.405A2.032 2.032 0 0118 14.158V11a6.002 6.002 0 00-4-5.659V5a2 2 0 10-4 0v.341C7.67 6.165 6 8.388 6 11v3.159c0 .538-.214 1.055-.595 1.436L4 17h5m6 0v1a3 3 0 11-6 0v-1m6 0H9" /></svg>'
+    },
+    {
+      id: 'display',
+      label: t('settings.navigation.display'),
+      icon: '<svg class="h-5 w-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9.75 17L9 20l-1 1h8l-1-1-.75-3M3 13h18M5 17h14a2 2 0 002-2V5a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z" /></svg>'
+    },
+    {
+      id: 'security',
+      label: t('settings.navigation.security'),
+      icon: '<svg class="h-5 w-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z" /></svg>'
+    }
+  ];
+  
+  // 只有管理员才能看到人事同步选项卡
+  if (canAccessHrSync.value) {
+    navItems.push({
+      id: 'hrSync',
+      label: t('settings.navigation.hrSync'),
+      icon: '<svg class="h-5 w-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" /></svg>'
+    });
+  }
+  
+  return navItems;
+});
 
 const profileForm = ref({
   name: currentUser.value?.name || '',

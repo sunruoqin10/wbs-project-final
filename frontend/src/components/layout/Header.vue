@@ -219,12 +219,18 @@ const handleMenuClick = (action: string) => {
   showUserMenu.value = false;
   switch (action) {
     case 'profile':
-      // TODO: 导航到个人中心页面
-      console.log('导航到个人中心');
+      // 导航到个人中心（设置页面的个人资料选项卡）
+      router.push({ 
+        name: 'Settings', 
+        query: { tab: 'profile' } 
+      });
       break;
     case 'settings':
-      // TODO: 导航到设置页面
-      console.log('导航到设置页面');
+      // 导航到账号设置（设置页面的安全设置选项卡）
+      router.push({ 
+        name: 'Settings', 
+        query: { tab: 'security' } 
+      });
       break;
   }
 };
