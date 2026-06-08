@@ -489,8 +489,8 @@
   </MainLayout>
 </template>
 
-<script setup lang="ts">
-import { ref, computed, onMounted, reactive, watch } from 'vue';
+  <script setup lang="ts">
+import { ref, computed, onMounted, onUnmounted, reactive, watch, nextTick } from 'vue';
 import { useI18n } from 'vue-i18n';
 import * as echarts from 'echarts';
 import MainLayout from '@/components/layout/MainLayout.vue';
@@ -531,6 +531,7 @@ const permissionStore = usePermissionStore();
 
 const users = computed(() => userStore.users);
 const workloadChartRef = ref<HTMLElement>();
+let workloadChartInstance: echarts.ECharts | null = null;
 const activeTab = ref(0);
 
 const tabs = computed<Tab[]>(() => [
@@ -823,7 +824,14 @@ const formattedDate = (date: string) => {
 const initWorkloadChart = () => {
   if (!workloadChartRef.value) return;
 
+  // 销毁旧实例
+  if (workloadChartInstance) {
+    workloadChartInstance.dispose();
+    workloadChartInstance = null;
+  }
+
   const chart = echarts.init(workloadChartRef.value);
+  workloadChartInstance = chart;
 
   // 只统计叶子任务（没有子任务的任务），避免重复统计
   const allTaskIds = new Set(taskStore.tasks.map(t => t.id));
@@ -831,13 +839,15 @@ const initWorkloadChart = () => {
   const leafTaskIds = new Set([...allTaskIds].filter(id => !parentTaskIds.has(id)));
   const leafTasks = taskStore.tasks.filter(t => leafTaskIds.has(t.id));
 
-  const userData = users.value.slice(0, 8).map(user => {
-    const taskCount = leafTasks.filter(t => t.assigneeId === user.id).length;
-    return {
-      name: user.name,
-      value: taskCount
-    };
-  });
+  // 按任务数量排序，取前8名
+  const userData = users.value
+    .map(user => {
+      const taskCount = leafTasks.filter(t => t.assigneeId === user.id).length;
+      return { name: user.name, value: taskCount };
+    })
+    .sort((a, b) => b.value - a.value)
+    .slice(0, 8)
+    .filter(u => u.value > 0);
 
   const option = {
     tooltip: {
@@ -1104,6 +1114,21 @@ watch([() => taskStore.tasks, () => userStore.users, () => projectStore.projects
   memberPage.value = 1;
 });
 
+// 监听数据加载完成，重新渲染图表
+watch(() => taskStore.loaded, async (loaded) => {
+  if (loaded && userStore.users.length > 0) {
+    await nextTick();
+    initWorkloadChart();
+  }
+}, { immediate: false });
+
+// 窗口大小变化处理
+const handleResize = () => {
+  if (workloadChartInstance) {
+    workloadChartInstance.resize();
+  }
+};
+
 onMounted(async () => {
   // 确保用户数据已加载
   await userStore.loadUsers();
@@ -1123,8 +1148,18 @@ onMounted(async () => {
   }
 
   // 初始化图表
-  setTimeout(() => {
-    initWorkloadChart();
-  }, 100);
+  await nextTick();
+  initWorkloadChart();
+
+  // 监听窗口大小变化
+  window.addEventListener('resize', handleResize);
+});
+
+onUnmounted(() => {
+  window.removeEventListener('resize', handleResize);
+  if (workloadChartInstance) {
+    workloadChartInstance.dispose();
+    workloadChartInstance = null;
+  }
 });
 </script>
