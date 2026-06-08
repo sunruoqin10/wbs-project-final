@@ -340,7 +340,13 @@ const editReport = (report: WeeklyReport) => {
 
 const confirmDelete = async (report: WeeklyReport) => {
   if (confirm(t('weeklyReports.confirmDelete'))) {
-    await weeklyReportStore.deleteReport(report.id);
+    try {
+      await weeklyReportStore.deleteReport(report.id);
+      await weeklyReportStore.loadReports();
+    } catch (error) {
+      console.error('删除周报失败:', error);
+      alert(t('weeklyReports.messages.deleteFailed'));
+    }
   }
 };
 

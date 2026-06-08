@@ -1067,6 +1067,10 @@ export default {
       noResults: '일치하는 주간 보고를 찾을 수 없습니다',
       createFirst: '첫 번째 주간 보고를 만들어 보세요',
       createButton: '주간 보고 생성'
+    },
+    messages: {
+      deleteSuccess: '주간 보고가 삭제되었습니다',
+      deleteFailed: '삭제에 실패했습니다. 다시 시도해주세요.'
     }
   },
 

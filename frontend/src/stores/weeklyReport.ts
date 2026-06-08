@@ -60,11 +60,11 @@ export const useWeeklyReportStore = defineStore('weeklyReport', () => {
   const createReport = async (data: Partial<WeeklyReport>) => {
     try {
       loading.value = true;
-      const response = await apiService.createWeeklyReport(data);
-      if (response.code === 200 && response.data) {
-        reports.value.unshift(response.data);
+      const report = await apiService.createWeeklyReport(data);
+      if (report) {
+        reports.value.unshift(report);
       }
-      return response.data;
+      return report;
     } catch (error) {
       console.warn('Failed to create weekly report:', error);
       throw error;
@@ -76,14 +76,14 @@ export const useWeeklyReportStore = defineStore('weeklyReport', () => {
   const updateReport = async (id: string, data: Partial<WeeklyReport>) => {
     try {
       loading.value = true;
-      const response = await apiService.updateWeeklyReport(id, data);
-      if (response.code === 200 && response.data) {
+      const report = await apiService.updateWeeklyReport(id, data);
+      if (report) {
         const index = reports.value.findIndex(r => r.id === id);
         if (index !== -1) {
-          reports.value[index] = response.data;
+          reports.value[index] = report;
         }
       }
-      return response.data;
+      return report;
     } catch (error) {
       console.warn('Failed to update weekly report:', error);
       throw error;
@@ -95,10 +95,8 @@ export const useWeeklyReportStore = defineStore('weeklyReport', () => {
   const deleteReport = async (id: string) => {
     try {
       loading.value = true;
-      const response = await apiService.deleteWeeklyReport(id);
-      if (response.code === 200) {
-        reports.value = reports.value.filter(r => r.id !== id);
-      }
+      await apiService.deleteWeeklyReport(id);
+      reports.value = reports.value.filter(r => r.id !== id);
     } catch (error) {
       console.warn('Failed to delete weekly report:', error);
       throw error;
@@ -110,14 +108,14 @@ export const useWeeklyReportStore = defineStore('weeklyReport', () => {
   const submitReport = async (id: string) => {
     try {
       loading.value = true;
-      const response = await apiService.submitWeeklyReport(id);
-      if (response.code === 200 && response.data) {
+      const report = await apiService.submitWeeklyReport(id);
+      if (report) {
         const index = reports.value.findIndex(r => r.id === id);
         if (index !== -1) {
-          reports.value[index] = response.data;
+          reports.value[index] = report;
         }
       }
-      return response.data;
+      return report;
     } catch (error) {
       console.warn('Failed to submit weekly report:', error);
       throw error;
@@ -129,14 +127,14 @@ export const useWeeklyReportStore = defineStore('weeklyReport', () => {
   const approveReport = async (id: string, approved: boolean, approveComment?: string) => {
     try {
       loading.value = true;
-      const response = await apiService.approveWeeklyReport(id, approved, approveComment);
-      if (response.code === 200 && response.data) {
+      const report = await apiService.approveWeeklyReport(id, approved, approveComment);
+      if (report) {
         const index = reports.value.findIndex(r => r.id === id);
         if (index !== -1) {
-          reports.value[index] = response.data;
+          reports.value[index] = report;
         }
       }
-      return response.data;
+      return report;
     } catch (error) {
       console.warn('Failed to approve weekly report:', error);
       throw error;
@@ -148,11 +146,11 @@ export const useWeeklyReportStore = defineStore('weeklyReport', () => {
   const loadMyReports = async (userId: string) => {
     try {
       loading.value = true;
-      const response = await apiService.getMyWeeklyReports(userId);
-      if (response.code === 200 && response.data) {
-        reports.value = response.data;
+      const reportList = await apiService.getMyWeeklyReports(userId);
+      if (Array.isArray(reportList)) {
+        reports.value = reportList;
       }
-      return response.data;
+      return reportList;
     } catch (error) {
       console.warn('Failed to load my weekly reports:', error);
       throw error;
@@ -164,11 +162,11 @@ export const useWeeklyReportStore = defineStore('weeklyReport', () => {
   const loadProjectReports = async (projectId: string) => {
     try {
       loading.value = true;
-      const response = await apiService.getProjectWeeklyReports(projectId);
-      if (response.code === 200 && response.data) {
-        reports.value = response.data;
+      const reportList = await apiService.getProjectWeeklyReports(projectId);
+      if (Array.isArray(reportList)) {
+        reports.value = reportList;
       }
-      return response.data;
+      return reportList;
     } catch (error) {
       console.warn('Failed to load project weekly reports:', error);
       throw error;
@@ -180,11 +178,11 @@ export const useWeeklyReportStore = defineStore('weeklyReport', () => {
   const loadCurrentWeekReport = async (userId: string) => {
     try {
       loading.value = true;
-      const response = await apiService.getCurrentWeekReport(userId);
-      if (response.code === 200 && response.data) {
-        currentReport.value = response.data;
+      const report = await apiService.getCurrentWeekReport(userId);
+      if (report) {
+        currentReport.value = report;
       }
-      return response.data;
+      return report;
     } catch (error) {
       console.warn('Failed to load current week report:', error);
       throw error;

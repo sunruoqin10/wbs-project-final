@@ -1155,6 +1155,10 @@ export default {
       noResults: '没有找到匹配的周报',
       createFirst: '开始创建您的第一份周报吧',
       createButton: '创建周报'
+    },
+    messages: {
+      deleteSuccess: '周报已删除',
+      deleteFailed: '删除失败，请稍后重试'
     }
   },
 
