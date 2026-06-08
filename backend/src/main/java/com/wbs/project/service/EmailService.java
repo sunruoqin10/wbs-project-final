@@ -30,7 +30,7 @@ public class EmailService {
     private final EmailLogMapper emailLogMapper;
     private Configuration freemarkerConfig;
 
-    @Value("${spring.mail.username:noreply@wbs-system.com}")
+    @Value("${spring.mail.addr:noreply@wbs-system.com}")
     private String fromEmail;
 
     @Value("${spring.mail.display-name:WBS项目管理系统}")
@@ -77,7 +77,6 @@ public class EmailService {
             Template template = freemarkerConfig.getTemplate(templateName + ".ftl");
             String htmlContent = FreeMarkerTemplateUtils.processTemplateIntoString(template, variables);
             helper.setText(htmlContent, true);
-
             mailSender.send(message);
             
             emailLog.setStatus("success");
