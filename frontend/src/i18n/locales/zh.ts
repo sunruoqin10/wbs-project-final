@@ -86,7 +86,7 @@ export default {
   // 应用名称
   app: {
     name: 'WBS项目管理系统',
-    shortName: 'WBS系统'
+    shortName: 'WBS项目管理'
   },
 
   // 登录页
