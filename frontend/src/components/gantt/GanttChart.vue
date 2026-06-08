@@ -18,6 +18,7 @@ interface GanttTask {
   text: string;
   start_date: string;
   duration: number;
+  workingDays: number;
   progress: number;
   parent: string | number;
   priority?: string;
@@ -55,6 +56,7 @@ const convertToGanttTasks = (): GanttTask[] => {
       text: task.title,
       start_date: task.startDate,
       duration: calculateDuration(task.startDate, task.endDate),
+      workingDays: countWorkingDays(task.startDate, task.endDate),
       progress: task.progress / 100,
       parent: task.parentTaskId || 0,
       priority: task.priority,
@@ -82,6 +84,21 @@ const calculateDuration = (start: string, end: string): number => {
   const diffTime = Math.abs(endDate.getTime() - startDate.getTime());
   const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
   return diffDays + 1;
+};
+
+const countWorkingDays = (start: string, end: string): number => {
+  const startDate = new Date(start);
+  const endDate = new Date(end);
+  let count = 0;
+  const current = new Date(startDate);
+  while (current <= endDate) {
+    const day = current.getDay();
+    if (day !== 0 && day !== 6) {
+      count++;
+    }
+    current.setDate(current.getDate() + 1);
+  }
+  return count || 1;
 };
 
 const getTaskColor = (task: Task, hasSubtasks: boolean = false): string => {
@@ -223,7 +240,8 @@ const initGantt = () => {
       name: 'duration',
       label: t('gantt.duration'),
       align: 'center',
-      width: 60
+      width: 60,
+      template: (task: any) => task.workingDays || task.duration
     }
     // 移除了 "add" 列，隐藏添加按钮
   ];
@@ -331,8 +349,8 @@ const initGantt = () => {
     tooltip += `
       <div style="margin-top: 6px; padding-top: 6px; border-top: 1px dashed #bdc3c7;">
         <div style="color: #95a5a6;">${t('gantt.tooltip.startTime')}：${formatDate(start)}</div>
-        <div style="color: #95a5a6;">${t('gantt.tooltip.endTime')}：${formatDate(gantt.date.add(end, -1, 'day'))}</div>
-        <div style="color: #95a5a6;">${t('gantt.tooltip.duration')}：${ganttTask.duration} ${t('gantt.tooltip.days')}</div>
+        <div style="color: #95a5a6;">${t('gantt.tooltip.endTime')}：${formatDate(gantt.date.add(start, ganttTask.duration - 1, 'day'))}</div>
+        <div style="color: #95a5a6;">${t('gantt.tooltip.duration')}：${ganttTask.workingDays || ganttTask.duration} ${t('gantt.tooltip.days')}</div>
       </div>
     `;
 
