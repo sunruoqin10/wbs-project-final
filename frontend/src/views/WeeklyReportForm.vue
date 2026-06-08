@@ -486,13 +486,13 @@ const handleSaveDraft = async () => {
       await weeklyReportStore.updateReport(reportId.value, reportData);
       await uploadDocuments(reportId.value);
       alert(t('messages.success.save'));
-      router.push('/weekly-reports');
+      router.back();
     } else {
       const newReport = await weeklyReportStore.createReport(reportData);
       if (newReport) {
         await uploadDocuments(newReport.id, formData.projectId);
         alert(t('messages.success.save'));
-        router.push('/weekly-reports');
+        router.back();
       }
     }
   } catch (error: any) {
