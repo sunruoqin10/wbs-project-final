@@ -69,10 +69,12 @@
             :disabled="isEditing"
             :class="[
               'w-full rounded-lg border px-3 py-2 text-sm focus:border-primary-500 focus:outline-none focus:ring-2 focus:ring-primary-500/20',
+              errors.endDate ? 'border-danger-300' : '',
               isEditing ? 'bg-secondary-50 text-secondary-600 cursor-not-allowed opacity-60 border-secondary-200' : 'border-secondary-200'
             ]"
             required
           />
+          <p v-if="errors.endDate" class="mt-1 text-xs text-danger-600">{{ errors.endDate }}</p>
         </div>
       </div>
 
@@ -273,7 +275,8 @@ const formData = reactive({
 });
 
 const errors = reactive({
-  name: ''
+  name: '',
+  endDate: ''
 });
 
 // Reset form
@@ -291,6 +294,7 @@ const resetForm = () => {
   formData.progress = 0;
   formData.estimatedHours = 0;
   errors.name = '';
+  errors.endDate = '';
 };
 
 // Load project data for editing
@@ -358,15 +362,21 @@ const calculateEstimatedHours = (): number => {
 // Validate form
 const validateForm = (): boolean => {
   errors.name = '';
+  errors.endDate = '';
 
   if (!formData.name.trim()) {
     errors.name = t('projectForm.validation.nameRequired');
     return false;
   }
 
+  if (!formData.endDate) {
+    errors.endDate = t('projectForm.validation.endDateRequired');
+    return false;
+  }
+
   if (formData.startDate && formData.endDate) {
     if (new Date(formData.startDate) > new Date(formData.endDate)) {
-      alert(t('projectForm.validation.dateInvalid'));
+      errors.endDate = t('projectForm.validation.endDateInvalid');
       return false;
     }
   }
