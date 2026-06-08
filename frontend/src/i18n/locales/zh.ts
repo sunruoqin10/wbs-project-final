@@ -228,6 +228,8 @@ export default {
   // 项目表单
   projectForm: {
     title: '项目信息',
+    editTitle: '编辑项目',
+    createTitle: '新建项目',
     name: '项目名称',
     namePlaceholder: '请输入项目名称',
     description: '项目描述',
@@ -235,18 +237,47 @@ export default {
     startDate: '开始日期',
     endDate: '结束日期',
     color: '项目颜色',
-    status: '项目状态',
+    status: '状态',
     priority: '优先级',
     owner: '项目负责人',
-    tags: '项目标签',
+    tags: '标签',
     estimatedHours: '预估工时',
-    createButton: '创建项目',
-    updateButton: '更新项目',
+    createButton: '创建',
+    updateButton: '保存',
+    cancelButton: '取消',
+    notEditable: '(不可编辑)',
+    ownerHint: '(请先选择团队成员)',
+    ownerSelectPlaceholder: '请选择',
+    ownerEmptyPlaceholder: '请先选择团队成员',
+    ownerEmptyHint: '项目负责人必须从已选中的团队成员中选择',
+    estimatedHoursLabel: '预估工时',
+    estimatedHoursUnit: '小时',
+    estimatedHoursHint: '根据工作日自动计算（每天8小时）',
+    members: '团队成员',
+    progressLabel: '进度',
+    progressHint: '(根据任务完成情况自动计算)',
+    dateInfoTip: '项目的开始日期和结束日期会根据任务的日期自动调整，无法手动编辑。如需修改项目日期，请调整相关任务的日期。',
+    commonTags: ['前端', '后端', '全栈', '移动端', '设计', '数据库', 'API', 'DevOps', '测试'],
+    statusOptions: {
+      planning: '计划中',
+      active: '进行中',
+      completed: '已完成',
+      onHold: '已暂停',
+      cancelled: '废弃'
+    },
+    priorityOptions: {
+      low: '低',
+      medium: '中',
+      high: '高',
+      critical: '紧急'
+    },
     validation: {
-      nameRequired: '项目名称不能为空',
+      nameRequired: '请输入项目名称',
       startDateRequired: '开始日期不能为空',
       endDateRequired: '结束日期不能为空',
-      endDateInvalid: '结束日期必须晚于开始日期'
+      endDateInvalid: '结束日期必须晚于开始日期',
+      ownerRequired: '请选择项目负责人',
+      dateInvalid: '开始日期不能晚于结束日期'
     }
   },
 

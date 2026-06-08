@@ -1,7 +1,7 @@
 <template>
   <Modal
     :open="open"
-    :title="isEditing ? '编辑项目' : '新建项目'"
+    :title="isEditing ? $t('projectForm.editTitle') : $t('projectForm.createTitle')"
     size="2xl"
     @close="handleClose"
   >
@@ -9,42 +9,42 @@
       <div class="grid grid-cols-1 lg:grid-cols-2 gap-4">
         <Input
           v-model="formData.name"
-          label="项目名称"
-          placeholder="请输入项目名称"
+          :label="$t('projectForm.name')"
+          :placeholder="$t('projectForm.namePlaceholder')"
           :error="errors.name"
           required
         />
         <div>
-          <label class="mb-1 block text-sm font-medium text-secondary-700">项目描述</label>
+          <label class="mb-1 block text-sm font-medium text-secondary-700">{{ $t('projectForm.description') }}</label>
           <textarea
             v-model="formData.description"
             rows="3"
             class="w-full rounded-lg border border-secondary-200 px-3 py-2 text-sm focus:border-primary-500 focus:outline-none focus:ring-2 focus:ring-primary-500/20 resize-none"
-            placeholder="请输入项目描述"
+            :placeholder="$t('projectForm.descriptionPlaceholder')"
           ></textarea>
         </div>
       </div>
 
       <div class="grid grid-cols-2 lg:grid-cols-4 gap-3">
-        <Select v-model="formData.status" label="状态" required :disabled="!isEditing">
-          <option value="planning">计划中</option>
-          <option value="active">进行中</option>
-          <option value="completed">已完成</option>
-          <option value="on-hold">已暂停</option>
-          <option value="cancelled">废弃</option>
+        <Select v-model="formData.status" :label="$t('projectForm.status')" required :disabled="!isEditing">
+          <option value="planning">{{ $t('projectForm.statusOptions.planning') }}</option>
+          <option value="active">{{ $t('projectForm.statusOptions.active') }}</option>
+          <option value="completed">{{ $t('projectForm.statusOptions.completed') }}</option>
+          <option value="on-hold">{{ $t('projectForm.statusOptions.onHold') }}</option>
+          <option value="cancelled">{{ $t('projectForm.statusOptions.cancelled') }}</option>
         </Select>
 
-        <Select v-model="formData.priority" label="优先级" required>
-          <option value="low">低</option>
-          <option value="medium">中</option>
-          <option value="high">高</option>
-          <option value="critical">紧急</option>
+        <Select v-model="formData.priority" :label="$t('projectForm.priority')" required>
+          <option value="low">{{ $t('projectForm.priorityOptions.low') }}</option>
+          <option value="medium">{{ $t('projectForm.priorityOptions.medium') }}</option>
+          <option value="high">{{ $t('projectForm.priorityOptions.high') }}</option>
+          <option value="critical">{{ $t('projectForm.priorityOptions.critical') }}</option>
         </Select>
 
         <div>
           <label class="mb-1 block text-sm font-medium text-secondary-700">
-            开始日期 *
-            <span v-if="isEditing" class="text-xs text-secondary-500 font-normal ml-1">(不可编辑)</span>
+            {{ $t('projectForm.startDate') }} *
+            <span v-if="isEditing" class="text-xs text-secondary-500 font-normal ml-1">{{ $t('projectForm.notEditable') }}</span>
           </label>
           <input
             v-model="formData.startDate"
@@ -60,8 +60,8 @@
 
         <div>
           <label class="mb-1 block text-sm font-medium text-secondary-700">
-            结束日期 *
-            <span v-if="isEditing" class="text-xs text-secondary-500 font-normal ml-1">(不可编辑)</span>
+            {{ $t('projectForm.endDate') }} *
+            <span v-if="isEditing" class="text-xs text-secondary-500 font-normal ml-1">{{ $t('projectForm.notEditable') }}</span>
           </label>
           <input
             v-model="formData.endDate"
@@ -82,7 +82,7 @@
             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
           </svg>
           <div class="text-xs text-info-800 leading-relaxed">
-            项目的开始日期和结束日期会根据任务的日期自动调整，无法手动编辑。如需修改项目日期，请调整相关任务的日期。
+            {{ $t('projectForm.dateInfoTip') }}
           </div>
         </div>
       </div>
@@ -90,8 +90,8 @@
       <div class="grid grid-cols-1 lg:grid-cols-2 gap-4">
         <div>
           <label class="mb-1 block text-sm font-medium text-secondary-700">
-            项目负责人 *
-            <span v-if="!hasTeamMembers" class="text-xs text-secondary-500 font-normal ml-1">(请先选择团队成员)</span>
+            {{ $t('projectForm.owner') }} *
+            <span v-if="!hasTeamMembers" class="text-xs text-secondary-500 font-normal ml-1">{{ $t('projectForm.ownerHint') }}</span>
           </label>
           <select
             v-model="formData.ownerId"
@@ -105,18 +105,18 @@
             required
           >
             <option value="">
-              {{ hasTeamMembers ? '请选择' : '请先选择团队成员' }}
+              {{ hasTeamMembers ? $t('projectForm.ownerSelectPlaceholder') : $t('projectForm.ownerEmptyPlaceholder') }}
             </option>
             <option v-for="user in availableOwners" :key="user.id" :value="user.id">
               {{ user.name }}
             </option>
           </select>
-          <p v-if="!hasTeamMembers" class="mt-1 text-xs text-secondary-500">项目负责人必须从已选中的团队成员中选择</p>
+          <p v-if="!hasTeamMembers" class="mt-1 text-xs text-secondary-500">{{ $t('projectForm.ownerEmptyHint') }}</p>
         </div>
 
         <div>
           <label class="mb-1 block text-sm font-medium text-secondary-700">
-            预估工时: {{ formData.estimatedHours || 0 }} 小时
+            {{ $t('projectForm.estimatedHoursLabel') }}: {{ formData.estimatedHours || 0 }} {{ $t('projectForm.estimatedHoursUnit') }}
           </label>
           <input
             v-model.number="formData.estimatedHours"
@@ -124,18 +124,18 @@
             class="w-full rounded-lg border border-secondary-200 px-3 py-2 text-sm bg-secondary-50 text-secondary-600 cursor-not-allowed opacity-60"
             disabled
           />
-          <p class="mt-1 text-xs text-secondary-500">根据工作日自动计算（每天8小时）</p>
+          <p class="mt-1 text-xs text-secondary-500">{{ $t('projectForm.estimatedHoursHint') }}</p>
         </div>
       </div>
 
       <div>
-        <label class="mb-2 block text-sm font-medium text-secondary-700">团队成员</label>
+        <label class="mb-2 block text-sm font-medium text-secondary-700">{{ $t('projectForm.members') }}</label>
         <SearchableMultiSelect v-model="formData.memberIds" />
       </div>
 
       <div class="grid grid-cols-1 lg:grid-cols-2 gap-4">
         <div>
-          <label class="mb-2 block text-sm font-medium text-secondary-700">项目颜色</label>
+          <label class="mb-2 block text-sm font-medium text-secondary-700">{{ $t('projectForm.color') }}</label>
           <div class="flex gap-2 flex-wrap">
             <button
               v-for="color in colors"
@@ -154,7 +154,7 @@
         </div>
 
         <div>
-          <label class="mb-2 block text-sm font-medium text-secondary-700">标签</label>
+          <label class="mb-2 block text-sm font-medium text-secondary-700">{{ $t('projectForm.tags') }}</label>
           <div class="flex flex-wrap gap-1.5">
             <span
               v-for="tag in commonTags"
@@ -177,8 +177,8 @@
         <div class="flex items-center gap-3">
           <div class="flex-1">
             <label class="mb-1 block text-sm font-medium text-secondary-700">
-              进度: {{ formData.progress }}%
-              <span class="text-xs text-secondary-500 font-normal ml-1">(根据任务完成情况自动计算)</span>
+              {{ $t('projectForm.progressLabel') }}: {{ formData.progress }}%
+              <span class="text-xs text-secondary-500 font-normal ml-1">{{ $t('projectForm.progressHint') }}</span>
             </label>
             <input
               v-model.number="formData.progress"
@@ -198,9 +198,9 @@
 
     <template #footer>
       <div class="flex justify-end gap-3">
-        <Button variant="secondary" @click="handleClose">取消</Button>
+        <Button variant="secondary" @click="handleClose">{{ $t('projectForm.cancelButton') }}</Button>
         <Button variant="primary" @click="handleSubmit" :loading="saving">
-          {{ isEditing ? '保存' : '创建' }}
+          {{ isEditing ? $t('projectForm.updateButton') : $t('projectForm.createButton') }}
         </Button>
       </div>
     </template>
@@ -209,6 +209,7 @@
 
 <script setup lang="ts">
 import { ref, reactive, watch, computed } from 'vue';
+import { useI18n } from 'vue-i18n';
 import Modal from '@/components/common/Modal.vue';
 import Button from '@/components/common/Button.vue';
 import Input from '@/components/common/Input.vue';
@@ -232,6 +233,7 @@ const emit = defineEmits<{
 
 const userStore = useUserStore();
 const projectStore = useProjectStore();
+const { t } = useI18n();
 
 const users = computed(() => userStore.users);
 const isEditing = computed(() => !!props.project);
@@ -242,7 +244,7 @@ const availableOwners = computed(() => {
   return users.value.filter(user => formData.memberIds.includes(user.id));
 });
 
-const commonTags = ['前端', '后端', '全栈', '移动端', '设计', '数据库', 'API', 'DevOps', '测试'];
+const commonTags = computed(() => t('projectForm.commonTags') as unknown as string[]);
 
 const colors = [
   '#3b82f6', // blue
@@ -358,19 +360,19 @@ const validateForm = (): boolean => {
   errors.name = '';
 
   if (!formData.name.trim()) {
-    errors.name = '请输入项目名称';
+    errors.name = t('projectForm.validation.nameRequired');
     return false;
   }
 
   if (formData.startDate && formData.endDate) {
     if (new Date(formData.startDate) > new Date(formData.endDate)) {
-      alert('开始日期不能晚于结束日期');
+      alert(t('projectForm.validation.dateInvalid'));
       return false;
     }
   }
 
   if (!formData.ownerId) {
-    alert('请选择项目负责人');
+    alert(t('projectForm.validation.ownerRequired'));
     return false;
   }
 

@@ -228,6 +228,8 @@ export default {
   // 프로젝트 폼
   projectForm: {
     title: '프로젝트 정보',
+    editTitle: '프로젝트 편집',
+    createTitle: '새 프로젝트 생성',
     name: '프로젝트 이름',
     namePlaceholder: '프로젝트 이름을 입력하세요',
     description: '프로젝트 설명',
@@ -235,18 +237,47 @@ export default {
     startDate: '시작일',
     endDate: '종료일',
     color: '프로젝트 색상',
-    status: '프로젝트 상태',
+    status: '상태',
     priority: '우선순위',
     owner: '프로젝트 담당자',
-    tags: '프로젝트 태그',
+    tags: '태그',
     estimatedHours: '예상 공수',
-    createButton: '프로젝트 생성',
-    updateButton: '프로젝트 업데이트',
+    createButton: '생성',
+    updateButton: '저장',
+    cancelButton: '취소',
+    notEditable: '(편집 불가)',
+    ownerHint: '(먼저 팀 구성원을 선택하세요)',
+    ownerSelectPlaceholder: '선택하세요',
+    ownerEmptyPlaceholder: '먼저 팀 구성원을 선택하세요',
+    ownerEmptyHint: '프로젝트 담당자는 선택한 팀 구성원 중에서 선택해야 합니다',
+    estimatedHoursLabel: '예상 공수',
+    estimatedHoursUnit: '시간',
+    estimatedHoursHint: '업무일 기준 자동 계산 (하루 8시간)',
+    members: '팀 구성원',
+    progressLabel: '진행률',
+    progressHint: '(작업 완료 상황에 따라 자동 계산)',
+    dateInfoTip: '프로젝트의 시작일과 종료일은 작업 날짜에 따라 자동으로 조정되며 수동으로 편집할 수 없습니다. 프로젝트 날짜를 수정하려면 관련 작업의 날짜를 조정하세요.',
+    commonTags: ['프론트엔드', '백엔드', '풀스택', '모바일', '디자인', '데이터베이스', 'API', 'DevOps', '테스트'],
+    statusOptions: {
+      planning: '계획 중',
+      active: '진행 중',
+      completed: '완료',
+      onHold: '보류',
+      cancelled: '취소됨'
+    },
+    priorityOptions: {
+      low: '낮음',
+      medium: '보통',
+      high: '높음',
+      critical: '긴급'
+    },
     validation: {
-      nameRequired: '프로젝트 이름을 입력해야 합니다',
+      nameRequired: '프로젝트 이름을 입력하세요',
       startDateRequired: '시작일을 입력해야 합니다',
       endDateRequired: '종료일을 입력해야 합니다',
-      endDateInvalid: '종료일은 시작일보다 늦어야 합니다'
+      endDateInvalid: '종료일은 시작일보다 늦어야 합니다',
+      ownerRequired: '프로젝트 담당자를 선택하세요',
+      dateInvalid: '시작일은 종료일보다 늦을 수 없습니다'
     }
   },
 
