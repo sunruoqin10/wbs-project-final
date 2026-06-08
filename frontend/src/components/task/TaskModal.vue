@@ -226,8 +226,8 @@
 
     <template #footer>
       <div class="flex justify-end gap-3">
-        <Button variant="secondary" @click="handleClose">取消</Button>
-        <Button variant="primary" @click="handleSubmit" :loading="saving">
+        <Button variant="secondary" @click="handleClose" :disabled="saving">取消</Button>
+        <Button variant="primary" @click="handleSubmit" :loading="saving" :disabled="saving">
           {{ isEditing ? '保存' : '创建' }}
         </Button>
       </div>
@@ -578,6 +578,7 @@ const validateForm = (): boolean => {
 
 // Handle submit
 const handleSubmit = async () => {
+  if (saving.value) return;
   if (!validateForm()) {
     return;
   }
@@ -610,16 +611,11 @@ const handleSubmit = async () => {
 
   console.log('TaskModal submitting data:', taskData);
   emit('save', taskData);
-
-  // Reset saving state after a short delay
-  // Let parent component handle closing the modal
-  setTimeout(() => {
-    saving.value = false;
-  }, 300);
 };
 
 // Handle close
 const handleClose = () => {
+  saving.value = false;
   resetForm();
   emit('close');
 };
@@ -670,6 +666,8 @@ watch(() => props.open, async (isOpen) => {
     if (formData.startDate && formData.endDate) {
       formData.estimatedHours = calculateEstimatedHours();
     }
+  } else {
+    saving.value = false;
   }
 });
 

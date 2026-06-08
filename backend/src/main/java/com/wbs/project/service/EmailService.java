@@ -86,12 +86,10 @@ public class EmailService {
             emailLog.setStatus("failed");
             emailLog.setErrorMessage(e.getMessage());
             log.error("Failed to send email to: {}", to, e);
-            throw new RuntimeException("邮件发送失败", e);
         } catch (Exception e) {
             emailLog.setStatus("failed");
             emailLog.setErrorMessage(e.getMessage());
             log.error("Error sending email to: {}", to, e);
-            throw new RuntimeException("邮件发送异常", e);
         } finally {
             try {
                 emailLogMapper.insert(emailLog);
@@ -126,7 +124,6 @@ public class EmailService {
             emailLog.setStatus("failed");
             emailLog.setErrorMessage(e.getMessage());
             log.error("Failed to send simple email to: {}", to, e);
-            throw new RuntimeException("邮件发送失败", e);
         } finally {
             try {
                 emailLogMapper.insert(emailLog);

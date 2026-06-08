@@ -431,8 +431,12 @@ const handleDeleteTask = async (task: Task) => {
   }
 };
 
+const taskSaving = ref(false);
+
 // Handle save task
 const handleSaveTask = async (taskData: Partial<Task>) => {
+  if (taskSaving.value) return;
+  taskSaving.value = true;
   try {
     if (editingTask.value) {
       // Update existing task
@@ -468,7 +472,7 @@ const handleSaveTask = async (taskData: Partial<Task>) => {
     console.error('Failed to save task:', error);
     // 即使保存失败也关闭 modal，让用户看到错误
   } finally {
-    // Close modal after saving (无论成功或失败)
+    taskSaving.value = false;
     closeModal();
   }
 };
