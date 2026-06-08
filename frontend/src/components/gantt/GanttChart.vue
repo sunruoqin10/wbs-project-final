@@ -331,7 +331,7 @@ const initGantt = () => {
     tooltip += `
       <div style="margin-top: 6px; padding-top: 6px; border-top: 1px dashed #bdc3c7;">
         <div style="color: #95a5a6;">${t('gantt.tooltip.startTime')}：${formatDate(start)}</div>
-        <div style="color: #95a5a6;">${t('gantt.tooltip.endTime')}：${formatDate(end)}</div>
+        <div style="color: #95a5a6;">${t('gantt.tooltip.endTime')}：${formatDate(gantt.date.add(end, -1, 'day'))}</div>
         <div style="color: #95a5a6;">${t('gantt.tooltip.duration')}：${ganttTask.duration} ${t('gantt.tooltip.days')}</div>
       </div>
     `;
