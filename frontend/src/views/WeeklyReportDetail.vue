@@ -365,10 +365,7 @@ const submitComment = async () => {
   
   try {
     const addedComment = await weeklyReportStore.addComment(reportId.value, newComment.value);
-    if (addedComment) {
-      comments.value.unshift(addedComment);
-      console.log('[详情页] 添加评论成功:', addedComment);
-    } else {
+    if (!addedComment) {
       await loadData();
     }
     newComment.value = '';
