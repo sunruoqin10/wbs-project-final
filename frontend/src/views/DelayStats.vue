@@ -556,24 +556,16 @@ const teamMembers = computed(() => {
   const currentUserId = userStore.currentUserId;
   if (!currentUserId) return [];
 
-  if (permissionStore.currentRole === 'admin' || permissionStore.currentRole === 'project-manager') {
-    return userStore.users.filter(u => u.id !== currentUserId);
-  }
+  // 统计参与项目的总成员数（与 Dashboard 保持一致）
+  const memberSet = new Set<string>();
+  accessibleProjects.value.forEach(p => {
+    memberSet.add(p.ownerId);
+    if (p.memberIds) {
+      p.memberIds.forEach(id => memberSet.add(id));
+    }
+  });
 
-  if (permissionStore.currentRole === 'member') {
-    const managedProjectIds = accessibleProjects.value
-      .filter(p => p.ownerId === currentUserId)
-      .map(p => p.id);
-    
-    const teamMemberIds = new Set<string>();
-    accessibleTasks.value
-      .filter(t => managedProjectIds.includes(t.projectId) && t.assigneeId)
-      .forEach(t => teamMemberIds.add(t.assigneeId!));
-    
-    return userStore.users.filter(u => teamMemberIds.has(u.id) && u.id !== currentUserId);
-  }
-
-  return [];
+  return userStore.users.filter(u => memberSet.has(u.id) && u.id !== currentUserId);
 });
 
 const teamMemberStats = computed(() => {
