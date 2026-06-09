@@ -370,11 +370,14 @@ const initTeamPerformanceChart = () => {
   const leafTaskIds = new Set([...allTaskIds].filter(id => !parentTaskIds.has(id)));
   const leafTasks = taskStore.tasks.filter(t => leafTaskIds.has(t.id));
 
-  const userData = userStore.users.map(user => ({
-    name: user.name,
-    completed: leafTasks.filter(t => t.assigneeId === user.id && t.status === 'done').length,
-    inProgress: leafTasks.filter(t => t.assigneeId === user.id && t.status === 'in-progress').length
-  }));
+  // 只统计有项目任务的成员
+  const userData = userStore.users
+    .map(user => ({
+      name: user.name,
+      completed: leafTasks.filter(t => t.assigneeId === user.id && t.status === 'done').length,
+      inProgress: leafTasks.filter(t => t.assigneeId === user.id && t.status === 'in-progress').length
+    }))
+    .filter(u => u.completed > 0 || u.inProgress > 0);
 
   const option = {
     tooltip: {
