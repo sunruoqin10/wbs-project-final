@@ -266,13 +266,38 @@ const taskChartRef = ref<HTMLElement>();
 const projectChartRef = ref<HTMLElement>();
 
 const currentUser = computed(() => userStore.currentUser);
-const recentProjects = computed(() => projectStore.projects.slice(0, 5));
+
+// 根据角色过滤项目：member 只能看自己参加的项目
+const userProjects = computed(() => {
+  if (!currentUser.value) return [];
+  if (currentUser.value.role === 'admin' || currentUser.value.role === 'project-manager') {
+    return projectStore.projects;
+  }
+  // member / viewer：只看自己参与的项目（成员或负责人）
+  const userId = currentUser.value.id;
+  return projectStore.projects.filter(
+    p => p.ownerId === userId || (p.memberIds && p.memberIds.includes(userId))
+  );
+});
+
+// 根据角色过滤任务：只显示用户参与项目的任务
+const userTasks = computed(() => {
+  if (!currentUser.value) return [];
+  if (currentUser.value.role === 'admin' || currentUser.value.role === 'project-manager') {
+    return taskStore.tasks;
+  }
+  const userProjectIds = new Set(userProjects.value.map(p => p.id));
+  return taskStore.tasks.filter(t => userProjectIds.has(t.projectId));
+});
+
+const recentProjects = computed(() => userProjects.value.slice(0, 5));
 const upcomingTasks = computed(() => {
   // 只统计叶子任务（没有子任务的任务）
-  const allTaskIds = new Set(taskStore.tasks.map(t => t.id));
-  const parentTaskIds = new Set(taskStore.tasks.filter(t => t.parentTaskId).map(t => t.parentTaskId));
+  const tasks = userTasks.value;
+  const allTaskIds = new Set(tasks.map(t => t.id));
+  const parentTaskIds = new Set(tasks.filter(t => t.parentTaskId).map(t => t.parentTaskId));
   const leafTaskIds = new Set([...allTaskIds].filter(id => !parentTaskIds.has(id)));
-  const leafTasks = taskStore.tasks.filter(t => leafTaskIds.has(t.id));
+  const leafTasks = tasks.filter(t => leafTaskIds.has(t.id));
 
   return leafTasks
     .filter(t => t.status !== 'done')
@@ -282,36 +307,32 @@ const upcomingTasks = computed(() => {
 
 // 从真实数据计算统计数据
 const statistics = computed(() => {
-  const totalProjects = projectStore.projects.length;
-  const activeProjects = projectStore.projects.filter(p => p.status === 'active').length;
-  const completedProjects = projectStore.projects.filter(p => p.status === 'completed').length;
+  const projects = userProjects.value;
+  const totalProjects = projects.length;
+  const activeProjects = projects.filter(p => p.status === 'active').length;
+  const completedProjects = projects.filter(p => p.status === 'completed').length;
 
   // 只统计叶子任务（没有子任务的任务），避免重复统计
-  // 一个任务是叶子任务的条件是：没有任何任务的 parentTaskId 指向它
-  const allTaskIds = new Set(taskStore.tasks.map(t => t.id));
-  const parentTaskIds = new Set(taskStore.tasks.filter(t => t.parentTaskId).map(t => t.parentTaskId));
-
-  // 叶子任务 = 所有的任务ID - 有子任务的父任务ID
+  const tasks = userTasks.value;
+  const allTaskIds = new Set(tasks.map(t => t.id));
+  const parentTaskIds = new Set(tasks.filter(t => t.parentTaskId).map(t => t.parentTaskId));
   const leafTaskIds = new Set([...allTaskIds].filter(id => !parentTaskIds.has(id)));
+  const leafTasks = tasks.filter(t => leafTaskIds.has(t.id));
 
-  const leafTasks = taskStore.tasks.filter(t => leafTaskIds.has(t.id));
-
-  // 调试日志
-  console.log('===== Dashboard 统计调试 =====');
-  console.log('所有任务数量:', taskStore.tasks.length);
-  console.log('所有任务:', taskStore.tasks.map(t => ({ id: t.id, title: t.title, status: t.status, parentTaskId: t.parentTaskId })));
-  console.log('父任务ID列表:', Array.from(parentTaskIds));
-  console.log('叶子任务ID列表:', Array.from(leafTaskIds));
-  console.log('叶子任务:', leafTasks.map(t => ({ id: t.id, title: t.title, status: t.status })));
-  console.log('待办任务数:', leafTasks.filter(t => t.status === 'todo').length);
-  console.log('进行中任务数:', leafTasks.filter(t => t.status === 'in-progress').length);
-  console.log('已完成任务数:', leafTasks.filter(t => t.status === 'done').length);
-  console.log('===== 调试结束 =====');
   const totalTasks = leafTasks.length;
   const completedTasks = leafTasks.filter(t => t.status === 'done').length;
   const inProgressTasks = leafTasks.filter(t => t.status === 'in-progress').length;
   const todoTasks = leafTasks.filter(t => t.status === 'todo').length;
-  const totalMembers = userStore.users.length;
+
+  // 统计参与项目的总成员数
+  const memberSet = new Set<string>();
+  projects.forEach(p => {
+    memberSet.add(p.ownerId);
+    if (p.memberIds) {
+      p.memberIds.forEach(id => memberSet.add(id));
+    }
+  });
+  const totalMembers = memberSet.size;
 
   return {
     totalProjects,
@@ -523,8 +544,10 @@ const initProjectChart = () => {
 
   projectChart = echarts.init(projectChartRef.value);
 
+  const chartProjects = userProjects.value.slice(0, 5);
+
   // 检查是否有项目数据
-  if (recentProjects.value.length === 0) {
+  if (chartProjects.length === 0) {
     // 显示空状态
     const option = {
       title: {
@@ -549,7 +572,7 @@ const initProjectChart = () => {
       },
       formatter: (params: any) => {
         const param = params[0];
-        const project = recentProjects.value[param.dataIndex];
+        const project = chartProjects[param.dataIndex];
         return `${project.name}<br/>${t('dashboard.recentProjects.progress')}: ${project.progress}%`;
       }
     },
@@ -561,7 +584,7 @@ const initProjectChart = () => {
     },
     xAxis: {
       type: 'category',
-      data: recentProjects.value.map(p => p.name.length > 6 ? p.name.substring(0, 6) + '...' : p.name),
+      data: chartProjects.map(p => p.name.length > 6 ? p.name.substring(0, 6) + '...' : p.name),
       axisLabel: {
         interval: 0,
         rotate: 30
@@ -578,7 +601,7 @@ const initProjectChart = () => {
       {
         name: t('dashboard.recentProjects.progress'),
         type: 'bar',
-        data: recentProjects.value.map(p => ({
+        data: chartProjects.map(p => ({
           value: p.progress || 0,
           itemStyle: { color: p.color || '#3b82f6' }
         })),

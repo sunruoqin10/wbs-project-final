@@ -169,12 +169,14 @@ import Card from '@/components/common/Card.vue';
 import { useProjectStore } from '@/stores/project';
 import { useTaskStore } from '@/stores/task';
 import { useUserStore } from '@/stores/user';
+import { usePermissionStore } from '@/stores/permission';
 import { exportToExcelNamespace } from '@/utils/export';
 
 const { t } = useI18n();
 const projectStore = useProjectStore();
 const taskStore = useTaskStore();
 const userStore = useUserStore();
+const permissionStore = usePermissionStore();
 
 const projectStatusChartRef = ref<HTMLElement>();
 const taskPriorityChartRef = ref<HTMLElement>();
@@ -182,15 +184,38 @@ const projectProgressChartRef = ref<HTMLElement>();
 const teamPerformanceChartRef = ref<HTMLElement>();
 const isExporting = ref(false);
 
+// 根据角色过滤项目：member 只能看自己参加的项目
+const userProjects = computed(() => {
+  if (permissionStore.currentRole === 'admin' || permissionStore.currentRole === 'project-manager') {
+    return projectStore.projects;
+  }
+  const currentUserId = userStore.currentUserId;
+  if (!currentUserId) return [];
+  return projectStore.projects.filter(
+    p => p.ownerId === currentUserId || (p.memberIds && p.memberIds.includes(currentUserId))
+  );
+});
+
+// 根据角色过滤任务：只显示用户参与项目的任务
+const userTasks = computed(() => {
+  if (permissionStore.currentRole === 'admin' || permissionStore.currentRole === 'project-manager') {
+    return taskStore.tasks;
+  }
+  const userProjectIds = new Set(userProjects.value.map(p => p.id));
+  return taskStore.tasks.filter(t => userProjectIds.has(t.projectId));
+});
+
 // 从真实数据计算统计数据
 const statistics = computed(() => {
-  const totalProjects = projectStore.projects.length;
+  const projects = userProjects.value;
+  const totalProjects = projects.length;
 
   // 只统计叶子任务（没有子任务的任务），避免重复统计
-  const allTaskIds = new Set(taskStore.tasks.map(t => t.id));
-  const parentTaskIds = new Set(taskStore.tasks.filter(t => t.parentTaskId).map(t => t.parentTaskId));
+  const tasks = userTasks.value;
+  const allTaskIds = new Set(tasks.map(t => t.id));
+  const parentTaskIds = new Set(tasks.filter(t => t.parentTaskId).map(t => t.parentTaskId));
   const leafTaskIds = new Set([...allTaskIds].filter(id => !parentTaskIds.has(id)));
-  const leafTasks = taskStore.tasks.filter(t => leafTaskIds.has(t.id));
+  const leafTasks = tasks.filter(t => leafTaskIds.has(t.id));
 
   const totalTasks = leafTasks.length;
   const completedTasks = leafTasks.filter(t => t.status === 'done').length;
@@ -213,11 +238,12 @@ const initProjectStatusChart = () => {
   if (!projectStatusChartRef.value) return;
 
   const chart = echarts.init(projectStatusChartRef.value);
+  const projects = userProjects.value;
   const statusData = [
-    { value: projectStore.projects.filter(p => p.status === 'planning').length, name: t('reports.statuses.planning'), itemStyle: { color: '#0891b2' } },
-    { value: projectStore.projects.filter(p => p.status === 'active').length, name: t('reports.statuses.active'), itemStyle: { color: '#3b82f6' } },
-    { value: projectStore.projects.filter(p => p.status === 'completed').length, name: t('reports.statuses.completed'), itemStyle: { color: '#10b981' } },
-    { value: projectStore.projects.filter(p => p.status === 'on-hold').length, name: t('reports.statuses.onHold'), itemStyle: { color: '#f59e0b' } }
+    { value: projects.filter(p => p.status === 'planning').length, name: t('reports.statuses.planning'), itemStyle: { color: '#0891b2' } },
+    { value: projects.filter(p => p.status === 'active').length, name: t('reports.statuses.active'), itemStyle: { color: '#3b82f6' } },
+    { value: projects.filter(p => p.status === 'completed').length, name: t('reports.statuses.completed'), itemStyle: { color: '#10b981' } },
+    { value: projects.filter(p => p.status === 'on-hold').length, name: t('reports.statuses.onHold'), itemStyle: { color: '#f59e0b' } }
   ];
 
   const option = {
@@ -263,10 +289,11 @@ const initTaskPriorityChart = () => {
   const chart = echarts.init(taskPriorityChartRef.value);
 
   // 只统计叶子任务（没有子任务的任务）
-  const allTaskIds = new Set(taskStore.tasks.map(t => t.id));
-  const parentTaskIds = new Set(taskStore.tasks.filter(t => t.parentTaskId).map(t => t.parentTaskId));
+  const tasks = userTasks.value;
+  const allTaskIds = new Set(tasks.map(t => t.id));
+  const parentTaskIds = new Set(tasks.filter(t => t.parentTaskId).map(t => t.parentTaskId));
   const leafTaskIds = new Set([...allTaskIds].filter(id => !parentTaskIds.has(id)));
-  const leafTasks = taskStore.tasks.filter(t => leafTaskIds.has(t.id));
+  const leafTasks = tasks.filter(t => leafTaskIds.has(t.id));
 
   const priorityData = [
     { value: leafTasks.filter(t => t.priority === 'low').length, name: t('reports.priorities.low'), itemStyle: { color: '#64748b' } },
@@ -317,6 +344,8 @@ const initProjectProgressChart = () => {
 
   const chart = echarts.init(projectProgressChartRef.value);
 
+  const projects = userProjects.value;
+
   const option = {
     tooltip: {
       trigger: 'axis',
@@ -332,7 +361,7 @@ const initProjectProgressChart = () => {
     },
     xAxis: {
       type: 'category',
-      data: projectStore.projects.map(p => p.name.length > 6 ? p.name.substring(0, 6) + '...' : p.name),
+      data: projects.map(p => p.name.length > 6 ? p.name.substring(0, 6) + '...' : p.name),
       axisLabel: {
         interval: 0,
         rotate: 30
@@ -347,7 +376,7 @@ const initProjectProgressChart = () => {
       {
         name: t('reports.charts.progress'),
         type: 'bar',
-        data: projectStore.projects.map(p => ({
+        data: projects.map(p => ({
           value: p.progress,
           itemStyle: { color: p.color }
         })),
@@ -365,10 +394,11 @@ const initTeamPerformanceChart = () => {
   const chart = echarts.init(teamPerformanceChartRef.value);
 
   // 只统计叶子任务（没有子任务的任务）
-  const allTaskIds = new Set(taskStore.tasks.map(t => t.id));
-  const parentTaskIds = new Set(taskStore.tasks.filter(t => t.parentTaskId).map(t => t.parentTaskId));
+  const tasks = userTasks.value;
+  const allTaskIds = new Set(tasks.map(t => t.id));
+  const parentTaskIds = new Set(tasks.filter(t => t.parentTaskId).map(t => t.parentTaskId));
   const leafTaskIds = new Set([...allTaskIds].filter(id => !parentTaskIds.has(id)));
-  const leafTasks = taskStore.tasks.filter(t => leafTaskIds.has(t.id));
+  const leafTasks = tasks.filter(t => leafTaskIds.has(t.id));
 
   // 只统计有项目任务的成员
   const userData = userStore.users
@@ -443,7 +473,8 @@ onMounted(async () => {
 
 // Export function
 const exportComprehensive = async () => {
-  if (projectStore.projects.length === 0) {
+  const projects = userProjects.value;
+  if (projects.length === 0) {
     alert(t('reports.messages.noData'));
     return;
   }
@@ -458,7 +489,7 @@ const exportComprehensive = async () => {
     // 导出综合 Excel 报表
     exportToExcelNamespace.comprehensive(
       {
-        projects: projectStore.projects,
+        projects,
         tasks: taskStore.tasks,
         users: userStore.users,
         stats: statistics.value
@@ -476,7 +507,8 @@ const exportComprehensive = async () => {
 
 // Export Gantt function
 const exportGantt = async () => {
-  if (projectStore.projects.length === 0) {
+  const projects = userProjects.value;
+  if (projects.length === 0) {
     alert(t('reports.messages.noData'));
     return;
   }
@@ -491,7 +523,7 @@ const exportGantt = async () => {
     // 导出甘特图 Excel
     await exportToExcelNamespace.gantt(
       {
-        projects: projectStore.projects,
+        projects,
         tasks: taskStore.tasks,
         users: userStore.users
       },
