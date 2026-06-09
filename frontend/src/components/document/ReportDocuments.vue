@@ -121,7 +121,7 @@
                 v-if="doc.fileType?.startsWith('image/')"
                 class="h-16 w-16 rounded-lg bg-secondary-100 flex items-center justify-center overflow-hidden"
               >
-                <img :src="`${apiBaseUrl}/documents/${doc.id}/preview`" :alt="doc.name" class="h-full w-full object-cover" />
+                <img :src="thumbnailUrls[doc.id] || ''" :alt="doc.name" class="h-full w-full object-cover" />
               </div>
               <div v-else class="h-16 w-16 rounded-lg bg-secondary-100 flex items-center justify-center text-secondary-400">
                 <svg class="h-8 w-8" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -235,7 +235,7 @@
 </template>
 
 <script setup lang="ts">
-import { ref, computed, onMounted } from 'vue';
+import { ref, computed, onMounted, watch } from 'vue';
 import { useI18n } from 'vue-i18n';
 import Button from '@/components/common/Button.vue';
 import Badge from '@/components/common/Badge.vue';
@@ -293,6 +293,30 @@ const filteredDocuments = computed(() => {
   }
 
   return result.sort((a, b) => new Date(b.createdAt || 0).getTime() - new Date(a.createdAt || 0).getTime());
+});
+
+// 缩略图 blob URL 缓存，通过 apiService 携带认证 token
+const thumbnailUrls = ref<Record<string, string>>({});
+
+async function loadThumbnails() {
+  const newUrls: Record<string, string> = {};
+  for (const doc of filteredDocuments.value) {
+    if (doc.fileType?.startsWith('image/')) {
+      try {
+        const blob = await apiService.previewDocument(doc.id);
+        newUrls[doc.id] = URL.createObjectURL(blob);
+      } catch {
+        // 缩略图加载失败，忽略
+      }
+    }
+  }
+  // 释放旧的 blob URL
+  Object.values(thumbnailUrls.value).forEach(url => URL.revokeObjectURL(url));
+  thumbnailUrls.value = newUrls;
+}
+
+watch(filteredDocuments, () => {
+  loadThumbnails();
 });
 
 const totalSize = computed(() => {
@@ -384,8 +408,15 @@ function canPreview(fileType: string): boolean {
   return fileType.startsWith('image/') || fileType === 'application/pdf';
 }
 
-function openPreview(doc: Document) {
-  window.open(`${apiBaseUrl.value}/documents/${doc.id}/preview`, '_blank');
+async function openPreview(doc: Document) {
+  try {
+    const blob = await apiService.previewDocument(doc.id);
+    const url = URL.createObjectURL(blob);
+    window.open(url, '_blank');
+  } catch (error) {
+    console.error('预览失败:', error);
+    alert(t('documents.previewFailed'));
+  }
 }
 
 async function downloadDocument(doc: Document) {

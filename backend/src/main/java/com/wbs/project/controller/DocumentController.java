@@ -137,14 +137,16 @@ public class DocumentController {
     }
 
     @GetMapping("/{id}/preview")
-    public ResponseEntity<byte[]> previewDocument(@PathVariable String id) {
+    public ResponseEntity<byte[]> previewDocument(
+            @PathVariable String id,
+            @RequestHeader(value = "X-User-Id", required = false) String userId) {
         try {
             Document document = documentService.getDocumentById(id);
             if (document == null) {
                 return ResponseEntity.notFound().build();
             }
 
-            String fileType = document.getFileType().toLowerCase();
+            String fileType = document.getFileType() != null ? document.getFileType().toLowerCase() : "";
             if (!fileType.startsWith("image/") && !fileType.equals("application/pdf")) {
                 HttpHeaders errorHeaders = new HttpHeaders();
                 errorHeaders.setContentType(MediaType.APPLICATION_JSON);
@@ -159,7 +161,7 @@ public class DocumentController {
                 }
             }
 
-            byte[] fileContent = documentService.downloadDocument(id, null);
+            byte[] fileContent = documentService.downloadDocument(id, userId);
 
             HttpHeaders headers = new HttpHeaders();
             headers.setContentType(MediaType.parseMediaType(document.getFileType()));

@@ -231,7 +231,7 @@ public class DocumentService {
         DocumentAccessLog log = new DocumentAccessLog();
         log.setId(UUID.randomUUID().toString());
         log.setDocumentId(documentId);
-        log.setUserId(userId);
+        log.setUserId(userId != null ? userId : "anonymous");
         log.setAction(action);
         log.setIpAddress(ipAddress);
         log.setCreatedAt(LocalDateTime.now());
