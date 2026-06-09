@@ -1130,19 +1130,19 @@ const handleResize = () => {
 };
 
 onMounted(async () => {
-  // 确保用户数据已加载
-  await userStore.loadUsers();
+  // 强制刷新用户数据，确保获取最新数据
+  await userStore.refreshUsers();
 
-  // 确保项目数据已加载（任务分配表格需要）
+  // 强制刷新项目数据（任务分配表格需要）
   try {
-    await projectStore.loadProjects();
+    await projectStore.refreshProjects();
   } catch (error) {
     console.warn('加载项目数据失败:', error);
   }
 
-  // 确保任务数据已加载（工作负载分布图表和任务分配表格需要）
+  // 强制刷新任务数据（工作负载分布图表和任务分配表格需要）
   try {
-    await taskStore.loadTasks();
+    await taskStore.refreshTasks();
   } catch (error) {
     console.warn('加载任务数据失败:', error);
   }

@@ -33,19 +33,25 @@ export const useUserStore = defineStore('user', () => {
     return user as User;
   };
 
-  // 加载所有用户
+  // 加载所有用户（首次加载，如果已加载则跳过）
   const loadUsers = async () => {
     if (currentUserLoaded.value) return;
+    await refreshUsers();
+    currentUserLoaded.value = true;
+  };
+
+  // 强制刷新用户数据（始终从 API 重新获取）
+  const refreshUsers = async () => {
     try {
       const rawUsers = await apiService.getUsers();
       // 解析每个用户的 skills 字段
       users.value = rawUsers.map(parseUserData);
-      currentUserLoaded.value = true;
     } catch (error) {
-      // API 调用失败时使用 mock 数据（开发阶段）
+      // API 调用失败时保持现有数据
       console.warn('API 未连接，使用 mock 数据:', error);
-      users.value = mockUsers;
-      currentUserLoaded.value = true;
+      if (users.value.length === 0) {
+        users.value = mockUsers;
+      }
     }
   };
 
@@ -150,6 +156,7 @@ export const useUserStore = defineStore('user', () => {
     currentUserLoaded,
     token,
     loadUsers,
+    refreshUsers,
     userById,
     getUsersByIds,
     addUser,

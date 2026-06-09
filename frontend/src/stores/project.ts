@@ -15,9 +15,19 @@ export const useProjectStore = defineStore('project', () => {
     search: ''
   });
 
-  // 加载所有项目
+  // 加载所有项目（首次加载，如果已加载则跳过）
   const loadProjects = async () => {
     if (loaded.value) return;
+    try {
+      await refreshProjects();
+      loaded.value = true;
+    } finally {
+      loading.value = false;
+    }
+  };
+
+  // 强制刷新项目数据（始终从 API 重新获取）
+  const refreshProjects = async () => {
     try {
       loading.value = true;
       projects.value = await apiService.getProjects();
@@ -30,12 +40,12 @@ export const useProjectStore = defineStore('project', () => {
           totalDelayedDays: p.totalDelayedDays
         });
       });
-      loaded.value = true;
     } catch (error) {
-      // API 调用失败时使用 mock 数据（开发阶段）
+      // API 调用失败时保持现有数据
       console.warn('API 未连接，使用 mock 数据:', error);
-      projects.value = mockProjects;
-      loaded.value = true;
+      if (projects.value.length === 0) {
+        projects.value = mockProjects;
+      }
     } finally {
       loading.value = false;
     }
@@ -136,6 +146,7 @@ export const useProjectStore = defineStore('project', () => {
     projectById,
     filteredProjects,
     loadProjects,
+    refreshProjects,
     setCurrentProject,
     createProject,
     updateProject,

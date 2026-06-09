@@ -702,6 +702,7 @@ export const useTaskStore = defineStore('task', () => {
     loading,
     loaded,
     loadTasks,
+    refreshTasks: loadTasks,
     tasksByProject,
     tasksByStatus,
     tasksByAssignee,
