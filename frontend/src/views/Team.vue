@@ -40,7 +40,7 @@
 
         <Card>
           <div class="p-4">
-            <p class="text-sm font-medium text-secondary-600">{{ $t('roles.member') }}</p>
+            <p class="text-sm font-medium text-secondary-600">{{ $t('dashboard.stats.totalMembers') }}</p>
             <p class="mt-2 text-2xl font-semibold text-secondary-900">{{ memberCount }}</p>
           </div>
         </Card>
@@ -784,7 +784,18 @@ const handleDeleteMember = async (userId: string) => {
 
 const adminCount = computed(() => users.value.filter(u => u.role?.replace(/_/g, '-') === 'admin').length);
 const pmCount = computed(() => users.value.filter(u => u.role?.replace(/_/g, '-') === 'project-manager').length);
-const memberCount = computed(() => users.value.filter(u => u.role?.replace(/_/g, '-') === 'member').length);
+// 统计参与项目的总成员数（与 Dashboard 保持一致）
+const memberCount = computed(() => {
+  const projects = projectStore.projects;
+  const memberSet = new Set<string>();
+  projects.forEach(p => {
+    memberSet.add(p.ownerId);
+    if (p.memberIds) {
+      p.memberIds.forEach(id => memberSet.add(id));
+    }
+  });
+  return memberSet.size;
+});
 
 const getRoleLabel = (role: string) => {
   // 标准化角色名称：处理下划线和连字符的兼容性
