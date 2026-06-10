@@ -2,309 +2,109 @@
 
 This file provides guidance to Claude Code (claude.ai/code) when working with code in this repository.
 
+> **Authoritative agent rules live in [`AGENTS.md`](./AGENTS.md).** It contains the canonical code style, naming, persistence, API-contract, and workflow rules. Read it before making non-trivial changes — it overrides any conflicting guidance below. This file is the short orientation; `AGENTS.md` is the rule book.
+
 ## Project Overview
 
-This is a full-stack WBS (Work Breakdown Structure) Project Management System with:
-- **Backend**: Spring Boot 3.2.0 + MyBatis + MySQL (Java 17, Maven)
-- **Frontend**: Vue 3 + TypeScript + Vite + Tailwind CSS + Pinia + DHTMLX Gantt + ECharts
+Full-stack **WBS (Work Breakdown Structure) Project Management System**.
 
-**Key Features**:
-- Project and task management with hierarchical task structures
-- Gantt chart visualization with DHTMLX Gantt
-- Weekly reports with approval workflow
-- Document management with version control
-- Overtime tracking and approval
-- Delay statistics and notifications (with scheduled email)
-- Role-based permissions (admin, project-manager, member, viewer)
-- Multi-language support (Chinese, Korean, English)
-- Email notifications (configured for QQ Mail SMTP)
-- User-generated avatars via DiceBear (no avatar upload)
+- **Backend** — Spring Boot 3.2.0 + MyBatis + MySQL, Java 17, Maven. Package root `com.wbs.project`.
+- **Frontend** — Vue 3 + TypeScript + Vite + Tailwind CSS + Pinia + DHTMLX Gantt + ECharts.
+
+**Features** — project/task management with hierarchical WBS, Gantt visualization, weekly reports with approval workflow, versioned document management, overtime tracking, delay statistics + scheduled email notifications, role-based permissions (admin / project-manager / member / viewer), i18n (zh / ko / en), QQ-Mail SMTP notifications, DiceBear-generated avatars (no upload pipeline).
+
+## Tooling Notes
+
+- **No linters are configured** — no ESLint, Prettier, EditorConfig, or Checkstyle. Follow the existing code style in `AGENTS.md`; do not introduce new linters without asking.
+- **No frontend test runner** is configured. Treat `npx vue-tsc` and `npm run build` as the verification gate for frontend changes.
+- **The backend test suite is empty** — `backend/src/test/` has no Java tests. Use `mvn -pl . test -DfailIfNoTests=false` to avoid hard failures, and follow JUnit 5 / Spring Boot starter test conventions when adding new ones.
 
 ## Development Commands
 
-### Backend
+### Backend (`backend/`)
 ```bash
-cd backend
-# Build
-mvn clean install
-# Run (requires MySQL on localhost:3306/db_webwbs)
-mvn spring-boot:run
-# Run tests
-mvn test
-# Skip tests during build
-mvn clean install -DskipTests
+mvn clean install                 # build + run all tests
+mvn clean install -DskipTests     # build, skip tests
+mvn spring-boot:run               # runs on http://localhost:8084 (context /api)
+mvn test                          # run all tests
+mvn test -Dtest=UserServiceTest              # run one test class
+mvn test -Dtest=UserServiceTest#createUser   # run a single test method
 ```
 
-### Frontend
+### Frontend (`frontend/`)
 ```bash
-cd frontend
-# Install dependencies
 npm install
-# Dev server (runs on http://localhost:5173)
-npm run dev
-# Build for production (includes type checking)
-npm run build
-# Preview production build
-npm run preview
-# Type checking only
-npx vue-tsc
+npm run dev            # Vite dev server on http://localhost:5173
+npm run build          # vue-tsc (type check) + vite build
+npm run preview        # serve production build
+npx vue-tsc            # type check only
 ```
 
-### Database Initialization
-```bash
-# From backend directory
-# Initialize weekly report tables
-./init_weekly_report_tables.bat
-# Check weekly report data
-./check_weekly_report_data.sql
-```
+### Database
+MySQL on `localhost:3306`, database `db_webwbs` (charset `utf8mb4`), default creds `root/root`. Init scripts: `backend/init_weekly_report_tables.bat`, `backend/add_*.sql`.
 
-## Backend Architecture
+## High-Level Architecture
 
-**Package Structure** (`com.wbs.project`):
-- `controller/` - REST API endpoints (handles HTTP requests/responses)
-- `service/` - Business logic layer (validation, foreign key handling, cascading operations)
-- `mapper/` - MyBatis data access layer with XML mappings in `resources/mapper/`
-- `entity/` - Domain models (User, Project, Task, Comment, Attachment, WeeklyReport, Document, OvertimeRecord, etc.)
-- `dto/` - Data Transfer Objects (request/response payloads distinct from entities)
-- `enums/` - UserRole, ProjectStatus, TaskStatus, Priority, ReportStatus
-- `common/Result.java` - Unified API response wrapper with `code`, `message`, `data`
-- `config/` - CORS configuration, email templates
-- `exception/` - Custom exception classes and `@ControllerAdvice` global handler
-- `interceptor/` - Handler interceptors (e.g. `AuthInterceptor` for token/role checks)
-- `scheduler/` - `@Scheduled` jobs (e.g. `DelayNotificationScheduler` for delay emails)
-- `annotation/` - Custom annotations (e.g. permission/role checks)
-- `util/` - Static utility helpers
+**Layered Spring Boot backend** under `com.wbs.project`:
+- `controller/` — thin REST endpoints; all responses are wrapped in `common.Result<T>` (`{ code, message, data }`, `code === 200` is success).
+- `service/` — business logic, validation, foreign-key / cascade handling. **FKs and cascades are enforced in Java, not in the database** (no `ON DELETE CASCADE`).
+- `mapper/` — MyBatis interfaces with XML in `src/main/resources/mapper/`.
+- `entity/` — domain models; `dto/` — separate request/response payloads (do not return entities to the controller when a DTO exists).
+- `enums/`, `common/Result.java`, `config/` (CORS, FreeMarker), `exception/` (`BusinessException` + `@RestControllerAdvice` `GlobalExceptionHandler`).
+- `interceptor/AuthInterceptor` — server-side auth/role enforcement; **this is the only source of truth for auth — no frontend guards**.
+- `scheduler/` — `@Scheduled` jobs (e.g. delay-notification email).
+- `annotation/` — custom permission/role annotations.
+- `util/` — JWT, date helpers, etc.
 
-**Key Controllers**:
-- `UserController` - User management
-- `ProjectController` - Project CRUD and statistics
-- `TaskController` - Task CRUD with hierarchical support
-- `WeeklyReportController` - Weekly reports with approval workflow
-- `DocumentController` - Document upload/download with versioning
-- `OvertimeController` - Overtime tracking and approval
-- `DelayNotificationController` - Delay statistics and email notifications
-- `PermissionController` - Role-based permission checks
+**Vue 3 + Pinia frontend** (`frontend/src/`):
+- `views/` — page-level components (Dashboard, ProjectList, TaskBoard, GanttView, Reports, Team, Settings, Login, WeeklyReports, Documents, OvertimeManagement, DelayStats).
+- `components/` — reusable UI, often grouped by domain (`common/`, `project/`, `task/`, `gantt/`, `document/`).
+- `stores/` — Pinia stores by domain (`project`, `task`, `user`, `weeklyReport`, `overtime`, `permission`, `ui`). Stores are thin: HTTP lives in `services/api.ts`.
+- `services/api.ts` — central API client using `VITE_API_BASE_URL` (default `/api`). Unwraps `Result<T>` here; components receive `T` directly and an `ApiError` on failure. `useUserStore` is the single source of truth for `Authorization` / `X-User-Id` / `X-User-Role` headers.
+- `types/index.ts` — TypeScript types mirroring backend entities/DTOs.
+- `i18n/locales/{zh,ko,en}.ts` — translations; user-facing strings should go through `$t(...)` (no hard-coded Chinese/English in templates).
+- `composables/`, `router/`, `directives/`, `utils/`, `data/`.
 
-**Key Design Decisions**:
-- **Foreign keys and cascading deletes are handled in Java code** (Service layer), not database constraints
-- Uses JSON fields for list data (e.g., skills, tags)
-- Supports soft deletes via status fields
-- File uploads stored locally in `./uploads/documents/` (configurable in application.yml)
-- Email notifications via FreeMarker templates in `src/main/resources/templates/`
-- **User IDs are auto-generated as `C0000001`, `C0000002`, …** (7-digit zero-padded). The next ID is derived by querying `MAX(id)` with prefix in `UserMapper.selectMaxIdByPrefix`. Don't switch back to UUIDs.
+## Critical Project Conventions
 
-**Configuration**: `src/main/resources/application.yml`
+These are easy to violate and hard to walk back — confirm before changing:
 
-- Server runs on port **8084** with context path `/api`
-- Database: MySQL on `localhost:3306/db_webwbs` (username: `root`, password: `root`)
-- File upload: Max 10MB per file, 50MB total request
-- Email: QQ Mail SMTP configured (use environment variables for credentials in production)
-- MyBatis: camelCase mapping, lazy loading enabled
-- **Warning**: SMTP password is currently hardcoded in `application.yml` for the dev account `631955572@qq.com`. Do not commit production credentials — override via env vars.
+- **User IDs are `C0000001`, `C0000002`, …** (7-digit zero-padded). The next id is computed by `UserMapper.selectMaxIdByPrefix`. **Do not switch to UUIDs.**
+- **Soft delete** via `status` fields, not `DELETE` from mappers, unless explicitly required.
+- **JWT auth** is enforced by `interceptor/AuthInterceptor`; the frontend has no router guards. Do not duplicate role checks client-side.
+- **DTOs vs entities** — return DTOs, not entities, from controllers when a DTO exists.
+- **Errors** — throw `BusinessException(code, message)` for expected business errors; the global handler maps to `Result.error(...)`. Let unexpected exceptions flow to `GlobalExceptionHandler`.
+- **List-shaped fields** (skills, tags) are JSON strings in a single column, not join tables.
+- **SMTP credentials** are hardcoded in `application.yml` for the dev account `631955572@qq.com` (`bkauvfogeavybdcc`). Do not commit production secrets — override `spring.mail.password` via env vars.
+- **Backend port is 8084** (context `/api`), not 8080. Frontend should resolve `VITE_API_BASE_URL` to `/api`; CORS for `localhost:5173` is set in `config/CorsConfig.java`.
+- **File uploads** land in `./uploads/documents/`, max 10MB/file, 50MB/request. Keep that path in mind for tests and migrations.
 
-## Frontend Architecture
+## API Contract
 
-**Directory Structure**:
-- `views/` - Page components (Dashboard, ProjectList, TaskBoard, GanttView, Reports, Team, Settings, Login, WeeklyReports, Documents, OvertimeManagement, DelayStats)
-- `components/` - Reusable Vue components
-- `stores/` - Pinia state management (project.ts, task.ts, ui.ts, user.ts, weeklyReport.ts, overtime.ts, permission.ts)
-- `services/api.ts` - Centralized API service layer (uses `VITE_API_BASE_URL` environment variable)
-- `router/index.ts` - Vue Router configuration with route metadata and i18n integration
-- `types/index.ts` - TypeScript type definitions (must match backend entities)
-- `composables/` - Vue composition functions
-- `i18n/` - Internationalization (locales/zh.ts, locales/ko.ts, locales/en.ts)
+All REST responses are `Result<T>`: `{ code: number, message: string, data: T }`. Frontend unwraps in `services/api.ts`; components only see `T`. `message` strings are in **Chinese**.
 
-**State Management**:
-- Uses Pinia for centralized state
-- Stores handle project, task, user, overtime, weekly report, permission, and UI state
-- Services layer (`services/api.ts`) abstracts data fetching with proper error handling
+## Service Startup — Do Not Auto-Start
 
-**Routing**:
-- Lazy-loaded route components
-- Route meta titles used for page titles
-- Authentication is enforced server-side via `AuthInterceptor` (registered in a `WebMvcConfigurer`); the frontend has no router guards yet
-
-**Key Libraries**:
-- `dhtmlx-gantt` - Gantt chart visualization with export capabilities
-- `echarts` - Charts and statistics
-- `vuedraggable` - Drag-and-drop task boards
-- `dayjs` - Date manipulation
-- `exceljs` - Excel export with styling
-- `jspdf` + `jspdf-autotable` - PDF export
-- `vue-i18n` - Internationalization
-- `@vueuse/core` - Vue composition utilities
-- `@dicebear/core` + `@dicebear/collection` - Generated SVG avatars (no upload pipeline)
-- `file-saver` - Client-side file download
-- `xlsx` - Spreadsheet parsing/generation
-
-## API Integration
-
-**Backend API**: All endpoints prefixed with `/api`, e.g. `http://localhost:8080/api/users`
-
-**Frontend API**: `services/api.ts` uses `VITE_API_BASE_URL` environment variable (defaults to `/api`)
-
-**Response Format**: All endpoints return `Result<T>` wrapper:
-```json
-{
-  "code": 200,
-  "message": "操作成功",
-  "data": { ... }
-}
-```
-
-**To connect frontend to backend**:
-1. Backend is already connected - `services/api.ts` uses `fetch()` with proper error handling
-2. Handle `Result<T>` response wrapper from backend
-3. CORS is configured in `config/CorsConfig.java` for localhost:5173
-
-## Database Schema
-
-**Core Tables**: `sys_user`, `sys_project`, `sys_task`, `sys_comment`, `sys_attachment`
-
-**Association Tables**: `sys_project_member`, `sys_project_tag`, `sys_task_tag`, `sys_task_dependency`
-
-**Feature Tables**:
-- `sys_weekly_report` - Weekly reports with status workflow
-- `sys_weekly_report_comment` - Comments on weekly reports
-- `sys_document` - Document management with versioning
-- `sys_document_access_log` - Document access tracking
-- `sys_overtime_record` - Overtime tracking and approval
-- `sys_delay_notification` - Delay statistics and notifications
-
-**Database name**: `db_webwbs` (create with `utf8mb4` charset)
-
-**Important**: Foreign key relationships are enforced at application level, not database level.
-
-## Feature-Specific Notes
-
-### Weekly Reports
-- Status workflow: draft → submitted → approved/rejected
-- Approval by project managers only
-- Comment system for feedback
-- Weekly date ranges auto-calculated (Monday-Sunday)
-
-### Document Management
-- Version control via `parent_id` field
-- Categories: requirements, design, development, testing, deployment, documentation, other
-- Access logging for downloads/views
-- File types validated against whitelist in application.yml
-
-### Overtime Management
-- Types: weekday, weekend, holiday
-- Approval workflow: pending → approved/rejected
-- Compensation: pay or timeoff
-- Statistics by project and user
-
-### Delay Statistics
-- Task delay tracking with `delayedDays`, `delayCount`, `delayReason`
-- Recursive delay calculation for child tasks
-- Email notifications for delayed tasks
-- Statistics at project and task level
-
-### Permissions
-- Roles: admin, project-manager, member, viewer
-- Project-level permissions: owner, member
-- System-level permissions: user management, system settings
-- Checked via `PermissionController` and frontend stores
-
-## Internationalization
-
-**Supported Languages**:
-- Chinese (zh) - Default, complete translations
-- Korean (ko) - Complete translations
-- English (en) - Basic translations
-
-**Adding Translations**:
-1. Add keys to `frontend/src/i18n/locales/[zh|ko|en].ts`
-2. Use `$t('key')` in Vue components
-3. Use `useI18n()` hook in composables
-
-## Export Features
-
-**Excel Export** (using `exceljs`):
-- Gantt chart export with task hierarchy
-- Styled columns: task name, dates, progress, assignee
-- Custom headers and cell formatting
-
-**PDF Export** (using `jspdf` + `jspdf-autotable`):
-- Weekly reports
-- Task lists
-- Statistical reports
-
-## Development Workflow
-
-**Backend Changes**:
-1. Modify entity in `entity/`
-2. Update mapper interface and XML in `mapper/` and `resources/mapper/`
-3. Add business logic in `service/`
-4. Add/modify endpoint in `controller/`
-5. Test with Postman/curl or frontend
-
-**Frontend Changes**:
-1. Update types in `types/index.ts` to match backend
-2. Add API methods in `services/api.ts`
-3. Create/update Pinia store in `stores/`
-4. Build UI components
-5. Add routes in `router/index.ts`
-6. Add i18n translations
-
-**Common Patterns**:
-- Use `Result<T>` wrapper for all API responses
-- Handle loading states and error messages in UI
-- Use composables for reusable logic
-- Maintain type safety between frontend and backend
+**Never run `mvn spring-boot:run`, `npm run dev`, `npm run preview`, or any other long-running dev/preview server on your own.** If you need to verify a change, run the non-interactive command only (e.g. `mvn test`, `mvn clean install -DskipTests`, `npx vue-tsc`, `npm run build`) and stop. Only start a service when the user explicitly asks for it, and stop it again as soon as the requested task is done.
 
 ## Git Workflow
 
-- **Never run `git commit` or `git push` without explicit user confirmation.** Always show the proposed commit message(s) and the list of files to be staged, then wait for the user to approve before executing. Same rule for `git push` — confirm the target branch and that the user wants to publish.
-- This applies to destructive variants too: do not run `git commit --amend`, `git push --force`, `git reset --hard`, or `git rebase` without confirmation.
+- **Never `git commit` or `git push` without explicit user confirmation.** Show the proposed message and file list first, then wait for approval.
+- Same rule for destructive operations: `git commit --amend`, `git push --force`, `git reset --hard`, `git rebase`.
+- `frontend/dist/` is in `.gitignore`, but a tracked `frontend/dist/index.html` may still show as modified after a build. Do not stage it without explicit user approval.
 
-## Platform Notes (Windows)
+## Platform
 
-- This project is developed on **Windows**. The default shell in this environment is **bash** (use Unix syntax: forward slashes in paths, `/dev/null` not `NUL`).
-- **PowerShell does not support `&&` or `||` operators.** When chaining commands, use `;` instead. Example: `git add .; git commit -m "msg"` — not `git add . && git commit -m "msg"`.
-- File paths and `cd` should still use forward slashes (e.g. `cd backend`, not `cd backend\`).
+Windows host, **bash** shell by default — use Unix-style paths and forward slashes. PowerShell is **not** the default; `&&` / `||` chain operators may not work there. Prefer `;` for sequential steps in portable commands.
 
-## Troubleshooting
+## Detailed Rules
 
-**Backend fails to start**:
-- Check MySQL is running on `localhost:3306`
-- Verify database `db_webwbs` exists with `utf8mb4` charset
-- Check credentials in `application.yml` (default: `root/root`)
+For backend/frontend code style, naming, Lombok usage, import ordering, store structure, i18n key conventions, persistence patterns, and a list of common pitfalls, see **[`AGENTS.md`](./AGENTS.md)**.
 
-**Frontend API calls fail**:
+## Common Pitfalls (Quick Reference)
 
-- Verify backend is running on port **8084** (not 8080)
-- Check `VITE_API_BASE_URL` in `.env` or environment
-- Check CORS configuration in `CorsConfig.java`
-
-**File uploads fail**:
-- Verify `./uploads/documents/` directory exists
-- Check file size limits in `application.yml`
-- Verify file type is in allowed types whitelist
-
-**Email notifications not sent**:
-- Check SMTP configuration in `application.yml`
-- Verify QQ Mail authorization code (not password)
-- Check network connectivity to smtp.qq.com:587
-
-## Testing
-
-**Backend Tests** (JUnit):
-```bash
-cd backend
-mvn test
-```
-
-**Frontend Type Checking**:
-```bash
-cd frontend
-npx vue-tsc
-```
-
-**Manual Testing**:
-- Use frontend UI at http://localhost:5173
-- Test API endpoints directly: http://localhost:8080/api
-- Check browser console for errors
-- Check backend logs for SQL errors (MyBatis logs to stdout)
+- **Port mismatch** — backend is 8084 (`/api`), not 8080. Verify `VITE_API_BASE_URL` and CORS.
+- **Hardcoded SMTP password** in `application.yml` — override via env vars in any non-dev environment.
+- **Tracked `dist/index.html`** — do not stage without explicit user approval.
+- **No client-side auth** — the backend's `AuthInterceptor` is the only source of truth.
+- **Test suite is empty** — `mvn test` will not fail only if you use the `mvn -pl . test -DfailIfNoTests=false` variant.
