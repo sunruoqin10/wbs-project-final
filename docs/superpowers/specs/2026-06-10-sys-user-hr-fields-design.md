@@ -30,7 +30,7 @@ ALTER TABLE sys_user
   ADD COLUMN sub_org_cd  VARCHAR(64)  NOT NULL DEFAULT '' COMMENT '父部门code' AFTER dept_code,
   ADD COLUMN sub_org_nam VARCHAR(128) NOT NULL DEFAULT '' COMMENT '父部门名'   AFTER sub_org_cd,
   ADD COLUMN company_cd  VARCHAR(32)  NOT NULL DEFAULT '' COMMENT '公司code(2700/8400)' AFTER sub_org_nam,
-  ADD COLUMN chinese_nam VARCHAR(128) NOT NULL DEFAULT '' COMMENT '中文姓名'   AFTER company_nam;
+  ADD COLUMN chinese_nam VARCHAR(128) NOT NULL DEFAULT '' COMMENT '中文姓名'   AFTER company_cd;
 ```
 
 > 注：`chinese_nam` 列在 `company_cd` 之后插入。已存在用户因有 `DEFAULT ''`，5 个新列会被默认填入空串，符合「NULL 用空串覆盖」的设计。
