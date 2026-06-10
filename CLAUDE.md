@@ -85,11 +85,18 @@ All REST responses are `Result<T>`: `{ code: number, message: string, data: T }`
 
 ## Service Startup — Do Not Auto-Start
 
-**Never run `mvn spring-boot:run`, `npm run dev`, `npm run preview`, or any other long-running dev/preview server on your own.** If you need to verify a change, run the non-interactive command only (e.g. `mvn test`, `mvn clean install -DskipTests`, `npx vue-tsc`, `npm run build`) and stop. Only start a service when the user explicitly asks for it, and stop it again as soon as the requested task is done.
+**Never run `mvn spring-boot:run`, `npm run dev`, `npm run preview`, or any other long-running dev/preview server on your own — even for "verification" or "smoke test" steps.** If you need to verify a change, run the non-interactive command only (e.g. `mvn test`, `mvn clean install -DskipTests`, `npx vue-tsc`, `npm run build`) and stop.
+
+- Do not start the backend (`mvn spring-boot:run`, `java -jar`, `gradle bootRun`, etc.) on your own, even if a curl-based smoke test seems to require it.
+- Do not start the frontend dev/preview server (`npm run dev`, `npm run preview`, `vite`, `npx vite`) on your own.
+- If a planned task or smoke test step requires a running server (e.g. `curl /api/orgs/tree`), **stop and tell the user** — do not start the server yourself. The user will start it and run the verification, or hand you a JWT/cookie if needed.
+- Only start a service when the user **explicitly and unambiguously** says "启动后端" / "启动前端" / "跑一下后端" etc., and stop it again as soon as the requested task is done.
+- Treat "I want to verify the API" / "let's do a smoke test" as **NOT** permission to start a server — verification in this repo means `mvn build` / `npm run build` / `vue-tsc` / DB queries via MCP, not running services.
 
 ## Git Workflow
 
 - **Never `git commit` or `git push` without explicit user confirmation.** Show the proposed message and file list first, then wait for approval.
+- **Even after the user reviews the proposed message and file list, do NOT run `git commit` proactively.** Only commit when the user explicitly says "提交" / "commit" / "commit 吧" / "确认提交" etc. Showing the message + getting an "approved" answer on a checklist is NOT the same as an explicit "commit now" instruction.
 - Same rule for destructive operations: `git commit --amend`, `git push --force`, `git reset --hard`, `git rebase`.
 - `frontend/dist/` is in `.gitignore`, but a tracked `frontend/dist/index.html` may still show as modified after a build. Do not stage it without explicit user approval.
 
