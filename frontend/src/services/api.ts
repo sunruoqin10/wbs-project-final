@@ -1,6 +1,6 @@
 // API Service Layer - Connects to Spring Boot backend
 
-import type { Project, Task, User, DelayStats, OvertimeRecord, OvertimeStats, Permission, TaskOvertimeStats, WeeklyReport, WeeklyReportComment, Document } from '@/types';
+import type { Project, Task, User, DelayStats, OvertimeRecord, OvertimeStats, Permission, TaskOvertimeStats, WeeklyReport, WeeklyReportComment, Document, OrgNode } from '@/types';
 import type { SchedulerConfig } from '@/types/scheduler';
 import { useUserStore } from '@/stores/user';
 
@@ -403,6 +403,11 @@ class ApiService {
     return request<{ inserted: number; updated: number }>('/users/sync-hr', {
       method: 'POST',
     });
+  }
+
+  // Org tree API
+  async getOrgTree(): Promise<OrgNode> {
+    return request<OrgNode>('/orgs/tree');
   }
 
   // Statistics API

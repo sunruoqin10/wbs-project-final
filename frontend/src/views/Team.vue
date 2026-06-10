@@ -58,171 +58,175 @@
       <Tabs v-model="activeTab" :tabs="tabs">
         <template #default="{ activeTab: currentTab }">
           <div v-if="currentTab === 0" class="space-y-6">
-            <!-- Team Members List -->
+            <!-- 顶部全局筛选 -->
             <Card>
               <template #header>
                 <div class="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
-                  <h3 class="text-lg font-semibold text-secondary-900">{{ $t('team.allMembers.title') }}</h3>
+                  <h3 class="text-lg font-semibold text-secondary-900">按组织架构查看</h3>
                   <div class="flex items-center gap-3">
                     <input
                       v-model="memberSearch"
                       type="text"
-                      :placeholder="$t('team.allMembers.searchPlaceholder')"
-                      @input="memberPage = 1"
+                      placeholder="搜索姓名/工号/邮箱"
                       class="w-48 rounded-lg border border-secondary-300 px-3 py-1.5 text-sm focus:border-primary-500 focus:outline-none focus:ring-1 focus:ring-primary-500"
                     />
                     <select
                       v-model="memberRoleFilter"
-                      @change="memberPage = 1"
                       class="rounded-lg border border-secondary-300 px-3 py-1.5 text-sm focus:border-primary-500 focus:outline-none focus:ring-1 focus:ring-primary-500"
                     >
-                      <option value="">{{ $t('team.allMembers.filterRole') }}</option>
-                      <option value="admin">{{ $t('roles.admin') }}</option>
-                      <option value="project-manager">{{ $t('roles.projectManager') }}</option>
-                      <option value="member">{{ $t('roles.member') }}</option>
+                      <option value="">所有角色</option>
+                      <option value="admin">管理员</option>
+                      <option value="project-manager">项目经理</option>
+                      <option value="member">成员</option>
+                      <option value="viewer">观察者</option>
                     </select>
                     <select
-                      v-model="memberDepartmentFilter"
-                      @change="memberPage = 1"
+                      v-model="companyFilter"
                       class="rounded-lg border border-secondary-300 px-3 py-1.5 text-sm focus:border-primary-500 focus:outline-none focus:ring-1 focus:ring-primary-500"
                     >
-                      <option value="">{{ $t('team.allMembers.filterDepartment') }}</option>
-                      <option v-for="dept in allDepartments" :key="dept" :value="dept">{{ dept }}</option>
+                      <option value="">所有公司</option>
+                      <option v-for="cd in availableCompanyCodes" :key="cd" :value="cd">
+                        {{ cd }} {{ companyName(cd) }}
+                      </option>
                     </select>
                   </div>
                 </div>
               </template>
-              <div class="overflow-x-auto">
-                <table class="min-w-full divide-y divide-secondary-200">
-                  <thead class="bg-secondary-50">
-                    <tr>
-                      <th class="px-6 py-3 text-left text-xs font-medium uppercase tracking-wider text-secondary-500">
-                        {{ $t('team.name') }}
-                      </th>
-                      <th class="px-6 py-3 text-left text-xs font-medium uppercase tracking-wider text-secondary-500">
-                        {{ $t('team.userId') }}
-                      </th>
-                      <th class="px-6 py-3 text-left text-xs font-medium uppercase tracking-wider text-secondary-500">
-                        {{ $t('team.role') }}
-                      </th>
-                      <th class="px-6 py-3 text-left text-xs font-medium uppercase tracking-wider text-secondary-500">
-                        {{ $t('team.department') }}
-                      </th>
-                      <th class="px-6 py-3 text-left text-xs font-medium uppercase tracking-wider text-secondary-500">
-                        {{ $t('team.skills') }}
-                      </th>
-                      <th class="px-6 py-3 text-left text-xs font-medium uppercase tracking-wider text-secondary-500">
-                        {{ $t('team.joinedAt') }}
-                      </th>
-                      <th class="px-6 py-3 text-left text-xs font-medium uppercase tracking-wider text-secondary-500">
-                        {{ $t('team.actions') }}
-                      </th>
-                    </tr>
-                  </thead>
-                  <tbody class="divide-y divide-secondary-200 bg-white">
-                    <tr v-for="user in paginatedMembers" :key="user.id" class="hover:bg-secondary-50">
-                      <td class="whitespace-nowrap px-6 py-4">
-                        <div class="flex items-center">
-                          <UserAvatar :name="user.name" :seed="user.avatar" size="xl" />
-                          <div class="ml-4">
-                            <div class="text-sm font-medium text-secondary-900">{{ user.name }}</div>
-                            <div class="text-sm text-secondary-600">{{ user.email }}</div>
-                          </div>
-                        </div>
-                      </td>
-                      <td class="whitespace-nowrap px-6 py-4 text-sm font-mono text-secondary-900">
-                        {{ user.id }}
-                      </td>
-                      <td class="whitespace-nowrap px-6 py-4">
-                        <Badge :variant="getRoleBadgeVariant(user.role)">
-                          {{ getRoleLabel(user.role) }}
-                        </Badge>
-                      </td>
-                      <td class="whitespace-nowrap px-6 py-4 text-sm text-secondary-900">
-                        {{ user.department }}
-                      </td>
-                      <td class="px-6 py-4">
-                        <div class="flex flex-wrap gap-1">
-                          <template v-if="user.skills && user.skills.length > 0">
-                            <span
-                              v-for="skill in user.skills.slice(0, 2)"
-                              :key="skill"
-                              class="rounded bg-secondary-100 px-2 py-0.5 text-xs text-secondary-600"
-                            >
-                              {{ skill }}
-                            </span>
-                            <span
-                              v-if="user.skills.length > 2"
-                              class="rounded bg-secondary-100 px-2 py-0.5 text-xs text-secondary-600"
-                            >
-                              +{{ user.skills.length - 2 }}
-                            </span>
-                          </template>
-                          <span v-else class="text-xs text-secondary-400">-</span>
-                        </div>
-                      </td>
-                      <td class="whitespace-nowrap px-6 py-4 text-sm text-secondary-600">
-                        {{ formattedDate(user.joinedAt) }}
-                      </td>
-                      <td class="whitespace-nowrap px-6 py-4 text-sm">
-                        <button
-                          v-if="permissionStore.canEditUser(user.id)"
-                          @click="openEditModal(user)"
-                          class="text-primary-600 hover:text-primary-900 mr-3"
-                        >
-                          {{ $t('team.edit') }}
-                        </button>
-                        <button
-                          v-if="permissionStore.canDeleteUser()"
-                          @click="handleDeleteMember(user.id)"
-                          class="text-red-600 hover:text-red-900"
-                        >
-                          {{ $t('team.delete') }}
-                        </button>
-                        <span v-if="!permissionStore.canEditUser(user.id) && !permissionStore.canDeleteUser()" class="text-secondary-400">
-                          -
-                        </span>
-                      </td>
-                    </tr>
-                  </tbody>
-                </table>
+
+              <div v-if="!orgStore.tree" class="py-8 text-center text-sm text-secondary-500">
+                正在加载组织架构…
               </div>
-              <!-- Members Pagination -->
-              <div v-if="filteredMembers.length > memberPageSize" class="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 border-t border-secondary-200 px-6 py-4">
-                <div class="flex items-center gap-2">
-                  <span class="text-sm text-secondary-600">{{ $t('team.allMembers.itemsPerPage') }}</span>
-                  <select 
-                    v-model="memberPageSize" 
-                    @change="memberPage = 1"
-                    class="rounded-lg border border-secondary-300 px-2 py-1 text-sm focus:border-primary-500 focus:outline-none focus:ring-1 focus:ring-primary-500"
+
+              <div v-else-if="filteredUsers.length === 0" class="py-8 text-center text-sm text-secondary-500">
+                没有匹配的用户
+              </div>
+
+              <!-- 搜索模式：扁平结果 -->
+              <div v-else-if="isSearchMode" class="space-y-4">
+                <div class="flex items-center justify-between">
+                  <h4 class="text-sm font-medium text-secondary-700">
+                    搜索结果 ({{ filteredUsers.length }} 人)
+                  </h4>
+                  <button
+                    type="button"
+                    @click="memberSearch = ''"
+                    class="text-xs text-primary-600 hover:text-primary-700"
                   >
-                    <option :value="10">10</option>
-                    <option :value="20">20</option>
-                    <option :value="50">50</option>
-                    <option :value="100">100</option>
-                  </select>
+                    清除搜索
+                  </button>
                 </div>
-                <div class="flex items-center gap-4">
-                  <span class="text-sm text-secondary-600">
-                    {{ $t('team.allMembers.page', { current: memberPage, total: totalMemberPages }) }}
-                  </span>
-                  <div class="flex gap-2">
-                    <Button 
-                      variant="secondary" 
-                      size="sm" 
-                      :disabled="memberPage === 1"
-                      @click="memberPage--"
-                    >
-                      {{ $t('team.allMembers.previous') }}
-                    </Button>
-                    <Button 
-                      variant="secondary" 
-                      size="sm" 
-                      :disabled="memberPage === totalMemberPages"
-                      @click="memberPage++"
-                    >
-                      {{ $t('team.allMembers.next') }}
-                    </Button>
+                <div class="grid grid-cols-1 gap-3 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4">
+                  <div
+                    v-for="user in filteredUsers"
+                    :key="user.id"
+                    class="flex items-start gap-3 rounded-lg border border-secondary-200 bg-white p-3 transition-shadow hover:shadow-sm"
+                  >
+                    <UserAvatar :name="displayName(user)" :seed="user.avatar" size="md" />
+                    <div class="min-w-0 flex-1">
+                      <div class="truncate text-sm font-medium text-secondary-900">
+                        {{ displayName(user) }}
+                      </div>
+                      <div v-if="user.chineseNam && user.chineseNam !== user.name" class="truncate text-xs text-secondary-500">
+                        {{ user.name }}
+                      </div>
+                      <div class="mt-0.5 truncate font-mono text-xs text-secondary-500">
+                        {{ user.id }}
+                      </div>
+                      <div class="mt-0.5 truncate text-xs text-secondary-500">
+                        {{ user.email }}
+                      </div>
+                      <div class="mt-0.5 truncate text-xs text-secondary-500">
+                        {{ user.companyCd }} · {{ user.department }}
+                      </div>
+                      <div class="mt-1">
+                        <Badge :variant="roleBadgeVariant(user.role)">
+                          {{ roleLabel(user.role) }}
+                        </Badge>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              </div>
+
+              <!-- 浏览模式：按公司 + org 树分组 -->
+              <div v-else class="space-y-3">
+                <div
+                  v-for="company in displayedCompanyNodes"
+                  :key="company.code"
+                  class="rounded-lg border-2 border-primary-200 bg-primary-50/30 p-3"
+                >
+                  <div class="mb-2 flex items-center gap-2 px-1">
+                    <span class="inline-flex h-6 w-6 items-center justify-center rounded bg-primary-600 text-xs font-bold text-white">
+                      {{ company.code }}
+                    </span>
+                    <span class="text-sm font-semibold text-secondary-900">{{ company.name }}</span>
+                    <span class="text-xs text-secondary-500">({{ countCompanyMembers(company) }} 人)</span>
+                  </div>
+                  <div v-if="company.children.length === 0" class="px-1 py-2 text-xs text-secondary-400">
+                    本公司在组织架构中暂无数据
+                  </div>
+                  <div v-else class="space-y-2">
+                    <OrgGroup
+                      v-for="top in company.children"
+                      :key="top.code"
+                      :node="top"
+                      :members="filteredUsers"
+                    />
+                  </div>
+                </div>
+
+                <!-- 未分配部门用户 -->
+                <div
+                  v-if="unassignedUsers.length > 0"
+                  class="rounded-lg border-2 border-dashed border-secondary-300 bg-secondary-50"
+                >
+                  <button
+                    type="button"
+                    @click="unassignedExpanded = !unassignedExpanded"
+                    class="flex w-full items-center justify-between gap-2 rounded-lg px-3 py-2.5 text-left transition-colors hover:bg-secondary-100"
+                    :aria-expanded="unassignedExpanded"
+                  >
+                    <div class="flex items-center gap-2">
+                      <span
+                        class="inline-flex h-5 w-5 items-center justify-center text-secondary-400 transition-transform"
+                        :class="{ 'rotate-90': unassignedExpanded }"
+                      >
+                        <svg viewBox="0 0 20 20" fill="currentColor" class="h-4 w-4">
+                          <path fill-rule="evenodd" d="M7.21 14.77a.75.75 0 01.02-1.06L10.94 10 7.23 6.29a.75.75 0 111.04-1.08l4.25 4.25a.75.75 0 010 1.08l-4.25 4.25a.75.75 0 01-1.06-.02z" clip-rule="evenodd" />
+                        </svg>
+                      </span>
+                      <span class="inline-flex h-6 w-6 items-center justify-center rounded bg-secondary-400 text-xs font-bold text-white">
+                        ?
+                      </span>
+                      <span class="text-sm font-semibold text-secondary-900">未分配部门</span>
+                      <span class="text-xs text-secondary-500">({{ unassignedUsers.length }} 人 · deptCode 为空)</span>
+                    </div>
+                  </button>
+
+                  <div v-if="unassignedExpanded" class="border-t border-secondary-200 p-3">
+                    <div class="grid grid-cols-1 gap-3 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4">
+                      <div
+                        v-for="user in visibleUnassignedUsers"
+                        :key="user.id"
+                        class="flex items-start gap-3 rounded-lg border border-secondary-200 bg-white p-3"
+                      >
+                        <UserAvatar :name="displayName(user)" :seed="user.avatar" size="md" />
+                        <div class="min-w-0 flex-1">
+                          <div class="truncate text-sm font-medium text-secondary-900">{{ displayName(user) }}</div>
+                          <div class="mt-0.5 truncate font-mono text-xs text-secondary-500">{{ user.id }}</div>
+                          <div class="mt-0.5 truncate text-xs text-secondary-500">{{ user.companyCd }}</div>
+                        </div>
+                      </div>
+                    </div>
+                    <div v-if="unassignedUsers.length > unassignedPageSize" class="mt-3 text-center">
+                      <button
+                        type="button"
+                        @click="unassignedVisibleCount += unassignedPageSize"
+                        class="text-xs font-medium text-primary-600 hover:text-primary-700"
+                      >
+                        加载更多 ({{ unassignedUsers.length - unassignedVisibleCount }} 人未显示)
+                      </button>
+                    </div>
                   </div>
                 </div>
               </div>
@@ -501,13 +505,13 @@ import Modal from '@/components/common/Modal.vue';
 import Tabs from '@/components/common/Tabs.vue';
 import type { Tab } from '@/components/common/Tabs.vue';
 import UserAvatar from '@/components/common/UserAvatar.vue';
+import OrgGroup from '@/components/team/OrgGroup.vue';
 import { useUserStore } from '@/stores/user';
 import { useTaskStore } from '@/stores/task';
 import { useProjectStore } from '@/stores/project';
-import { usePermissionStore } from '@/stores/permission';
+import { useOrgStore } from '@/stores/org';
 import { ApiError } from '@/services/api';
-import type { User, Task, Project } from '@/types';
-import dayjs from 'dayjs';
+import type { User, Task, OrgNode } from '@/types';
 
 interface TaskAssignment {
   id: string;
@@ -527,7 +531,7 @@ const { t } = useI18n();
 const userStore = useUserStore();
 const taskStore = useTaskStore();
 const projectStore = useProjectStore();
-const permissionStore = usePermissionStore();
+const orgStore = useOrgStore();
 
 const users = computed(() => userStore.users);
 const workloadChartRef = ref<HTMLElement>();
@@ -609,22 +613,8 @@ const closeModal = () => {
   submitting.value = false;
 };
 
-const openEditModal = (user: User) => {
-  isEditMode.value = true;
-  editingUserId.value = user.id;
-  newMember.name = user.name;
-  newMember.email = user.email;
-  // 标准化角色：将下划线转换为连字符，确保与表单选项匹配
-  const normalizedRole = user.role?.replace(/_/g, '-') || 'member';
-  newMember.role = normalizedRole as User['role'];
-  newMember.department = user.department;
-  // 确保 skills 是数组
-  newMember.skills = Array.isArray(user.skills) ? [...user.skills] : [];
-  skillsInput.value = Array.isArray(user.skills) ? user.skills.join(', ') : '';
-  formError.value = '';
-  submitting.value = false;
-  showAddMemberModal.value = true;
-};
+// (openEditModal/handleDeleteMember removed: members are now managed
+// via HR sync, individual edit/delete is no longer exposed in the UI)
 
 // 将后端错误信息映射为友好提示
 const mapSaveMemberError = (error: unknown): string => {
@@ -762,25 +752,8 @@ const submitForm = () => {
   handleSaveMember();
 };
 
-const handleDeleteMember = async (userId: string) => {
-  const user = users.value.find(u => u.id === userId);
-  if (!user) return;
-
-  if (confirm(t('team.messages.deleteConfirm', { name: user.name }))) {
-    try {
-      await userStore.deleteUser(userId);
-      alert(t('team.messages.deleteSuccess'));
-
-      // Refresh chart after a short delay
-      setTimeout(() => {
-        initWorkloadChart();
-      }, 200);
-    } catch (error) {
-      console.error('Failed to delete member:', error);
-      alert(t('team.messages.deleteFailed'));
-    }
-  }
-};
+// handleDeleteMember removed: members are now managed via HR sync,
+// individual delete is no longer exposed in the UI.
 
 const adminCount = computed(() => users.value.filter(u => u.role?.replace(/_/g, '-') === 'admin').length);
 const pmCount = computed(() => users.value.filter(u => u.role?.replace(/_/g, '-') === 'project-manager').length);
@@ -797,40 +770,8 @@ const memberCount = computed(() => {
   return memberSet.size;
 });
 
-const getRoleLabel = (role: string) => {
-  // 标准化角色名称：处理下划线和连字符的兼容性
-  const normalizedRole = role?.replace(/_/g, '-');
-
-  const labels: Record<string, string> = {
-    admin: 'roles.admin',
-    'project-manager': 'roles.projectManager',
-    member: 'roles.member'
-  };
-  const key = labels[normalizedRole];
-  return key ? t(key) : role;
-};
-
-const getRoleBadgeVariant = (role: string) => {
-  // 标准化角色名称：处理下划线和连字符的兼容性
-  const normalizedRole = role?.replace(/_/g, '-');
-
-  const variants: Record<string, 'default' | 'primary' | 'danger' | 'success' | 'warning' | 'info'> = {
-    admin: 'danger',
-    'project-manager': 'warning',
-    member: 'primary'
-  };
-  return variants[normalizedRole] || 'default';
-};
-
-const formattedDate = (date: string) => {
-  // Use localized date format based on current locale
-  const locale = t('common.locale') || 'zh';
-  if (locale === 'ko') {
-    return dayjs(date).format('YYYY년 MM월');
-  } else {
-    return dayjs(date).format('YYYY年MM月');
-  }
-};
+// (getRoleLabel / getRoleBadgeVariant / formattedDate removed: org
+// group view uses inline role/date formatting in OrgGroup.vue)
 
 const initWorkloadChart = () => {
   if (!workloadChartRef.value) return;
@@ -905,39 +846,136 @@ const initWorkloadChart = () => {
   chart.setOption(option);
 };
 
-// Members Pagination
-const memberPage = ref<number>(1);
-const memberPageSize = ref<number>(20);
-
 // 筛选
 const memberSearch = ref<string>('');
 const memberRoleFilter = ref<string>('');
-const memberDepartmentFilter = ref<string>('');
+const companyFilter = ref<string>('');
 
 const allDepartments = computed(() => {
   const depts = new Set(users.value.map(u => u.department).filter(Boolean));
   return [...depts].sort();
 });
 
-const filteredMembers = computed(() => {
+/**
+ * 按顶部筛选条件过滤用户
+ * 用于驱动 org 分组视图
+ */
+const filteredUsers = computed<User[]>(() => {
   const search = memberSearch.value.trim().toLowerCase();
   return users.value.filter(user => {
-    if (search && !user.id.toLowerCase().includes(search) && !user.name.toLowerCase().includes(search)) return false;
+    if (search) {
+      const name = (user.chineseNam || user.name || '').toLowerCase();
+      const id = (user.id || '').toLowerCase();
+      const email = (user.email || '').toLowerCase();
+      if (!name.includes(search) && !id.includes(search) && !email.includes(search)) return false;
+    }
     const normalizedRole = user.role?.replace(/_/g, '-');
     if (memberRoleFilter.value && normalizedRole !== memberRoleFilter.value) return false;
-    if (memberDepartmentFilter.value && user.department !== memberDepartmentFilter.value) return false;
+    if (companyFilter.value && user.companyCd !== companyFilter.value) return false;
     return true;
   });
 });
 
-const paginatedMembers = computed(() => {
-  const start = (memberPage.value - 1) * memberPageSize.value;
-  return filteredMembers.value.slice(start, start + memberPageSize.value);
+/**
+ * 顶层节点 = 4 个公司（2700 / 8400 / 2710 / 9000）
+ * 按 companyFilter 过滤
+ */
+const displayedCompanyNodes = computed<OrgNode[]>(() => {
+  if (!orgStore.tree) return [];
+  const all = orgStore.tree.children || [];
+  if (!companyFilter.value) return all;
+  return all.filter(n => n.code === companyFilter.value);
 });
 
-const totalMemberPages = computed(() => {
-  return Math.ceil(filteredMembers.value.length / memberPageSize.value) || 1;
+/**
+ * 用户所有出现过的 company_cd（驱动公司下拉框）
+ */
+const availableCompanyCodes = computed<string[]>(() => {
+  if (!orgStore.tree) return [];
+  return (orgStore.tree.children || []).map(n => n.code).filter(Boolean);
 });
+
+function companyName(cd: string): string {
+  if (!orgStore.tree) return cd;
+  const node = (orgStore.tree.children || []).find(n => n.code === cd);
+  return node?.name || cd;
+}
+
+/**
+ * 搜索模式：搜索框有内容 → 扁平结果
+ * 浏览模式：搜索框为空 → org 树分组
+ */
+const isSearchMode = computed(() => memberSearch.value.trim().length > 0);
+
+/**
+ * 收集 org tree 中所有 code（用于判断用户的 deptCode 是否在树里）
+ */
+const orgCodes = computed<Set<string>>(() => {
+  const set = new Set<string>();
+  if (!orgStore.tree) return set;
+  const walk = (n: OrgNode) => {
+    set.add(n.code);
+    for (const c of n.children || []) walk(c);
+  };
+  walk(orgStore.tree);
+  return set;
+});
+
+/**
+ * deptCode 为空 或 deptCode 在 org tree 里找不到的用户
+ */
+const unassignedUsers = computed<User[]>(() => {
+  return filteredUsers.value.filter(u => !u.deptCode || !orgCodes.value.has(u.deptCode));
+});
+
+/**
+ * 未分配部门折叠/分页状态
+ */
+const unassignedExpanded = ref(false);
+const unassignedVisibleCount = ref(12);
+const unassignedPageSize = 12;
+const visibleUnassignedUsers = computed<User[]>(() =>
+  unassignedUsers.value.slice(0, unassignedVisibleCount.value)
+);
+
+/**
+ * 统计某公司节点下所有成员数（含子组织）
+ */
+function countCompanyMembers(root: OrgNode): number {
+  const codes = new Set<string>();
+  const walk = (n: OrgNode) => {
+    codes.add(n.code);
+    for (const c of n.children || []) walk(c);
+  };
+  walk(root);
+  return filteredUsers.value.filter(u => u.deptCode && codes.has(u.deptCode)).length;
+}
+
+function displayName(user: User): string {
+  return user.chineseNam && user.chineseNam.trim() ? user.chineseNam : user.name;
+}
+
+function roleLabel(role: string): string {
+  const normalized = role?.replace(/_/g, '-');
+  const map: Record<string, string> = {
+    'admin': '管理员',
+    'project-manager': '项目经理',
+    'member': '成员',
+    'viewer': '观察者',
+  };
+  return map[normalized] || role;
+}
+
+function roleBadgeVariant(role: string): 'default' | 'primary' | 'danger' | 'success' | 'warning' | 'info' {
+  const normalized = role?.replace(/_/g, '-');
+  const map: Record<string, 'danger' | 'warning' | 'primary' | 'default'> = {
+    'admin': 'danger',
+    'project-manager': 'warning',
+    'member': 'primary',
+    'viewer': 'default',
+  };
+  return map[normalized] || 'default';
+}
 
 // Task Assignment Table
 const sortBy = ref<string>('memberName');
@@ -1122,7 +1160,6 @@ const getPriorityLabel = (priority: Task['priority']) => {
 // 监听任务、用户、项目数据变化，重置当前页
 watch([() => taskStore.tasks, () => userStore.users, () => projectStore.projects], () => {
   currentPage.value = 1;
-  memberPage.value = 1;
 });
 
 // 监听数据加载完成，重新渲染图表
@@ -1143,6 +1180,13 @@ const handleResize = () => {
 onMounted(async () => {
   // 强制刷新用户数据，确保获取最新数据
   await userStore.refreshUsers();
+
+  // 加载组织架构树
+  try {
+    await orgStore.loadTree();
+  } catch (error) {
+    console.warn('加载组织架构失败:', error);
+  }
 
   // 强制刷新项目数据（任务分配表格需要）
   try {

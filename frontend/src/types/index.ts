@@ -262,3 +262,18 @@ export type DocumentCategory = 'requirements' | 'design' | 'development' | 'test
 export type DocumentStatus = 'active' | 'deleted';
 
 export type DocumentAction = 'upload' | 'download' | 'update' | 'delete' | 'preview';
+
+export interface OrgNode {
+  /** 组织 code（来自 mdm_if_or_a.ORG_CD） */
+  code: string;
+  /** 组织名（来自 mdm_if_or_a.ORG_NAM） */
+  name: string;
+  /** 所属公司 code（来自 mdm_if_or_a.COMPANY_CD，2700/8400） */
+  companyCd: string;
+  /** 父组织 code（来自 mdm_if_or_a.PRNT_ORG_CD，根为 null） */
+  parentCode: string | null;
+  /** 组织层级数字（来自 mdm_if_or_a.ORG_LVL_NUM） */
+  level: number;
+  /** 子组织 */
+  children: OrgNode[];
+}
