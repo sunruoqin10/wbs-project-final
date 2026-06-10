@@ -10,6 +10,11 @@
         <result column="avatar" property="avatar"/>
         <result column="role" property="role"/>
         <result column="department" property="department"/>
+        <result column="dept_code"   property="deptCode"/>
+        <result column="sub_org_cd"  property="subOrgCd"/>
+        <result column="sub_org_nam" property="subOrgNam"/>
+        <result column="company_cd"  property="companyCd"/>
+        <result column="chinese_nam" property="chineseNam"/>
         <result column="skills" property="skills"/>
         <result column="password" property="password"/>
         <result column="joined_at" property="joinedAt"/>
@@ -18,7 +23,9 @@
     </resultMap>
 
     <sql id="Base_Column_List">
-        id, name, email, avatar, role, department, skills, password, joined_at, created_at, updated_at
+        id, name, email, avatar, role, department,
+        dept_code, sub_org_cd, sub_org_nam, company_cd, chinese_nam,
+        skills, password, joined_at, created_at, updated_at
     </sql>
 
     <select id="selectAll" resultMap="BaseResultMap">
@@ -69,8 +76,14 @@
     </select>
 
     <insert id="insert" parameterType="com.wbs.project.entity.User">
-        INSERT INTO sys_user (id, name, email, avatar, role, department, skills, password, joined_at, created_at, updated_at)
-        VALUES (#{id}, #{name}, #{email}, #{avatar}, #{role}, #{department}, #{skills}, #{password}, #{joinedAt}, #{createdAt}, #{updatedAt})
+        INSERT INTO sys_user
+          (id, name, email, avatar, role, department,
+           dept_code, sub_org_cd, sub_org_nam, company_cd, chinese_nam,
+           skills, password, joined_at, created_at, updated_at)
+        VALUES
+          (#{id}, #{name}, #{email}, #{avatar}, #{role}, #{department},
+           #{deptCode}, #{subOrgCd}, #{subOrgNam}, #{companyCd}, #{chineseNam},
+           #{skills}, #{password}, #{joinedAt}, #{createdAt}, #{updatedAt})
     </insert>
 
     <update id="update" parameterType="com.wbs.project.entity.User">
@@ -124,32 +137,47 @@
 
     <!-- 人事数据同步：插入新用户 -->
     <insert id="syncHrInsert">
-        INSERT IGNORE INTO sys_user (id, name, email, role, department, joined_at, created_at, updated_at, password)
+        INSERT IGNORE INTO sys_user
+          (id, name, chinese_nam, email, role, department,
+           dept_code, sub_org_cd, sub_org_nam, company_cd,
+           joined_at, created_at, updated_at, password)
         SELECT
             p.EMP_NUM,
             p.EMP_NAM,
+            IFNULL(p.CHINESE_NAM, ''),
             p.EMAIL_ADDR,
             'member',
             o.ORG_NAM,
+            IFNULL(p.ORG_CD, ''),
+            IFNULL(p.SUB_ORG_CD, ''),
+            IFNULL(o2.ORG_NAM, ''),
+            IFNULL(p.COMPANY_CD, ''),
             NOW(),
             NOW(),
             NOW(),
             '1'
         FROM mdm_if_pa_a p
-        LEFT JOIN mdm_if_or_a o ON p.ORG_CD = o.ORG_CD
+        LEFT JOIN mdm_if_or_a o  ON p.ORG_CD     = o.ORG_CD
+        LEFT JOIN mdm_if_or_a o2 ON p.SUB_ORG_CD = o2.ORG_CD
         WHERE p.EMP_NAM IS NOT NULL
           AND p.EMAIL_ADDR IS NOT NULL
     </insert>
 
-    <!-- 人事数据同步：更新已有用户 -->
+    <!-- 人事数据同步：更新已有用户（回填 5 个新字段，NULL 用空串覆盖） -->
     <update id="syncHrUpdate">
         UPDATE sys_user u
         INNER JOIN mdm_if_pa_a p ON u.id = p.EMP_NUM COLLATE utf8mb4_unicode_ci
-        LEFT JOIN mdm_if_or_a o ON p.ORG_CD = o.ORG_CD
-        SET u.name = p.EMP_NAM,
-            u.email = p.EMAIL_ADDR,
-            u.department = o.ORG_NAM,
-            u.updated_at = NOW()
+        LEFT JOIN mdm_if_or_a o  ON p.ORG_CD     = o.ORG_CD
+        LEFT JOIN mdm_if_or_a o2 ON p.SUB_ORG_CD = o2.ORG_CD
+        SET u.name        = p.EMP_NAM,
+            u.chinese_nam = IFNULL(p.CHINESE_NAM, ''),
+            u.email       = p.EMAIL_ADDR,
+            u.department  = o.ORG_NAM,
+            u.dept_code   = IFNULL(p.ORG_CD, ''),
+            u.sub_org_cd  = IFNULL(p.SUB_ORG_CD, ''),
+            u.sub_org_nam = IFNULL(o2.ORG_NAM, ''),
+            u.company_cd  = IFNULL(p.COMPANY_CD, ''),
+            u.updated_at  = NOW()
         WHERE p.EMP_NAM IS NOT NULL
           AND p.EMAIL_ADDR IS NOT NULL
     </update>

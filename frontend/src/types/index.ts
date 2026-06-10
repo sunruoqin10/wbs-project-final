@@ -8,6 +8,12 @@ export interface User {
   skills: string[];
   password?: string;
   joinedAt: string;
+  // === HR 同步扩展字段（2026-06-10 来自 MDM 中间表，后端在 sync-hr 时回填） ===
+  deptCode?: string;
+  subOrgCd?: string;
+  subOrgNam?: string;
+  companyCd?: string;
+  chineseNam?: string;
 }
 
 export interface Comment {
