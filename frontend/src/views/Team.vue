@@ -222,14 +222,40 @@
                       <div
                         v-for="user in visibleUnassignedUsers"
                         :key="user.id"
-                        class="flex items-start gap-3 rounded-lg border border-secondary-200 bg-white p-3"
+                        class="flex items-start gap-3 rounded-lg border border-secondary-200 bg-white p-3 transition-shadow hover:shadow-sm"
                       >
                         <UserAvatar :name="displayName(user)" :seed="user.avatar" size="md" />
                         <div class="min-w-0 flex-1">
                           <div class="truncate text-sm font-medium text-secondary-900">{{ displayName(user) }}</div>
+                          <div v-if="user.chineseNam && user.chineseNam !== user.name" class="truncate text-xs text-secondary-500">
+                            {{ user.name }}
+                          </div>
                           <div class="mt-0.5 truncate font-mono text-xs text-secondary-500">{{ user.id }}</div>
-                          <div class="mt-0.5 truncate text-xs text-secondary-500">{{ user.companyCd }}</div>
                           <div v-if="user.email" class="mt-0.5 truncate text-xs text-secondary-500">{{ user.email }}</div>
+                          <div class="mt-0.5 truncate text-xs text-secondary-500">
+                            {{ user.companyCd || '-' }} · {{ user.department || '未分配部门' }}
+                          </div>
+                          <div class="mt-1 flex items-center justify-between gap-2">
+                            <Badge :variant="roleBadgeVariant(user.role)">
+                              {{ roleLabel(user.role) }}
+                            </Badge>
+                            <button
+                              type="button"
+                              :class="[
+                                'rounded px-2 py-0.5 text-xs',
+                                permissionStore.isAdmin()
+                                  ? 'text-primary-600 hover:bg-primary-50 hover:text-primary-700'
+                                  : 'cursor-not-allowed text-secondary-400'
+                              ]"
+                              :disabled="!permissionStore.isAdmin()"
+                              :title="permissionStore.isAdmin()
+                                ? $t('team.roleChange.title')
+                                : $t('team.roleChange.adminOnly')"
+                              @click="permissionStore.isAdmin() && openRoleChangeDialog(user)"
+                            >
+                              {{ $t('team.roleChange.title') }}
+                            </button>
+                          </div>
                         </div>
                       </div>
                     </div>
@@ -410,6 +436,8 @@
       :current-role="roleChangeTarget.role"
       :current-managed-dept-codes="roleChangeTarget.managedDeptCodes || []"
       :current-managed-company-cd="roleChangeTarget.managedCompanyCd || ''"
+      :user-company-cd="roleChangeTarget.companyCd || ''"
+      :user-dept-code="roleChangeTarget.deptCode || ''"
       @success="onRoleChangeSuccess"
     />
   </MainLayout>

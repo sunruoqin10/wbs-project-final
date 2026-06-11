@@ -11,10 +11,16 @@ interface Props {
   currentRole: string;
   currentManagedDeptCodes?: string[];
   currentManagedCompanyCd?: string;
+  /** 员工所属公司代码，作为管辖公司的默认值 */
+  userCompanyCd?: string;
+  /** 员工所属部门代码，作为管辖部门的默认值 */
+  userDeptCode?: string;
 }
 const props = withDefaults(defineProps<Props>(), {
   currentManagedDeptCodes: () => [],
   currentManagedCompanyCd: '',
+  userCompanyCd: '',
+  userDeptCode: '',
 });
 const emit = defineEmits<{
   (e: 'update:visible', val: boolean): void;
@@ -33,6 +39,7 @@ const errorMsg = ref('');
 
 const orgTree = ref<OrgNode | null>(null);
 const orgLoading = ref(false);
+const orgError = ref<string>('');
 
 const history = ref<RoleChangeLog[]>([]);
 const historyLoading = ref(false);
@@ -54,13 +61,30 @@ const flatDepts = computed(() => {
 
 const showManagedFields = computed(() => newRole.value === 'dept-project-manager');
 
+// 管辖公司显示名称（从组织树顶层节点查找）
+const managedCompanyName = computed(() => {
+  if (!managedCompanyCd.value || !orgTree.value?.children) return managedCompanyCd.value;
+  const company = orgTree.value.children.find(c => c.code === managedCompanyCd.value);
+  return company?.name || managedCompanyCd.value;
+});
+
+// 管辖部门显示名称（从组织树查找）
+const managedDeptNames = computed(() => {
+  return managedDeptCodes.value.map(code => {
+    const dept = flatDepts.value.find(d => d.code === code);
+    return dept?.name || code;
+  });
+});
+
 const isAdmin = computed(() => permissionStore.isAdmin());
 
 watch(() => props.visible, async (v) => {
   if (v) {
     newRole.value = props.currentRole;
-    managedDeptCodes.value = [...props.currentManagedDeptCodes];
-    managedCompanyCd.value = props.currentManagedCompanyCd;
+    managedDeptCodes.value = props.currentManagedDeptCodes.length > 0
+      ? [...props.currentManagedDeptCodes]
+      : (props.userDeptCode ? [props.userDeptCode] : []);
+    managedCompanyCd.value = props.currentManagedCompanyCd || props.userCompanyCd;
     reason.value = '';
     errorMsg.value = '';
     showHistory.value = false;
@@ -72,11 +96,17 @@ watch(() => props.visible, async (v) => {
 });
 
 const loadOrgTree = async () => {
+  orgError.value = '';
   try {
     orgLoading.value = true;
-    orgTree.value = await apiService.getOrgTree();
-  } catch (e) {
+    const tree = await apiService.getOrgTree();
+    orgTree.value = tree;
+    if (!tree) {
+      orgError.value = '后端返回的组织树为空';
+    }
+  } catch (e: any) {
     console.error('加载组织树失败', e);
+    orgError.value = e?.message || '加载组织树失败,请检查后端是否启动';
   } finally {
     orgLoading.value = false;
   }
@@ -90,15 +120,6 @@ const loadHistory = async () => {
     console.error('加载历史失败', e);
   } finally {
     historyLoading.value = false;
-  }
-};
-
-const toggleDept = (code: string) => {
-  const idx = managedDeptCodes.value.indexOf(code);
-  if (idx >= 0) {
-    managedDeptCodes.value.splice(idx, 1);
-  } else {
-    managedDeptCodes.value.push(code);
   }
 };
 
@@ -195,12 +216,12 @@ const formatTime = (iso: string): string => {
             {{ t('team.roleChange.managedCompanyCdLabel') }}
           </label>
           <input
-            v-model="managedCompanyCd"
+            :value="managedCompanyName"
             type="text"
-            placeholder="如 2700 / 8400"
-            class="w-full rounded-lg border border-secondary-300 px-3 py-2 text-sm focus:border-primary-500 focus:outline-none focus:ring-1 focus:ring-primary-500"
+            readonly
+            class="w-full rounded-lg border border-secondary-200 bg-secondary-50 px-3 py-2 text-sm text-secondary-600 cursor-not-allowed"
           />
-          <p class="mt-1 text-xs text-secondary-500">需与用户所属公司一致</p>
+          <p class="mt-1 text-xs text-secondary-400">管辖公司自动设为员工所属公司，不可修改</p>
         </div>
 
         <!-- 管辖部门 -->
@@ -208,24 +229,17 @@ const formatTime = (iso: string): string => {
           <label class="mb-1 block text-sm font-medium text-secondary-700">
             {{ t('team.roleChange.managedDeptCodesLabel') }}
           </label>
-          <div v-if="orgLoading" class="py-2 text-sm text-secondary-500">加载中…</div>
-          <div v-else class="max-h-48 overflow-y-auto rounded-lg border border-secondary-200 p-2 space-y-1">
-            <label
-              v-for="d in flatDepts"
-              :key="d.code"
-              class="flex items-center gap-2 rounded px-2 py-1 text-sm hover:bg-secondary-50"
-            >
-              <input
-                type="checkbox"
-                :checked="managedDeptCodes.includes(d.code)"
-                :disabled="!isAdmin"
-                class="rounded border-secondary-300"
-                @change="toggleDept(d.code)"
-              />
-              <span class="flex-1">{{ d.name }}</span>
-              <span class="text-xs text-secondary-400">{{ d.code }}</span>
-            </label>
+          <div
+            class="w-full rounded-lg border border-secondary-200 bg-secondary-50 px-3 py-2 text-sm text-secondary-600"
+          >
+            <template v-if="managedDeptNames.length === 0">-</template>
+            <template v-else>
+              <span v-for="(name, i) in managedDeptNames" :key="i">
+                {{ name }}<span v-if="i < managedDeptNames.length - 1">, </span>
+              </span>
+            </template>
           </div>
+          <p class="mt-1 text-xs text-secondary-400">管辖部门自动设为员工所属部门，不可修改</p>
         </div>
 
         <!-- 变更原因 -->

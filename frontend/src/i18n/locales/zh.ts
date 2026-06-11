@@ -546,6 +546,7 @@ export default {
     roleChange: {
       title: '修改角色',
       adminOnly: '仅管理员可见(您当前不是管理员)',
+      deptSearchPlaceholder: '搜索部门名称或 code',
       newRoleLabel: '新角色',
       managedDeptCodesLabel: '管辖部门',
       managedDeptCodesPlaceholder: '请选择管辖的部门',
