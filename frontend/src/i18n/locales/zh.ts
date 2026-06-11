@@ -725,7 +725,7 @@ export default {
       syncButton: '开始同步',
       syncing: '同步中...',
       syncSuccess: '人事数据同步成功',
-      syncSuccessWithCount: '同步完成：新增 {inserted} 人，更新 {updated} 人',
+      syncSuccessWithCount: '同步完成：新增 {inserted} 人，更新 {updated} 人，标记离职 {resigned} 人',
       syncFailed: '人事数据同步失败',
     },
     // 通用

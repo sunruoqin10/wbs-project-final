@@ -4,6 +4,10 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 > **Authoritative agent rules live in [`AGENTS.md`](./AGENTS.md).** It contains the canonical code style, naming, persistence, API-contract, and workflow rules. Read it before making non-trivial changes — it overrides any conflicting guidance below. This file is the short orientation; `AGENTS.md` is the rule book.
 
+## Communication
+
+**Default to Chinese (中文) for user-facing dialogue.** The assistant's replies, status reports, explanations, plan summaries, and tool output descriptions should all be in Chinese. Code, identifiers, code comments, and this `CLAUDE.md` itself remain in English. Backend `Result.message` strings stay in Chinese per the [API Contract](#api-contract). The user may switch to English mid-session by simply writing in English — match the user's current language for that turn, then return to Chinese on the next Chinese prompt.
+
 ## Project Overview
 
 Full-stack **WBS (Work Breakdown Structure) Project Management System**.

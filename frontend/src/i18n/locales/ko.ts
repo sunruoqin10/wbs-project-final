@@ -710,7 +710,7 @@ export default {
       syncButton: '동기화 시작',
       syncing: '동기화 중...',
       syncSuccess: '인사 데이터 동기화 성공',
-      syncSuccessWithCount: '동기화 완료: {inserted}명 추가, {updated}명 업데이트',
+      syncSuccessWithCount: '동기화 완료: {inserted}명 추가, {updated}명 업데이트, {resigned}명 퇴직 처리',
       syncFailed: '인사 데이터 동기화 실패',
     },
     // 공통

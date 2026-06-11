@@ -215,6 +215,7 @@
                           <div class="truncate text-sm font-medium text-secondary-900">{{ displayName(user) }}</div>
                           <div class="mt-0.5 truncate font-mono text-xs text-secondary-500">{{ user.id }}</div>
                           <div class="mt-0.5 truncate text-xs text-secondary-500">{{ user.companyCd }}</div>
+                          <div v-if="user.email" class="mt-0.5 truncate text-xs text-secondary-500">{{ user.email }}</div>
                         </div>
                       </div>
                     </div>

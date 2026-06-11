@@ -96,4 +96,25 @@ public interface UserMapper {
      * @return 更新行数
      */
     int syncHrUpdate();
+
+    /**
+     * 同步人事数据：标记已离职用户 status='T'
+     * 条件：MDM 中不存在 或 MDM 状态为 T
+     * @return 更新的行数
+     */
+    int syncHrMarkResigned();
+
+    /**
+     * 统计未在 MDM 中记录的管理员数
+     * 用作同步前误标保护
+     * @return 管理员但无 MDM 记录的条数
+     */
+    int countAdminNotInMdm();
+
+    /**
+     * 查询未在 MDM 中记录的管理员 ID 列表
+     * 用于同步前误标保护，把具体 ID 暴露给运维
+     * @return 管理员 ID 列表（如 ["C0000001", "C0000007"]），空列表表示无风险
+     */
+    java.util.List<String> selectAdminIdsNotInMdm();
 }

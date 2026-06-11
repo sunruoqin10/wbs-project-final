@@ -1,6 +1,7 @@
 package com.wbs.project.service;
 
 import com.wbs.project.entity.User;
+import com.wbs.project.exception.BusinessException;
 import com.wbs.project.mapper.UserMapper;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
@@ -200,16 +201,32 @@ public class UserService {
     /**
      * 同步人事数据
      * 从 mdm_if_pa_a 和 mdm_if_or_a 表同步数据到 sys_user
-     * 先插入新用户，再更新已有用户
-     * @return 包含 inserted 和 updated 数量的 Map
+     * 流程：插入新用户 → 更新已有用户 → 标记离职用户
+     * 同步前会阻断「在岗 admin 但 MDM 缺失」的情况，避免误标管理员为离职
+     * @return 包含 inserted / updated / resigned 数量的 Map
      */
     @Transactional
     public java.util.Map<String, Integer> syncHrData() {
+        // 1. 同步前安全检查：阻断 admin 误标
+        java.util.List<String> adminIds = userMapper.selectAdminIdsNotInMdm();
+        if (!adminIds.isEmpty()) {
+            throw new BusinessException(
+                409,
+                "检测到 " + adminIds.size() + " 名管理员不在 MDM 中 (ID: "
+                + String.join(", ", adminIds)
+                + ")，继续同步将被标记为离职。"
+                + "请先在 MDM 中维护管理员记录，或手动设置其 status='C' 后再重试。"
+            );
+        }
+
+        // 2. 同步流程
         int inserted = userMapper.syncHrInsert();
         int updated = userMapper.syncHrUpdate();
+        int resigned = userMapper.syncHrMarkResigned();
         java.util.Map<String, Integer> result = new java.util.HashMap<>();
         result.put("inserted", inserted);
         result.put("updated", updated);
+        result.put("resigned", resigned);
         return result;
     }
 }

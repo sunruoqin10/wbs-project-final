@@ -74,6 +74,9 @@
                 <div class="mt-0.5 truncate font-mono text-xs text-secondary-500">
                   {{ user.id }}
                 </div>
+                <div v-if="user.email" class="mt-0.5 truncate text-xs text-secondary-500">
+                  {{ user.email }}
+                </div>
                 <div class="mt-1">
                   <Badge :variant="roleBadgeVariant(user.role)">
                     {{ roleLabel(user.role) }}

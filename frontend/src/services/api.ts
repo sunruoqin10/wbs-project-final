@@ -399,8 +399,8 @@ class ApiService {
   }
 
   // HR Sync API
-  async syncHrUsers(): Promise<{ inserted: number; updated: number }> {
-    return request<{ inserted: number; updated: number }>('/users/sync-hr', {
+  async syncHrUsers(): Promise<{ inserted: number; updated: number; resigned: number }> {
+    return request<{ inserted: number; updated: number; resigned: number }>('/users/sync-hr', {
       method: 'POST',
     });
   }

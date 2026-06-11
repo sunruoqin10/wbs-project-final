@@ -17,6 +17,7 @@
         <result column="chinese_nam" property="chineseNam"/>
         <result column="skills" property="skills"/>
         <result column="password" property="password"/>
+        <result column="status" property="status"/>
         <result column="joined_at" property="joinedAt"/>
         <result column="created_at" property="createdAt"/>
         <result column="updated_at" property="updatedAt"/>
@@ -25,12 +26,14 @@
     <sql id="Base_Column_List">
         id, name, email, avatar, role, department,
         dept_code, sub_org_cd, sub_org_nam, company_cd, chinese_nam,
-        skills, password, joined_at, created_at, updated_at
+        skills, password, status,
+        joined_at, created_at, updated_at
     </sql>
 
     <select id="selectAll" resultMap="BaseResultMap">
         SELECT <include refid="Base_Column_List"/>
         FROM sys_user
+        WHERE status != 'T'
         ORDER BY created_at DESC
     </select>
 
@@ -56,6 +59,7 @@
         SELECT <include refid="Base_Column_List"/>
         FROM sys_user
         WHERE role = #{role}
+          AND status != 'T'
         ORDER BY created_at DESC
     </select>
 
@@ -63,6 +67,7 @@
         SELECT <include refid="Base_Column_List"/>
         FROM sys_user
         WHERE department = #{department}
+          AND status != 'T'
         ORDER BY created_at DESC
     </select>
 
@@ -73,17 +78,20 @@
         <foreach collection="ids" item="id" open="(" separator="," close=")">
             #{id}
         </foreach>
+          AND status != 'T'
     </select>
 
     <insert id="insert" parameterType="com.wbs.project.entity.User">
         INSERT INTO sys_user
           (id, name, email, avatar, role, department,
            dept_code, sub_org_cd, sub_org_nam, company_cd, chinese_nam,
-           skills, password, joined_at, created_at, updated_at)
+           skills, password, status,
+           joined_at, created_at, updated_at)
         VALUES
           (#{id}, #{name}, #{email}, #{avatar}, #{role}, #{department},
            #{deptCode}, #{subOrgCd}, #{subOrgNam}, #{companyCd}, #{chineseNam},
-           #{skills}, #{password}, #{joinedAt}, #{createdAt}, #{updatedAt})
+           #{skills}, #{password}, #{status},
+           #{joinedAt}, #{createdAt}, #{updatedAt})
     </insert>
 
     <update id="update" parameterType="com.wbs.project.entity.User">
@@ -106,7 +114,7 @@
     </delete>
 
     <select id="countTotal" resultType="int">
-        SELECT COUNT(*) FROM sys_user
+        SELECT COUNT(*) FROM sys_user WHERE status != 'T'
     </select>
 
     <select id="selectMaxIdByPrefix" resultType="java.lang.String">
@@ -123,6 +131,7 @@
         <if test="keyword != null and keyword != ''">
             AND (name LIKE CONCAT('%', #{keyword}, '%') OR id LIKE CONCAT('%', #{keyword}, '%'))
         </if>
+          AND status != 'T'
         ORDER BY created_at DESC
         LIMIT #{offset}, #{pageSize}
     </select>
@@ -133,14 +142,15 @@
         <if test="keyword != null and keyword != ''">
             AND (name LIKE CONCAT('%', #{keyword}, '%') OR id LIKE CONCAT('%', #{keyword}, '%'))
         </if>
+          AND status != 'T'
     </select>
 
-    <!-- 人事数据同步：插入新用户 -->
+    <!-- 人事数据同步：插入新用户（仅同步 ACT_CLSS_CD IN C/H） -->
     <insert id="syncHrInsert">
         INSERT IGNORE INTO sys_user
           (id, name, chinese_nam, email, role, department,
            dept_code, sub_org_cd, sub_org_nam, company_cd,
-           joined_at, created_at, updated_at, password)
+           password, status)
         SELECT
             p.EMP_NUM,
             p.EMP_NAM,
@@ -150,20 +160,19 @@
             o.ORG_NAM,
             IFNULL(p.ORG_CD, ''),
             IFNULL(p.SUB_ORG_CD, ''),
-            IFNULL(o2.ORG_NAM, ''),
+            IFNULL(p.SUB_ORG_NAM, ''),
             IFNULL(p.COMPANY_CD, ''),
-            NOW(),
-            NOW(),
-            NOW(),
-            '1'
+            '1',
+            IFNULL(p.ACT_CLSS_CD, 'C')
         FROM mdm_if_pa_a p
-        LEFT JOIN mdm_if_or_a o  ON p.ORG_CD     = o.ORG_CD
+        LEFT JOIN mdm_if_or_a o  ON p.ORG_CD    = o.ORG_CD
         LEFT JOIN mdm_if_or_a o2 ON p.SUB_ORG_CD = o2.ORG_CD
         WHERE p.EMP_NAM IS NOT NULL
           AND p.EMAIL_ADDR IS NOT NULL
+          AND p.ACT_CLSS_CD IN ('C','H');
     </insert>
 
-    <!-- 人事数据同步：更新已有用户（回填 5 个新字段，NULL 用空串覆盖） -->
+    <!-- 人事数据同步：更新已有用户（仅处理 C/H，含 T→C/H 复活） -->
     <update id="syncHrUpdate">
         UPDATE sys_user u
         INNER JOIN mdm_if_pa_a p ON u.id = p.EMP_NUM COLLATE utf8mb4_unicode_ci
@@ -175,11 +184,46 @@
             u.department  = o.ORG_NAM,
             u.dept_code   = IFNULL(p.ORG_CD, ''),
             u.sub_org_cd  = IFNULL(p.SUB_ORG_CD, ''),
-            u.sub_org_nam = IFNULL(o2.ORG_NAM, ''),
+            u.sub_org_nam = IFNULL(p.SUB_ORG_NAM, ''),
             u.company_cd  = IFNULL(p.COMPANY_CD, ''),
+            u.status      = IFNULL(p.ACT_CLSS_CD, 'C'),
             u.updated_at  = NOW()
         WHERE p.EMP_NAM IS NOT NULL
           AND p.EMAIL_ADDR IS NOT NULL
+          AND p.ACT_CLSS_CD IN ('C','H');
     </update>
+
+    <!-- 人事数据同步：标记离职（MDM 中为 T 或缺失），含复活由 syncHrUpdate 负责 -->
+    <update id="syncHrMarkResigned">
+        UPDATE sys_user u
+        LEFT JOIN mdm_if_pa_a p ON u.id = p.EMP_NUM COLLATE utf8mb4_unicode_ci
+        SET u.status = 'T',
+            u.updated_at = NOW()
+        WHERE u.status != 'T'
+          AND (p.EMP_NUM IS NULL OR p.ACT_CLSS_CD = 'T');
+    </update>
+
+    <!-- 同步前安全检查：在岗 admin 但 MDM 中缺失（用于阻断误标） -->
+    <select id="countAdminNotInMdm" resultType="int">
+        SELECT COUNT(*) FROM sys_user u
+        WHERE u.role = 'admin'
+          AND u.status != 'T'
+          AND NOT EXISTS (
+            SELECT 1 FROM mdm_if_pa_a p
+            WHERE p.EMP_NUM = u.id COLLATE utf8mb4_unicode_ci
+          );
+    </select>
+
+    <!-- 同步前安全检查：同上但返回具体 ID 列表（用于把误标风险暴露给运维） -->
+    <select id="selectAdminIdsNotInMdm" resultType="java.lang.String">
+        SELECT u.id FROM sys_user u
+        WHERE u.role = 'admin'
+          AND u.status != 'T'
+          AND NOT EXISTS (
+            SELECT 1 FROM mdm_if_pa_a p
+            WHERE p.EMP_NUM = u.id COLLATE utf8mb4_unicode_ci
+          )
+        ORDER BY u.id;
+    </select>
 
 </mapper>

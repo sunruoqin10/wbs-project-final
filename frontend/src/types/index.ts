@@ -14,6 +14,7 @@ export interface User {
   subOrgNam?: string;
   companyCd?: string;
   chineseNam?: string;
+  status?: 'C' | 'H' | 'T'; // C=在职, H=休职, T=离职（后端已过滤 T，前端不展示）
 }
 
 export interface Comment {
