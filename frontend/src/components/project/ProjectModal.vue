@@ -196,6 +196,10 @@
           </div>
         </div>
       </div>
+
+      <div v-if="saveError" class="rounded-lg border border-red-200 bg-red-50 p-3 text-sm text-red-700">
+        {{ saveError }}
+      </div>
     </form>
 
     <template #footer>
@@ -230,7 +234,6 @@ const props = defineProps<Props>();
 
 const emit = defineEmits<{
   close: [];
-  save: [project: Partial<Project>];
 }>();
 
 const userStore = useUserStore();
@@ -390,23 +393,33 @@ const validateForm = (): boolean => {
 };
 
 // Handle submit
+const saveError = ref('');
 const handleSubmit = async () => {
   if (!validateForm()) {
     return;
   }
 
   saving.value = true;
+  saveError.value = '';
 
   const projectData: Partial<Project> = {
-    ...formData
+    ...formData,
+    // dept-project-manager 创建项目时自动带上部门
+    deptCode: userStore.currentUser?.deptCode || undefined,
   };
 
-  emit('save', projectData);
-
-  setTimeout(() => {
+  try {
+    if (isEditing.value) {
+      await projectStore.updateProject(props.project!.id, projectData);
+    } else {
+      await projectStore.createProject(projectData);
+    }
     saving.value = false;
     handleClose();
-  }, 500);
+  } catch (e: any) {
+    saving.value = false;
+    saveError.value = e?.message || '保存失败，请重试';
+  }
 };
 
 // Handle close

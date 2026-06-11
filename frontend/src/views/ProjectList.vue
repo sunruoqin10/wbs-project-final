@@ -239,7 +239,6 @@
         :open="modalOpen"
         :project="editingProject"
         @close="closeModal"
-        @save="handleSaveProject"
       />
     </div>
   </MainLayout>
@@ -399,15 +398,6 @@ const openEditModal = (project: Project) => {
 const closeModal = () => {
   modalOpen.value = false;
   editingProject.value = null;
-};
-
-const handleSaveProject = async (projectData: Partial<Project>) => {
-  if (editingProject.value) {
-    await projectStore.updateProject(editingProject.value.id, projectData);
-  } else {
-    const newProject = await projectStore.createProject(projectData);
-    console.log('Created project:', newProject);
-  }
 };
 
 const getMembers = (project: Project): User[] => {

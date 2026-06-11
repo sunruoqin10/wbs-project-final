@@ -126,8 +126,12 @@ const containerRef = ref<HTMLElement>();
 const searchInputRef = ref<HTMLInputElement>();
 const listRef = ref<HTMLElement>();
 
-// 全部用户来自 store
-const allUsers = computed(() => userStore.users);
+// 全部用户来自 store,仅显示与当前用户同部门的成员
+const allUsers = computed(() => {
+  const currentDept = userStore.currentUser?.deptCode;
+  if (!currentDept) return userStore.users;
+  return userStore.users.filter(u => u.deptCode === currentDept);
+});
 
 // 前端搜索过滤
 const filteredResults = computed(() => {
@@ -144,10 +148,10 @@ const displayedResults = computed(() => {
   return filteredResults.value.slice(0, showLimit.value);
 });
 
-// 已选用户（从 store 中查找）
+// 已选用户（从全量 store 中查找，确保已选标签始终可见）
 const selectedUsers = computed(() => {
   if (props.modelValue.length === 0) return [];
-  const userMap = new Map(allUsers.value.map(u => [u.id, u]));
+  const userMap = new Map(userStore.users.map(u => [u.id, u]));
   return props.modelValue
     .filter(id => userMap.has(id))
     .map(id => userMap.get(id)!);
