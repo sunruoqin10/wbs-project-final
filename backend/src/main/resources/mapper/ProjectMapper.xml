@@ -14,12 +14,13 @@
         <result column="progress" property="progress"/>
         <result column="owner_id" property="ownerId"/>
         <result column="color" property="color"/>
+        <result column="dept_code" property="deptCode"/>
         <result column="created_at" property="createdAt"/>
         <result column="updated_at" property="updatedAt"/>
     </resultMap>
 
     <sql id="Base_Column_List">
-        id, name, description, status, priority, start_date, end_date, progress, owner_id, color, created_at, updated_at
+        id, name, description, status, priority, start_date, end_date, progress, owner_id, color, dept_code, created_at, updated_at
     </sql>
 
     <select id="selectAll" resultMap="BaseResultMap">
@@ -57,8 +58,8 @@
     </select>
 
     <insert id="insert" parameterType="com.wbs.project.entity.Project">
-        INSERT INTO sys_project (id, name, description, status, priority, start_date, end_date, progress, owner_id, color, created_at, updated_at)
-        VALUES (#{id}, #{name}, #{description}, #{status}, #{priority}, #{startDate}, #{endDate}, #{progress}, #{ownerId}, #{color}, #{createdAt}, #{updatedAt})
+        INSERT INTO sys_project (id, name, description, status, priority, start_date, end_date, progress, owner_id, color, dept_code, created_at, updated_at)
+        VALUES (#{id}, #{name}, #{description}, #{status}, #{priority}, #{startDate}, #{endDate}, #{progress}, #{ownerId}, #{color}, #{deptCode}, #{createdAt}, #{updatedAt})
     </insert>
 
     <update id="update" parameterType="com.wbs.project.entity.Project">
@@ -73,6 +74,7 @@
             <if test="progress != null">progress = #{progress},</if>
             <if test="ownerId != null">owner_id = #{ownerId},</if>
             <if test="color != null">color = #{color},</if>
+            <if test="deptCode != null">dept_code = #{deptCode},</if>
             updated_at = #{updatedAt}
         </set>
         WHERE id = #{id}
@@ -88,6 +90,35 @@
 
     <select id="countByStatus" resultType="int">
         SELECT COUNT(*) FROM sys_project WHERE status = #{status}
+    </select>
+
+    <!-- 角色管理 v2：按部门编码列表查询项目（部门项目负责人数据范围） -->
+    <select id="selectByDeptCodes" resultMap="BaseResultMap">
+        SELECT <include refid="Base_Column_List"/>
+        FROM sys_project
+        WHERE dept_code IN
+        <foreach collection="deptCodes" item="dc" open="(" separator="," close=")">
+            #{dc}
+        </foreach>
+        ORDER BY created_at DESC
+    </select>
+
+    <!-- 角色管理 v2：批量按 ID 查项目（成员/owner 数据范围） -->
+    <select id="selectByIds" resultMap="BaseResultMap">
+        SELECT <include refid="Base_Column_List"/>
+        FROM sys_project
+        WHERE id IN
+        <foreach collection="ids" item="id" open="(" separator="," close=")">
+            #{id}
+        </foreach>
+        ORDER BY created_at DESC
+    </select>
+
+    <!-- 角色管理 v2：按 ownerId 查项目 ID 列表 -->
+    <select id="selectIdsByOwner" resultType="java.lang.String">
+        SELECT id FROM sys_project
+        WHERE owner_id = #{ownerId}
+        ORDER BY created_at DESC
     </select>
 
 </mapper>

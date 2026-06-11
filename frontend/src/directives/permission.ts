@@ -102,7 +102,7 @@ export const vProjectPermission: Directive = {
       return;
     }
 
-    const hasPermission = permissionStore.hasProjectPermission(projectId, permission);
+    const hasPermission = permissionStore.hasPermission(permission) && permissionStore.canViewProject(projectId);
 
     if (!hasPermission) {
       el.style.display = 'none';
@@ -118,7 +118,7 @@ export const vProjectPermission: Directive = {
       return;
     }
 
-    const hasPermission = permissionStore.hasProjectPermission(projectId, permission);
+    const hasPermission = permissionStore.hasPermission(permission) && permissionStore.canViewProject(projectId);
 
     if (hasPermission) {
       el.style.display = '';

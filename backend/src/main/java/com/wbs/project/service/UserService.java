@@ -1,23 +1,33 @@
 package com.wbs.project.service;
 
+import com.fasterxml.jackson.core.type.TypeReference;
+import com.fasterxml.jackson.databind.ObjectMapper;
+import com.wbs.project.entity.RoleChangeLog;
 import com.wbs.project.entity.User;
+import com.wbs.project.enums.UserRole;
 import com.wbs.project.exception.BusinessException;
+import com.wbs.project.mapper.RoleChangeLogMapper;
 import com.wbs.project.mapper.UserMapper;
 import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.time.LocalDateTime;
+import java.util.Collections;
 import java.util.List;
 
 /**
  * 用户Service
  */
+@Slf4j
 @Service
 @RequiredArgsConstructor
 public class UserService {
 
     private final UserMapper userMapper;
+    private final RoleChangeLogMapper roleChangeLogMapper;
+    private final ObjectMapper objectMapper = new ObjectMapper();
 
     /**
      * 查询所有用户
@@ -153,12 +163,27 @@ public class UserService {
             throw new RuntimeException("用户不存在");
         }
 
+        // 角色管理 v2 兼容期：旧 project-manager 角色自动降级为 member
+        if (UserRole.PROJECT_MANAGER.code.equals(user.getRole())) {
+            log.warn("用户 {} 仍持有废弃的 project-manager 角色,降级为 member", userId);
+            userMapper.updateRoleAndScope(userId, UserRole.MEMBER.code, null, null);
+            user = userMapper.selectById(userId);
+        }
+
         // 明文密码比对
         if (!password.equals(user.getPassword())) {
             throw new RuntimeException("密码错误");
         }
 
         return user;
+    }
+
+    /**
+     * 获取当前 token_version（供 JwtUtil.generateToken 使用）
+     */
+    public long getCurrentTokenVersion(String userId) {
+        User u = userMapper.selectById(userId);
+        return u == null || u.getTokenVersion() == null ? 0L : u.getTokenVersion().longValue();
     }
 
     /**
@@ -228,5 +253,107 @@ public class UserService {
         result.put("updated", updated);
         result.put("resigned", resigned);
         return result;
+    }
+
+    // ============ 角色管理 v2 ============
+
+    /**
+     * 修改用户角色与管辖范围
+     * - 调用方须为 admin（在 Controller 层通过 @RequireRole("admin") 或 PermissionService.requireAdmin 拦截）
+     * - dept-project-manager 必须指定 managedCompanyCd == user.companyCd
+     * - managedDeptCodes 自动序列化为 JSON
+     * - 触发 token_version + 1,旧 JWT 立即失效
+     * - 写 sys_role_change_log 审计
+     *
+     * @param operatorId       操作人 id
+     * @param targetUserId     被操作用户 id
+     * @param newRole          新角色（UserRole 枚举 code）
+     * @param managedDeptCodes 管辖部门编码列表（仅 dept-project-manager 必填）
+     * @param managedCompanyCd 管辖公司编码（仅 dept-project-manager 必填）
+     * @param reason           变更原因
+     * @return 更新后的用户
+     */
+    @Transactional
+    public User changeUserRole(String operatorId,
+                                String targetUserId,
+                                String newRole,
+                                List<String> managedDeptCodes,
+                                String managedCompanyCd,
+                                String reason) {
+        User target = userMapper.selectById(targetUserId);
+        if (target == null) {
+            throw new BusinessException(404, "用户不存在: " + targetUserId);
+        }
+
+        UserRole newRoleEnum = UserRole.fromCode(newRole);
+        if (newRoleEnum == UserRole.PROJECT_MANAGER) {
+            throw new BusinessException(400, "project-manager 角色已废弃,请使用 dept-project-manager/member");
+        }
+
+        // 校验 dept-project-manager 必须指定 managed_company_cd
+        String jsonCodes = null;
+        if (newRoleEnum == UserRole.DEPT_PROJECT_MANAGER) {
+            if (managedDeptCodes == null || managedDeptCodes.isEmpty()) {
+                throw new BusinessException(400, "dept-project-manager 必须指定至少一个管辖部门");
+            }
+            if (managedCompanyCd == null || managedCompanyCd.isEmpty()) {
+                throw new BusinessException(400, "dept-project-manager 必须指定 managed_company_cd");
+            }
+            if (target.getCompanyCd() != null && !target.getCompanyCd().equals(managedCompanyCd)) {
+                throw new BusinessException(400, "managed_company_cd 必须与用户所属公司一致 (user.company_cd=" + target.getCompanyCd() + ")");
+            }
+            try {
+                jsonCodes = objectMapper.writeValueAsString(managedDeptCodes);
+            } catch (Exception e) {
+                throw new BusinessException(500, "managedDeptCodes 序列化失败: " + e.getMessage());
+            }
+        } else {
+            // 切到非 dept-pm 角色时清空 managed_*
+            managedCompanyCd = null;
+            jsonCodes = null;
+        }
+
+        // 写审计
+        RoleChangeLog changeLog = new RoleChangeLog();
+        changeLog.setUserId(targetUserId);
+        changeLog.setOldRole(target.getRole());
+        changeLog.setNewRole(newRoleEnum.code);
+        changeLog.setOldManagedDeptCodes(target.getManagedDeptCodes());
+        changeLog.setNewManagedDeptCodes(jsonCodes);
+        changeLog.setOldManagedCompanyCd(target.getManagedCompanyCd());
+        changeLog.setNewManagedCompanyCd(managedCompanyCd);
+        changeLog.setChangedBy(operatorId);
+        changeLog.setChangedAt(LocalDateTime.now());
+        changeLog.setReason(reason);
+        roleChangeLogMapper.insert(changeLog);
+
+        // 更新用户(role + managed_* + token_version+1)
+        userMapper.updateRoleAndScope(targetUserId, newRoleEnum.code, jsonCodes, managedCompanyCd);
+        log.info("角色变更: operator={}, target={}, {} -> {}, deptCodes={}, companyCd={}, reason={}",
+                operatorId, targetUserId, changeLog.getOldRole(), changeLog.getNewRole(), jsonCodes, managedCompanyCd, reason);
+
+        return userMapper.selectById(targetUserId);
+    }
+
+    /**
+     * 查询某用户的角色变更历史
+     */
+    public List<RoleChangeLog> getRoleChangeHistory(String userId) {
+        return roleChangeLogMapper.selectByUserId(userId);
+    }
+
+    /**
+     * 解析 managedDeptCodes JSON 字符串为 List（供其他 Service 复用）
+     */
+    public List<String> parseManagedDeptCodes(String json) {
+        if (json == null || json.isEmpty()) {
+            return Collections.emptyList();
+        }
+        try {
+            return objectMapper.readValue(json, new TypeReference<List<String>>() {});
+        } catch (Exception e) {
+            log.warn("解析 managedDeptCodes 失败: {}", json, e);
+            return Collections.emptyList();
+        }
     }
 }

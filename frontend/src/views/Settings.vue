@@ -57,10 +57,12 @@
                 <Input :label="t('settings.profile.name')" v-model="profileForm.name" />
                 <Input :label="t('settings.profile.email')" v-model="profileForm.email" type="email" />
                 <Input :label="t('settings.profile.department')" v-model="profileForm.department" />
-                <Select :label="t('settings.profile.role')" v-model="profileForm.role" :disabled="isMemberRole">
+                <Select :label="t('settings.profile.role')" v-model="profileForm.role" :disabled="!isAdmin">
                   <option value="admin">{{ t('roles.admin') }}</option>
-                  <option value="project-manager">{{ t('roles.projectManager') }}</option>
+                  <option value="dept-project-manager">{{ t('roles.deptProjectManager') }}</option>
+                  <option value="project-manager" disabled>{{ t('roles.projectManager') }} (已废弃)</option>
                   <option value="member">{{ t('roles.member') }}</option>
+                  <option value="viewer">{{ t('roles.viewer') }}</option>
                 </Select>
               </div>
 
@@ -299,7 +301,7 @@ const { t } = useI18n();
 const userStore = useUserStore();
 const permissionStore = usePermissionStore();
 const currentUser = computed(() => userStore.currentUser);
-const isMemberRole = computed(() => currentUser.value?.role === 'member');
+const isAdmin = computed(() => permissionStore.isAdmin());
 const route = useRoute();
 const router = useRouter();
 

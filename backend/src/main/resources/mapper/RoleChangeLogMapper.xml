@@ -1,0 +1,43 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+        "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.wbs.project.mapper.RoleChangeLogMapper">
+
+    <resultMap id="BaseResultMap" type="com.wbs.project.entity.RoleChangeLog">
+        <id column="id" property="id"/>
+        <result column="user_id" property="userId"/>
+        <result column="old_role" property="oldRole"/>
+        <result column="new_role" property="newRole"/>
+        <result column="old_managed_dept_codes" property="oldManagedDeptCodes"/>
+        <result column="new_managed_dept_codes" property="newManagedDeptCodes"/>
+        <result column="old_managed_company_cd" property="oldManagedCompanyCd"/>
+        <result column="new_managed_company_cd" property="newManagedCompanyCd"/>
+        <result column="changed_by" property="changedBy"/>
+        <result column="changed_at" property="changedAt"/>
+        <result column="reason" property="reason"/>
+    </resultMap>
+
+    <insert id="insert" parameterType="com.wbs.project.entity.RoleChangeLog" useGeneratedKeys="true" keyProperty="id">
+        INSERT INTO sys_role_change_log
+          (user_id, old_role, new_role,
+           old_managed_dept_codes, new_managed_dept_codes,
+           old_managed_company_cd, new_managed_company_cd,
+           changed_by, changed_at, reason)
+        VALUES
+          (#{userId}, #{oldRole}, #{newRole},
+           #{oldManagedDeptCodes}, #{newManagedDeptCodes},
+           #{oldManagedCompanyCd}, #{newManagedCompanyCd},
+           #{changedBy}, #{changedAt}, #{reason})
+    </insert>
+
+    <select id="selectByUserId" resultMap="BaseResultMap">
+        SELECT id, user_id, old_role, new_role,
+               old_managed_dept_codes, new_managed_dept_codes,
+               old_managed_company_cd, new_managed_company_cd,
+               changed_by, changed_at, reason
+        FROM sys_role_change_log
+        WHERE user_id = #{userId}
+        ORDER BY changed_at DESC
+    </select>
+
+</mapper>

@@ -202,6 +202,7 @@ const pageTitle = computed(() => {
 const roleLabel = computed(() => {
   const roleMap = {
     admin: 'roles.admin',
+    'dept-project-manager': 'roles.deptProjectManager',
     'project-manager': 'roles.projectManager',
     member: 'roles.member',
     viewer: 'roles.viewer'

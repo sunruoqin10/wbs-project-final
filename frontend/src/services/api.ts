@@ -1,6 +1,6 @@
 // API Service Layer - Connects to Spring Boot backend
 
-import type { Project, Task, User, DelayStats, OvertimeRecord, OvertimeStats, Permission, TaskOvertimeStats, WeeklyReport, WeeklyReportComment, Document, OrgNode } from '@/types';
+import type { Project, Task, User, DelayStats, OvertimeRecord, OvertimeStats, Permission, TaskOvertimeStats, WeeklyReport, WeeklyReportComment, Document, OrgNode, RoleChangeLog, RoleChangeRequest } from '@/types';
 import type { SchedulerConfig } from '@/types/scheduler';
 import { useUserStore } from '@/stores/user';
 
@@ -396,6 +396,26 @@ class ApiService {
 
   async getUserCount(): Promise<number> {
     return request<number>('/users/count');
+  }
+
+  // ============ 角色管理 v2 ============
+
+  /**
+   * 角色变更（仅 admin 可调用）
+   * 触发 tokenVersion + 1,目标用户旧 token 失效
+   */
+  async changeUserRole(id: string, req: RoleChangeRequest): Promise<User> {
+    return request<User>(`/users/${id}/role`, {
+      method: 'PUT',
+      body: JSON.stringify(req),
+    });
+  }
+
+  /**
+   * 查询某用户角色变更历史
+   */
+  async getRoleChangeHistory(id: string): Promise<RoleChangeLog[]> {
+    return request<RoleChangeLog[]>(`/users/${id}/role-history`);
   }
 
   // HR Sync API

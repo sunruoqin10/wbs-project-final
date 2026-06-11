@@ -3,7 +3,8 @@ export interface User {
   name: string;
   email: string;
   avatar: string;
-  role: 'admin' | 'project-manager' | 'member' | 'viewer';
+  /** 角色管理 v2:5 个枚举 */
+  role: 'admin' | 'dept-project-manager' | 'project-manager' | 'member' | 'viewer';
   department: string;
   skills: string[];
   password?: string;
@@ -15,6 +16,10 @@ export interface User {
   companyCd?: string;
   chineseNam?: string;
   status?: 'C' | 'H' | 'T'; // C=在职, H=休职, T=离职（后端已过滤 T，前端不展示）
+  // === 角色管理 v2 扩展 ===
+  managedDeptCodes?: string[];  // 管辖部门编码列表(仅 dept-project-manager 有效)
+  managedCompanyCd?: string;    // 管辖公司编码(仅 dept-project-manager 有效)
+  tokenVersion?: number;        // JWT 版本号(角色变更后旧 token 失效)
 }
 
 export interface Comment {
@@ -102,6 +107,8 @@ export interface Project {
   delayedTasks?: number;          // 延期任务数
   totalDelayedDays?: number;      // 总延期天数
   isDelayed?: boolean;            // 是否有延期任务
+  // === 角色管理 v2 扩展 ===
+  deptCode?: string;              // 项目归属部门编码(对应 MDM ORG_CD)
 }
 
 export interface Statistics {
@@ -187,7 +194,37 @@ export interface Permission {
   description: string;
 }
 
-export type UserRole = 'admin' | 'project-manager' | 'member';
+/**
+ * 角色管理 v2:5 个角色
+ */
+export type UserRole = 'admin' | 'dept-project-manager' | 'project-manager' | 'member' | 'viewer';
+
+/**
+ * 角色变更请求 DTO
+ */
+export interface RoleChangeRequest {
+  newRole: UserRole;
+  managedDeptCodes?: string[];
+  managedCompanyCd?: string;
+  reason?: string;
+}
+
+/**
+ * 角色变更历史记录
+ */
+export interface RoleChangeLog {
+  id: number;
+  userId: string;
+  oldRole: string;
+  newRole: string;
+  oldManagedDeptCodes?: string;
+  newManagedDeptCodes?: string;
+  oldManagedCompanyCd?: string;
+  newManagedCompanyCd?: string;
+  changedBy: string;
+  changedAt: string;
+  reason?: string;
+}
 
 export interface PermissionCheckResult {
   hasPermission: boolean;

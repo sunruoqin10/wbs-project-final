@@ -85,6 +85,12 @@
             <artifactId>spring-boot-starter-mail</artifactId>
         </dependency>
 
+        <!-- Spring Boot AOP (角色管理 v2 权限切面) -->
+        <dependency>
+            <groupId>org.springframework.boot</groupId>
+            <artifactId>spring-boot-starter-aop</artifactId>
+        </dependency>
+
         <!-- FreeMarker for email templates -->
         <dependency>
             <groupId>org.springframework.boot</groupId>

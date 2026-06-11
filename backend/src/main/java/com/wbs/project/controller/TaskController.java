@@ -2,7 +2,9 @@ package com.wbs.project.controller;
 
 import com.wbs.project.common.Result;
 import com.wbs.project.entity.Task;
+import com.wbs.project.service.PermissionService;
 import com.wbs.project.service.TaskService;
+import jakarta.servlet.http.HttpServletRequest;
 import lombok.RequiredArgsConstructor;
 import org.springframework.web.bind.annotation.*;
 
@@ -14,10 +16,15 @@ import java.util.List;
 public class TaskController {
 
     private final TaskService taskService;
+    private final PermissionService permissionService;
 
+    /**
+     * 查询所有任务（角色管理 v2：按当前用户数据范围过滤）
+     */
     @GetMapping
-    public Result<List<Task>> getAllTasks() {
-        List<Task> tasks = taskService.getAllTasks();
+    public Result<List<Task>> getAllTasks(HttpServletRequest request) {
+        String currentUserId = (String) request.getAttribute("userId");
+        List<Task> tasks = taskService.getAllTasks(currentUserId);
         taskService.updateDelayedStatus(tasks);
         return Result.success(tasks);
     }
@@ -63,8 +70,11 @@ public class TaskController {
     @PostMapping
     public Result<Task> createTask(
             @RequestBody Task task,
-            @RequestHeader(value = "X-User-Id", required = false) String userId,
-            @RequestHeader(value = "X-User-Role", required = false) String userRole) {
+            HttpServletRequest request) {
+        String currentUserId = (String) request.getAttribute("userId");
+        if (!permissionService.canCreateTask(currentUserId, task.getProjectId())) {
+            return Result.error(403, "无任务创建权限");
+        }
         Task createdTask = taskService.createTask(task);
         return Result.success("任务创建成功", createdTask);
     }
@@ -73,7 +83,11 @@ public class TaskController {
     public Result<Task> updateTask(
             @PathVariable String id,
             @RequestBody Task task,
-            @RequestHeader(value = "X-User-Id", required = false) String userId) {
+            HttpServletRequest request) {
+        String currentUserId = (String) request.getAttribute("userId");
+        if (!permissionService.canEditTask(currentUserId, id)) {
+            return Result.error(403, "无任务编辑权限");
+        }
         Task existingTask = taskService.getTaskById(id);
         if (existingTask == null) {
             return Result.error("任务不存在");
@@ -85,8 +99,11 @@ public class TaskController {
     @DeleteMapping("/{id}")
     public Result<Void> deleteTask(
             @PathVariable String id,
-            @RequestHeader(value = "X-User-Id", required = false) String userId,
-            @RequestHeader(value = "X-User-Role", required = false) String userRole) {
+            HttpServletRequest request) {
+        String currentUserId = (String) request.getAttribute("userId");
+        if (!permissionService.canEditTask(currentUserId, id)) {
+            return Result.error(403, "无任务删除权限");
+        }
         Task existingTask = taskService.getTaskById(id);
         if (existingTask == null) {
             return Result.error("任务不存在");
@@ -99,7 +116,11 @@ public class TaskController {
     public Result<Void> updateTaskStatus(
             @PathVariable String id,
             @RequestBody StatusRequest request,
-            @RequestHeader(value = "X-User-Id", required = false) String userId) {
+            HttpServletRequest request2) {
+        String currentUserId = (String) request2.getAttribute("userId");
+        if (!permissionService.canEditTask(currentUserId, id)) {
+            return Result.error(403, "无任务状态修改权限");
+        }
         Task existingTask = taskService.getTaskById(id);
         if (existingTask == null) {
             return Result.error("任务不存在");
@@ -108,16 +129,24 @@ public class TaskController {
         return Result.success();
     }
 
+    /**
+     * 角色管理 v2:更新任务进度
+     * 规则：admin / dept-pm(部门内) / pm(owner) 全部允许
+     *       member: 仅当 task.assigneeId == currentUserId
+     *       viewer: 拒绝
+     */
     @PatchMapping("/{id}/progress")
     public Result<Void> updateTaskProgress(
             @PathVariable String id,
             @RequestBody ProgressRequest request,
-            @RequestHeader(value = "X-User-Id", required = false) String userId) {
+            HttpServletRequest httpRequest) {
+        String currentUserId = (String) httpRequest.getAttribute("userId");
         Task existingTask = taskService.getTaskById(id);
         if (existingTask == null) {
             return Result.error("任务不存在");
         }
-        taskService.updateTaskProgress(id, request.getProgress());
+        // 使用新签名(带 currentUserId 校验)
+        taskService.updateTaskProgress(currentUserId, id, request.getProgress());
         return Result.success();
     }
 

@@ -1,12 +1,17 @@
 package com.wbs.project.controller;
 
+import com.wbs.project.annotation.RequireRole;
 import com.wbs.project.common.Result;
 import com.wbs.project.entity.ChangePasswordRequest;
 import com.wbs.project.entity.LoginRequest;
 import com.wbs.project.entity.LoginResponse;
+import com.wbs.project.entity.RoleChangeLog;
+import com.wbs.project.entity.RoleChangeRequest;
 import com.wbs.project.entity.User;
+import com.wbs.project.service.PermissionService;
 import com.wbs.project.service.UserService;
 import com.wbs.project.util.JwtUtil;
+import jakarta.servlet.http.HttpServletRequest;
 import lombok.RequiredArgsConstructor;
 import org.springframework.web.bind.annotation.*;
 
@@ -19,12 +24,15 @@ public class UserController {
 
     private final UserService userService;
     private final JwtUtil jwtUtil;
+    private final PermissionService permissionService;
 
     @PostMapping("/login")
     public Result<LoginResponse> login(@RequestBody LoginRequest request) {
         User user = userService.login(request.getUserId(), request.getPassword());
         user.setPassword(null);
-        String token = jwtUtil.generateToken(user.getId(), user.getRole());
+        // 角色管理 v2:token 携带 tokenVersion,角色/管辖范围变更后旧 token 失效
+        long tokenVersion = userService.getCurrentTokenVersion(user.getId());
+        String token = jwtUtil.generateToken(user.getId(), user.getRole(), tokenVersion);
         LoginResponse loginResponse = new LoginResponse(token, user);
         return Result.success("登录成功", loginResponse);
     }
@@ -58,8 +66,21 @@ public class UserController {
         return Result.success(users);
     }
 
+    /**
+     * 创建用户（角色管理 v2：非 admin 不能创建 admin 账号）
+     */
     @PostMapping
-    public Result<User> createUser(@RequestBody User user) {
+    public Result<User> createUser(@RequestBody User user, HttpServletRequest request) {
+        String operatorId = (String) request.getAttribute("userId");
+        if (operatorId == null) {
+            return Result.error(401, "未登录");
+        }
+        if ("admin".equals(user.getRole()) && !permissionService.isAdmin(operatorId)) {
+            return Result.error(403, "无权限创建管理员账号");
+        }
+        if ("dept-project-manager".equals(user.getRole()) && !permissionService.isAdmin(operatorId)) {
+            return Result.error(403, "无权限创建部门项目负责人账号");
+        }
         User createdUser = userService.createUser(user);
         return Result.success("用户创建成功", createdUser);
     }
@@ -92,5 +113,37 @@ public class UserController {
     public Result<java.util.Map<String, Integer>> syncHrData() {
         java.util.Map<String, Integer> result = userService.syncHrData();
         return Result.success("人事数据同步完成", result);
+    }
+
+    // ============ 角色管理 v2 ============
+
+    /**
+     * 修改用户角色与管辖范围
+     * 仅 admin 可调用
+     * 触发 tokenVersion + 1,旧 token 立即失效
+     */
+    @PutMapping("/{id}/role")
+    @RequireRole({"admin"})
+    public Result<User> changeUserRole(@PathVariable String id,
+                                        @RequestBody RoleChangeRequest req,
+                                        HttpServletRequest request) {
+        String operatorId = (String) request.getAttribute("userId");
+        User updated = userService.changeUserRole(operatorId, id, req.getNewRole(),
+                req.getManagedDeptCodes(), req.getManagedCompanyCd(), req.getReason());
+        return Result.success("角色变更成功,目标用户需重新登录", updated);
+    }
+
+    /**
+     * 查询某用户角色变更历史
+     */
+    @GetMapping("/{id}/role-history")
+    public Result<List<RoleChangeLog>> getRoleChangeHistory(@PathVariable String id,
+                                                             HttpServletRequest request) {
+        String operatorId = (String) request.getAttribute("userId");
+        // 非 admin 只能查自己的历史
+        if (operatorId != null && !permissionService.isAdmin(operatorId) && !operatorId.equals(id)) {
+            return Result.error(403, "无权限查看他人角色变更历史");
+        }
+        return Result.success(userService.getRoleChangeHistory(id));
     }
 }

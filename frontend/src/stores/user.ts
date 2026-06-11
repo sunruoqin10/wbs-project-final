@@ -15,7 +15,7 @@ export const useUserStore = defineStore('user', () => {
     return users.value.find(u => u.id === currentUserId.value) || null;
   });
 
-  // 解析用户数据，处理 skills 字段的 JSON 字符串
+  // 解析用户数据，处理 skills / managedDeptCodes 字段的 JSON 字符串
   const parseUserData = (user: any): User => {
     // 处理 skills 字段：如果是 JSON 字符串则解析为数组
     if (user.skills && typeof user.skills === 'string') {
@@ -29,6 +29,18 @@ export const useUserStore = defineStore('user', () => {
     // 确保 skills 是数组
     if (!Array.isArray(user.skills)) {
       user.skills = [];
+    }
+    // 角色管理 v2:managedDeptCodes 也是 JSON 字符串
+    if (user.managedDeptCodes && typeof user.managedDeptCodes === 'string') {
+      try {
+        user.managedDeptCodes = JSON.parse(user.managedDeptCodes);
+      } catch (e) {
+        console.warn('Failed to parse managedDeptCodes JSON:', user.managedDeptCodes, e);
+        user.managedDeptCodes = [];
+      }
+    }
+    if (user.managedDeptCodes && !Array.isArray(user.managedDeptCodes)) {
+      user.managedDeptCodes = [];
     }
     return user as User;
   };

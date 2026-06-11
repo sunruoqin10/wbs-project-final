@@ -1,5 +1,7 @@
 package com.wbs.project.interceptor;
 
+import com.wbs.project.entity.User;
+import com.wbs.project.mapper.UserMapper;
 import com.wbs.project.util.JwtUtil;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
@@ -9,13 +11,16 @@ import org.springframework.web.servlet.HandlerInterceptor;
 
 /**
  * JWT认证拦截器
- * 拦截所有请求，验证JWT令牌
+ * 拦截所有请求，验证JWT令牌 + tokenVersion（角色管理 v2）
  */
 @Component
 public class AuthInterceptor implements HandlerInterceptor {
 
     @Autowired
     private JwtUtil jwtUtil;
+
+    @Autowired
+    private UserMapper userMapper;
 
     /**
      * 在处理请求之前进行认证检查
@@ -58,6 +63,24 @@ public class AuthInterceptor implements HandlerInterceptor {
         // Token有效，将用户信息存入请求属性
         String userId = jwtUtil.extractUserId(token);
         String role = jwtUtil.extractRole(token);
+        long tokenVersionInJwt = jwtUtil.extractTokenVersion(token);
+
+        // 角色管理 v2: 校验 tokenVersion,角色/管辖范围变更后强制重新登录
+        User user = userId == null ? null : userMapper.selectById(userId);
+        if (user == null) {
+            response.setStatus(HttpServletResponse.SC_UNAUTHORIZED);
+            response.setContentType("application/json;charset=UTF-8");
+            response.getWriter().write("{\"code\":401,\"message\":\"账号不存在\",\"data\":null}");
+            return false;
+        }
+        long currentTokenVersion = user.getTokenVersion() == null ? 0L : user.getTokenVersion().longValue();
+        if (currentTokenVersion != tokenVersionInJwt) {
+            response.setStatus(HttpServletResponse.SC_UNAUTHORIZED);
+            response.setContentType("application/json;charset=UTF-8");
+            response.getWriter().write("{\"code\":401,\"message\":\"账号权限已变更,请重新登录\",\"data\":null}");
+            return false;
+        }
+
         request.setAttribute("userId", userId);
         request.setAttribute("userRole", role);
 

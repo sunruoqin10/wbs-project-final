@@ -14,6 +14,7 @@ import org.springframework.transaction.annotation.Transactional;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.time.temporal.ChronoUnit;
+import java.util.ArrayList;
 import java.util.List;
 import java.util.UUID;
 import java.util.stream.Collectors;
@@ -29,16 +30,19 @@ public class TaskService {
     private final EmailNotificationService emailNotificationService;
     private final UserService userService;
     private final ProjectMapper projectMapper;
+    private final PermissionService permissionService;
     private ProjectService projectService;
 
-    public TaskService(TaskMapper taskMapper, 
+    public TaskService(TaskMapper taskMapper,
                        EmailNotificationService emailNotificationService,
                        UserService userService,
-                       ProjectMapper projectMapper) {
+                       ProjectMapper projectMapper,
+                       PermissionService permissionService) {
         this.taskMapper = taskMapper;
         this.emailNotificationService = emailNotificationService;
         this.userService = userService;
         this.projectMapper = projectMapper;
+        this.permissionService = permissionService;
     }
 
     @Autowired
@@ -48,7 +52,30 @@ public class TaskService {
     }
 
     /**
-     * 查询所有任务
+     * 查询所有任务（角色管理 v2：按当前用户的项目范围过滤）
+     * @param currentUserId 当前用户 id
+     */
+    public List<Task> getAllTasks(String currentUserId) {
+        if (currentUserId == null) {
+            return List.of();
+        }
+        if (permissionService.isAdmin(currentUserId)) {
+            return taskMapper.selectAll();
+        }
+        List<String> accessibleProjectIds = permissionService.getAccessibleProjectIds(currentUserId);
+        if (accessibleProjectIds == null || accessibleProjectIds.isEmpty()) {
+            return List.of();
+        }
+        // 收集这些项目下的所有任务
+        List<Task> result = new ArrayList<>();
+        for (String pid : accessibleProjectIds) {
+            result.addAll(taskMapper.selectByProjectId(pid));
+        }
+        return result;
+    }
+
+    /**
+     * 查询所有任务（兼容旧调用,实际不推荐,建议使用 getAllTasks(currentUserId)）
      */
     public List<Task> getAllTasks() {
         return taskMapper.selectAll();
@@ -297,7 +324,31 @@ public class TaskService {
     }
 
     /**
-     * 更新任务进度
+     * 更新任务进度（角色管理 v2：调用方需传入 currentUserId 校验）
+     * 规则：
+     * - admin / dept-pm(部门内) / pm(owner) 全部允许
+     * - member: 仅当 task.assigneeId == currentUserId
+     * - viewer: 不允许
+     */
+    @Transactional
+    public void updateTaskProgress(String currentUserId, String id, Integer progress) {
+        Task task = taskMapper.selectById(id);
+        if (task == null) {
+            throw new RuntimeException("任务不存在");
+        }
+
+        // 角色管理 v2: 权限校验
+        if (!permissionService.canEditTaskProgress(currentUserId, id)) {
+            throw new com.wbs.project.exception.BusinessException(403, "只能修改自己负责的任务进度");
+        }
+
+        task.setProgress(progress);
+        task.setUpdatedAt(LocalDateTime.now());
+        taskMapper.update(task);
+    }
+
+    /**
+     * 兼容旧调用（不带 currentUserId,跳过权限校验,仅用于内部调用）
      */
     @Transactional
     public void updateTaskProgress(String id, Integer progress) {
@@ -305,15 +356,9 @@ public class TaskService {
         if (task == null) {
             throw new RuntimeException("任务不存在");
         }
-
         task.setProgress(progress);
         task.setUpdatedAt(LocalDateTime.now());
         taskMapper.update(task);
-
-        // 不再自动更新状态，状态应该由用户手动控制
-        // 移除了以下逻辑：
-        // - 进度为100%时自动设置为"done"
-        // - 进度大于0且状态为"todo"时自动设置为"in-progress"
     }
 
     /**

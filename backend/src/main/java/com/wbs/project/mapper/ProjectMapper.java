@@ -61,4 +61,20 @@ public interface ProjectMapper {
      * 统计进行中的项目数
      */
     int countByStatus(@Param("status") String status);
+
+    /**
+     * 根据部门编码列表查询项目（角色管理 v2：部门项目负责人数据范围）
+     * 适用于 dept_code IN (deptCode1, deptCode2, ...)
+     */
+    List<Project> selectByDeptCodes(@Param("deptCodes") java.util.List<String> deptCodes);
+
+    /**
+     * 根据 ID 集合批量查询项目（角色管理 v2：成员/owner 数据范围）
+     */
+    List<Project> selectByIds(@Param("ids") java.util.List<String> ids);
+
+    /**
+     * 根据 ownerId 集合查询项目 ID 列表（角色管理 v2：project-manager 数据范围）
+     */
+    java.util.List<String> selectIdsByOwner(@Param("ownerId") String ownerId);
 }

@@ -487,8 +487,7 @@ export default {
   // 团队成员
   team: {
     title: '团队成员',
-    subtitle: '管理项目团队成员和权限',
-    addMember: '添加成员',
+    subtitle: '管理项目团队成员和权限（人员数据由 HR 同步）',
     searchPlaceholder: '搜索成员...',
     name: '姓名',
     userId: '用户ID',
@@ -498,48 +497,9 @@ export default {
     skills: '技能',
     joinedAt: '加入时间',
     actions: '操作',
-    remove: '移除',
-    edit: '编辑',
-    delete: '删除',
     workloadDistribution: '工作负载分布',
     taskCount: '任务数',
-    editMember: '编辑成员',
-    addNewMember: '添加新成员',
-    form: {
-      nameLabel: '姓名',
-      namePlaceholder: '请输入成员姓名',
-      emailLabel: '邮箱',
-      emailPlaceholder: "example{'@'}company.com",
-      roleLabel: '角色',
-      rolePlaceholder: '请选择角色',
-      departmentLabel: '部门',
-      departmentPlaceholder: '请选择部门',
-      skillsLabel: '技能',
-      skillsPlaceholder: '用逗号分隔，例如：Vue, TypeScript, Node.js',
-      skillsHint: '多个技能请用逗号分隔'
-    },
-    buttons: {
-      saveChanges: '保存修改',
-      addMember: '添加成员'
-    },
-    messages: {
-      requiredFields: '请填写所有必填项！',
-      updateSuccess: '成员信息更新成功！',
-      createSuccess: '新成员添加成功！',
-      deleteConfirm: '确定要删除成员 "{name}" 吗？此操作不可恢复。',
-      deleteSuccess: '成员删除成功！',
-      operationFailed: '操作失败，请稍后重试。',
-      deleteFailed: '删除失败，请稍后重试。',
-      emailAlreadyRegistered: '该邮箱已被注册，请使用其他邮箱',
-      emailInvalid: '请输入有效的邮箱地址',
-      userNotFound: '用户不存在',
-      serverError: '服务器繁忙，请稍后再试',
-      networkError: '网络异常，请检查网络连接后重试'
-    },
-    emptyState: {
-      title: '暂无成员',
-      message: '还没有团队成员'
-    },
+    // 成员新增/编辑/删除入口已移除:由 HR 同步统一管理
     allMembers: {
       title: '所有成员',
       searchPlaceholder: '搜索ID或姓名...',
@@ -555,8 +515,9 @@ export default {
       loadMoreRemaining: '人未显示',
       memberCount: '人',
       roleAdmin: '管理员',
+      roleDeptProjectManager: '部门项目负责人',
       roleProjectManager: '项目经理',
-      roleMember: '成员',
+      roleMember: '项目人员',
       roleViewer: '观察者',
       company2700: '2700 运营法人',
       company8400: '8400 建设法人',
@@ -580,6 +541,28 @@ export default {
       page: '第 {current} 页 / 共 {total} 页',
       itemsPerPage: '每页条数',
       sort: '排序'
+    },
+    // 角色管理 v2
+    roleChange: {
+      title: '修改角色',
+      adminOnly: '仅管理员可见(您当前不是管理员)',
+      newRoleLabel: '新角色',
+      managedDeptCodesLabel: '管辖部门',
+      managedDeptCodesPlaceholder: '请选择管辖的部门',
+      managedCompanyCdLabel: '管辖公司',
+      reasonLabel: '变更原因',
+      reasonPlaceholder: '可选,便于审计',
+      warning: '修改后该用户需要重新登录',
+      confirm: '确认修改',
+      success: '角色修改成功',
+      failed: '角色修改失败',
+      historyTitle: '角色变更历史',
+      changedAt: '变更时间',
+      changedBy: '操作人',
+      oldRole: '原角色',
+      newRole: '新角色',
+      reason: '原因',
+      noHistory: '暂无变更历史'
     }
   },
 
@@ -752,8 +735,9 @@ export default {
   // 用户角色
   roles: {
     admin: '管理员',
+    deptProjectManager: '部门项目负责人',
     projectManager: '项目经理',
-    member: '成员',
+    member: '项目人员',
     viewer: '观察者'
   },
 

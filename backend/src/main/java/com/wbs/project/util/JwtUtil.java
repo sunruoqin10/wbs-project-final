@@ -28,15 +28,24 @@ public class JwtUtil {
     }
 
     /**
-     * 生成JWT令牌
-     * @param userId 用户ID
-     * @param role 用户角色
-     * @return JWT令牌
+     * 生成JWT令牌（兼容旧版本，tokenVersion 默认为 0）
      */
     public String generateToken(String userId, String role) {
+        return generateToken(userId, role, 0L);
+    }
+
+    /**
+     * 生成JWT令牌（角色管理 v2：携带 tokenVersion 用于失效控制）
+     * @param userId 用户ID
+     * @param role 用户角色
+     * @param tokenVersion 当前用户的 token_version（角色变更时会 +1,与历史 token 不一致则 401）
+     * @return JWT令牌
+     */
+    public String generateToken(String userId, String role, long tokenVersion) {
         Map<String, Object> claims = new HashMap<>();
         claims.put("userId", userId);
         claims.put("role", role);
+        claims.put("tokenVersion", tokenVersion);
 
         Date now = new Date();
         Date expirationDate = new Date(now.getTime() + EXPIRATION_TIME);
@@ -67,6 +76,28 @@ public class JwtUtil {
     public String extractRole(String token) {
         Claims claims = extractClaims(token);
         return claims.get("role", String.class);
+    }
+
+    /**
+     * 从JWT令牌中提取 tokenVersion（角色管理 v2）
+     * 旧 token 中无该字段时默认 0
+     * @param token JWT令牌
+     * @return tokenVersion
+     */
+    public long extractTokenVersion(String token) {
+        Claims claims = extractClaims(token);
+        Object v = claims.get("tokenVersion");
+        if (v == null) {
+            return 0L;
+        }
+        if (v instanceof Number) {
+            return ((Number) v).longValue();
+        }
+        try {
+            return Long.parseLong(v.toString());
+        } catch (NumberFormatException e) {
+            return 0L;
+        }
     }
 
     /**

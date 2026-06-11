@@ -117,4 +117,20 @@ public interface UserMapper {
      * @return 管理员 ID 列表（如 ["C0000001", "C0000007"]），空列表表示无风险
      */
     java.util.List<String> selectAdminIdsNotInMdm();
+
+    /**
+     * 更新用户角色与管辖范围（角色管理 v2）
+     * 同步 bump token_version，强制 token 失效
+     * @return 更新行数
+     */
+    int updateRoleAndScope(@Param("id") String id,
+                           @Param("role") String role,
+                           @Param("managedDeptCodes") String managedDeptCodes,
+                           @Param("managedCompanyCd") String managedCompanyCd);
+
+    /**
+     * 仅 bump token_version（用于旧 project-manager 兼容期降级）
+     * @return 更新行数
+     */
+    int bumpTokenVersion(@Param("id") String id);
 }

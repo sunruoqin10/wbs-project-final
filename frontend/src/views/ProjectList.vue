@@ -339,18 +339,13 @@ const statusOptions = computed(() => [
 const filteredProjects = computed(() => {
   let result = projectStore.projects;
 
-  // 权限控制：管理员和项目经理可以看到所有项目，其他角色只能看到自己参与或负责的项目
-  if (permissionStore.currentRole !== 'admin' && permissionStore.currentRole !== 'project-manager') {
-    const currentUserId = userStore.currentUserId;
-    if (currentUserId) {
-      result = result.filter(project => {
-        // 检查是否是项目负责人
-        const isOwner = project.ownerId === currentUserId;
-        // 检查是否是项目成员
-        const isMember = project.memberIds?.includes(currentUserId) || false;
-        return isOwner || isMember;
-      });
-    }
+  // 角色管理 v2:后端 ProjectController.getAllProjects 已按 currentUserId 数据范围过滤
+  // 此处不再做前端过滤,避免数据泄露与双重判断不一致
+  // 如需兜底,可用 permissionStore.canViewProject(project.id) 二次过滤(性能损耗)
+  const currentUserId = userStore.currentUserId;
+  if (currentUserId) {
+    // 兜底:防止后端漏判时泄露
+    result = result.filter(project => permissionStore.canViewProject(project.id));
   }
 
   if (selectedStatuses.value.length > 0) {

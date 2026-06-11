@@ -2,7 +2,9 @@ package com.wbs.project.controller;
 
 import com.wbs.project.common.Result;
 import com.wbs.project.entity.Project;
+import com.wbs.project.service.PermissionService;
 import com.wbs.project.service.ProjectService;
+import jakarta.servlet.http.HttpServletRequest;
 import lombok.RequiredArgsConstructor;
 import org.springframework.web.bind.annotation.*;
 
@@ -14,10 +16,15 @@ import java.util.List;
 public class ProjectController {
 
     private final ProjectService projectService;
+    private final PermissionService permissionService;
 
+    /**
+     * 查询所有项目（角色管理 v2：按当前用户数据范围过滤）
+     */
     @GetMapping
-    public Result<List<Project>> getAllProjects() {
-        List<Project> projects = projectService.getAllProjects();
+    public Result<List<Project>> getAllProjects(HttpServletRequest request) {
+        String currentUserId = (String) request.getAttribute("userId");
+        List<Project> projects = projectService.getAllProjectsForUser(currentUserId);
         projectService.updateProjectsDelayedStatus(projects);
         return Result.success(projects);
     }
@@ -54,7 +61,19 @@ public class ProjectController {
     }
 
     @PostMapping
-    public Result<Project> createProject(@RequestBody Project project) {
+    public Result<Project> createProject(@RequestBody Project project, HttpServletRequest request) {
+        String currentUserId = (String) request.getAttribute("userId");
+        // 角色管理 v2:权限校验
+        if (!permissionService.canCreateProject(currentUserId)) {
+            return Result.error(403, "无创建项目权限");
+        }
+        // dept-project-manager 必须在所管部门下创建
+        if (permissionService.isDeptProjectManager(currentUserId)) {
+            if (project.getDeptCode() == null
+                    || !permissionService.isDeptManager(currentUserId, project.getDeptCode())) {
+                return Result.error(403, "项目部门必须为您管辖的部门");
+            }
+        }
         Project createdProject = projectService.createProject(project);
         return Result.success("项目创建成功", createdProject);
     }
@@ -63,8 +82,11 @@ public class ProjectController {
     public Result<Project> updateProject(
             @PathVariable String id,
             @RequestBody Project project,
-            @RequestHeader(value = "X-User-Id", required = false) String userId,
-            @RequestHeader(value = "X-User-Role", required = false) String userRole) {
+            HttpServletRequest request) {
+        String currentUserId = (String) request.getAttribute("userId");
+        if (!permissionService.canEditProject(currentUserId, id)) {
+            return Result.error(403, "无项目编辑权限");
+        }
         Project updatedProject = projectService.updateProject(id, project);
         projectService.updateProjectDelayedStatus(updatedProject);
         return Result.success("项目更新成功", updatedProject);
@@ -73,8 +95,11 @@ public class ProjectController {
     @DeleteMapping("/{id}")
     public Result<Void> deleteProject(
             @PathVariable String id,
-            @RequestHeader(value = "X-User-Id", required = false) String userId,
-            @RequestHeader(value = "X-User-Role", required = false) String userRole) {
+            HttpServletRequest request) {
+        String currentUserId = (String) request.getAttribute("userId");
+        if (!permissionService.canEditProject(currentUserId, id)) {
+            return Result.error(403, "无项目删除权限");
+        }
         projectService.deleteProject(id);
         return Result.success();
     }

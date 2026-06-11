@@ -7,12 +7,7 @@
           <h1 class="text-2xl font-bold text-secondary-900">{{ $t('team.title') }}</h1>
           <p class="mt-1 text-sm text-secondary-600">{{ $t('team.subtitle') }}</p>
         </div>
-        <Button v-permission="'user:create'" variant="primary" @click="openAddMemberModal">
-          <svg class="mr-2 h-5 w-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4" />
-          </svg>
-          {{ $t('team.addMember') }}
-        </Button>
+        <!-- 成员由 HR 同步管理,无手动添加入口 -->
       </div>
 
       <!-- Stats -->
@@ -74,11 +69,12 @@
                       v-model="memberRoleFilter"
                       class="rounded-lg border border-secondary-300 px-3 py-1.5 text-sm focus:border-primary-500 focus:outline-none focus:ring-1 focus:ring-primary-500"
                     >
-                      <option value="">所有角色</option>
-                      <option value="admin">管理员</option>
-                      <option value="project-manager">项目经理</option>
-                      <option value="member">成员</option>
-                      <option value="viewer">观察者</option>
+                      <option value="">{{ $t('team.allMembers.filterRole') }}</option>
+                      <option value="admin">{{ $t('team.allMembers.roleAdmin') }}</option>
+                      <option value="dept-project-manager">{{ $t('team.allMembers.roleDeptProjectManager') }}</option>
+                      <option value="project-manager">{{ $t('team.allMembers.roleProjectManager') }}</option>
+                      <option value="member">{{ $t('team.allMembers.roleMember') }}</option>
+                      <option value="viewer">{{ $t('team.allMembers.roleViewer') }}</option>
                     </select>
                     <select
                       v-model="companyFilter"
@@ -138,10 +134,27 @@
                       <div class="mt-0.5 truncate text-xs text-secondary-500">
                         {{ user.companyCd }} · {{ user.department }}
                       </div>
-                      <div class="mt-1">
+                      <div class="mt-1 flex items-center justify-between gap-2">
                         <Badge :variant="roleBadgeVariant(user.role)">
                           {{ roleLabel(user.role) }}
                         </Badge>
+                        <!-- 修改角色按钮:永远显示,仅 admin 可点;非 admin 显示灰色 + tooltip 提示 -->
+                        <button
+                          type="button"
+                          :class="[
+                            'rounded px-2 py-0.5 text-xs',
+                            permissionStore.isAdmin()
+                              ? 'text-primary-600 hover:bg-primary-50 hover:text-primary-700'
+                              : 'cursor-not-allowed text-secondary-400'
+                          ]"
+                          :disabled="!permissionStore.isAdmin()"
+                          :title="permissionStore.isAdmin()
+                            ? $t('team.roleChange.title')
+                            : $t('team.roleChange.adminOnly')"
+                          @click="permissionStore.isAdmin() && openRoleChangeDialog(user)"
+                        >
+                          {{ $t('team.roleChange.title') }}
+                        </button>
                       </div>
                     </div>
                   </div>
@@ -171,6 +184,7 @@
                       :key="top.code"
                       :node="top"
                       :members="filteredUsers"
+                      @open-role-change="openRoleChangeDialog"
                     />
                   </div>
                 </div>
@@ -386,132 +400,40 @@
       </Tabs>
     </div>
 
-    <!-- Add/Edit Member Modal -->
-    <Modal
-      :open="showAddMemberModal"
-      :title="isEditMode ? $t('team.editMember') : $t('team.addNewMember')"
-      size="lg"
-      @close="closeModal"
-    >
-      <form @submit.prevent="handleSaveMember" class="space-y-4">
-        <div
-          v-if="formError"
-          class="flex items-start gap-2 rounded-lg border border-red-200 bg-red-50 p-3 text-sm text-red-700"
-          role="alert"
-        >
-          <svg class="mt-0.5 h-5 w-5 flex-shrink-0" fill="currentColor" viewBox="0 0 20 20" aria-hidden="true">
-            <path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zM8.28 7.22a.75.75 0 00-1.06 1.06L8.94 10l-1.72 1.72a.75.75 0 101.06 1.06L10 11.06l1.72 1.72a.75.75 0 101.06-1.06L11.06 10l1.72-1.72a.75.75 0 00-1.06-1.06L10 8.94 8.28 7.22z" clip-rule="evenodd" />
-          </svg>
-          <span class="flex-1">{{ formError }}</span>
-          <button
-            type="button"
-            class="rounded p-0.5 text-red-500 transition-colors hover:bg-red-100 hover:text-red-700"
-            :aria-label="$t('common.close')"
-            @click="formError = ''"
-          >
-            <svg class="h-4 w-4" fill="currentColor" viewBox="0 0 20 20" aria-hidden="true">
-              <path fill-rule="evenodd" d="M4.293 4.293a1 1 0 011.414 0L10 8.586l4.293-4.293a1 1 0 111.414 1.414L11.414 10l4.293 4.293a1 1 0 01-1.414 1.414L10 11.414l-4.293 4.293a1 1 0 01-1.414-1.414L8.586 10 4.293 5.707a1 1 0 010-1.414z" clip-rule="evenodd" />
-            </svg>
-          </button>
-        </div>
+    <!-- Add Member Modal 已移除:成员由 HR 同步管理 -->
 
-        <div>
-          <label class="block text-sm font-medium text-secondary-700 mb-1">{{ $t('team.form.nameLabel') }} *</label>
-          <input
-            v-model="newMember.name"
-            type="text"
-            required
-            class="w-full rounded-lg border border-secondary-300 px-3 py-2 text-sm focus:border-primary-500 focus:outline-none focus:ring-1 focus:ring-primary-500"
-            :placeholder="$t('team.form.namePlaceholder')"
-          />
-        </div>
-
-        <div>
-          <label class="block text-sm font-medium text-secondary-700 mb-1">{{ $t('team.form.emailLabel') }} *</label>
-          <input
-            v-model="newMember.email"
-            type="email"
-            required
-            :class="[
-              'w-full rounded-lg border px-3 py-2 text-sm focus:outline-none focus:ring-1',
-              isEmailError
-                ? 'border-red-400 bg-red-50 text-red-900 focus:border-red-500 focus:ring-red-500'
-                : 'border-secondary-300 focus:border-primary-500 focus:ring-primary-500'
-            ]"
-            :placeholder="$t('team.form.emailPlaceholder')"
-            :aria-invalid="isEmailError"
-            @input="onEmailInput"
-          />
-        </div>
-
-        <div>
-          <label class="block text-sm font-medium text-secondary-700 mb-1">{{ $t('team.form.roleLabel') }} *</label>
-          <select
-            v-model="newMember.role"
-            required
-            class="w-full rounded-lg border border-secondary-300 px-3 py-2 text-sm focus:border-primary-500 focus:outline-none focus:ring-1 focus:ring-primary-500"
-          >
-            <option value="">{{ $t('team.form.rolePlaceholder') }}</option>
-            <option value="member">{{ $t('roles.member') }}</option>
-            <option value="project-manager">{{ $t('roles.projectManager') }}</option>
-            <option value="admin">{{ $t('roles.admin') }}</option>
-          </select>
-        </div>
-
-        <div>
-          <label class="block text-sm font-medium text-secondary-700 mb-1">{{ $t('team.form.departmentLabel') }} *</label>
-          <select
-            v-model="newMember.department"
-            required
-            class="w-full rounded-lg border border-secondary-300 px-3 py-2 text-sm focus:border-primary-500 focus:outline-none focus:ring-1 focus:ring-primary-500"
-          >
-            <option value="">{{ $t('team.form.departmentPlaceholder') }}</option>
-            <option v-for="dept in allDepartments" :key="dept" :value="dept">{{ dept }}</option>
-          </select>
-        </div>
-
-        <div>
-          <label class="block text-sm font-medium text-secondary-700 mb-1">{{ $t('team.form.skillsLabel') }}</label>
-          <input
-            v-model="skillsInput"
-            type="text"
-            class="w-full rounded-lg border border-secondary-300 px-3 py-2 text-sm focus:border-primary-500 focus:outline-none focus:ring-1 focus:ring-primary-500"
-            :placeholder="$t('team.form.skillsPlaceholder')"
-          />
-          <p class="mt-1 text-xs text-secondary-500">{{ $t('team.form.skillsHint') }}</p>
-        </div>
-      </form>
-
-      <template #footer>
-        <div class="flex justify-end gap-3">
-          <Button variant="secondary" :disabled="submitting" @click="closeModal">{{ $t('common.cancel') }}</Button>
-          <Button variant="primary" :loading="submitting" :disabled="submitting" @click="submitForm">
-            {{ isEditMode ? $t('team.buttons.saveChanges') : $t('team.buttons.addMember') }}
-          </Button>
-        </div>
-      </template>
-    </Modal>
+    <!-- 角色变更弹窗（仅 admin 可触发） -->
+    <RoleChangeDialog
+      v-if="roleChangeTarget"
+      v-model:visible="roleChangeDialogVisible"
+      :user-id="roleChangeTarget.id"
+      :current-role="roleChangeTarget.role"
+      :current-managed-dept-codes="roleChangeTarget.managedDeptCodes || []"
+      :current-managed-company-cd="roleChangeTarget.managedCompanyCd || ''"
+      @success="onRoleChangeSuccess"
+    />
   </MainLayout>
 </template>
 
   <script setup lang="ts">
-import { ref, computed, onMounted, onUnmounted, reactive, watch, nextTick } from 'vue';
+import { ref, computed, onMounted, onUnmounted, watch, nextTick } from 'vue';
 import { useI18n } from 'vue-i18n';
 import * as echarts from 'echarts';
 import MainLayout from '@/components/layout/MainLayout.vue';
 import Card from '@/components/common/Card.vue';
 import Button from '@/components/common/Button.vue';
 import Badge from '@/components/common/Badge.vue';
-import Modal from '@/components/common/Modal.vue';
 import Tabs from '@/components/common/Tabs.vue';
 import type { Tab } from '@/components/common/Tabs.vue';
 import UserAvatar from '@/components/common/UserAvatar.vue';
 import OrgGroup from '@/components/team/OrgGroup.vue';
+import RoleChangeDialog from '@/components/team/RoleChangeDialog.vue';
 import { useUserStore } from '@/stores/user';
 import { useTaskStore } from '@/stores/task';
 import { useProjectStore } from '@/stores/project';
 import { useOrgStore } from '@/stores/org';
-import { ApiError } from '@/services/api';
+import { usePermissionStore } from '@/stores/permission';
+// Modal 与 ApiError 已不再使用（Add Member 表单移除）
 import type { User, Task, OrgNode } from '@/types';
 
 interface TaskAssignment {
@@ -533,6 +455,7 @@ const userStore = useUserStore();
 const taskStore = useTaskStore();
 const projectStore = useProjectStore();
 const orgStore = useOrgStore();
+const permissionStore = usePermissionStore();
 
 const users = computed(() => userStore.users);
 const workloadChartRef = ref<HTMLElement>();
@@ -552,212 +475,13 @@ const tabs = computed<Tab[]>(() => [
   }
 ]);
 
-// Add Member Modal
-const showAddMemberModal = ref(false);
-const isEditMode = ref(false);
-const editingUserId = ref<string | null>(null);
-const skillsInput = ref('');
-const formError = ref<string>('');
-const submitting = ref(false);
+// (Add Member Modal 相关 state/functions 已移除:成员由 HR 同步管理,前端不再暴露手动 add/edit/delete 入口)
 
-// 当前错误是否与邮箱相关，用于在邮箱输入框上呈现红色高亮
-const isEmailError = computed(() => {
-  const msg = formError.value;
-  if (!msg) return false;
-  return (
-    msg.includes('邮箱') ||
-    /email/i.test(msg) ||
-    msg === t('team.messages.emailAlreadyRegistered') ||
-    msg === t('team.messages.emailInvalid')
-  );
-});
-
-// 用户在邮箱输入框中输入时，自动清除已有的邮箱相关错误
-const onEmailInput = () => {
-  if (isEmailError.value) {
-    formError.value = '';
-  }
-};
-
-const newMember = reactive<Omit<User, 'id' | 'avatar' | 'joinedAt'>>({
-  name: '',
-  email: '',
-  role: 'member',
-  department: '',
-  skills: []
-});
-
-const resetNewMember = () => {
-  newMember.name = '';
-  newMember.email = '';
-  newMember.role = 'member';
-  newMember.department = '';
-  newMember.skills = [];
-  skillsInput.value = '';
-};
-
-const openAddMemberModal = () => {
-  isEditMode.value = false;
-  editingUserId.value = null;
-  resetNewMember();
-  formError.value = '';
-  submitting.value = false;
-  showAddMemberModal.value = true;
-};
-
-const closeModal = () => {
-  showAddMemberModal.value = false;
-  isEditMode.value = false;
-  editingUserId.value = null;
-  resetNewMember();
-  formError.value = '';
-  submitting.value = false;
-};
-
-// (openEditModal/handleDeleteMember removed: members are now managed
-// via HR sync, individual edit/delete is no longer exposed in the UI)
-
-// 将后端错误信息映射为友好提示
-const mapSaveMemberError = (error: unknown): string => {
-  const isApiError = error instanceof ApiError;
-  const rawMessage = isApiError
-    ? error.message
-    : (error instanceof Error ? error.message : String(error || ''));
-  const message = (rawMessage || '').trim();
-  const status = isApiError ? error.status : undefined;
-
-  // 邮箱重复（中英文关键词都覆盖）
-  if (
-    message.includes('邮箱已被注册') ||
-    message.includes('邮箱已被使用') ||
-    message.includes('邮箱已存在') ||
-    /email.{0,10}(already|exists|registered|been used)/i.test(message)
-  ) {
-    return t('team.messages.emailAlreadyRegistered');
-  }
-
-  // 邮箱格式无效
-  if (
-    message.includes('邮箱格式') ||
-    message.includes('合法邮箱') ||
-    /invalid email/i.test(message)
-  ) {
-    return t('team.messages.emailInvalid');
-  }
-
-  // 用户不存在
-  if (message.includes('用户不存在') || /user not found/i.test(message)) {
-    return t('team.messages.userNotFound');
-  }
-
-  // 网络异常
-  if (
-    message.includes('Failed to fetch') ||
-    message.includes('NetworkError') ||
-    message.includes('Network request failed') ||
-    message.includes('网络')
-  ) {
-    return t('team.messages.networkError');
-  }
-
-  // 仅当后端没有返回可读消息时，再根据状态码做兜底
-  const isGenericHttpError = /^HTTP error! status:\s*\d+$/.test(message) || message === '';
-  if (isGenericHttpError) {
-    if (status === 400) {
-      // 400 但没有可读消息：通常是参数错误或唯一性冲突，按最常见情况提示
-      return t('team.messages.emailAlreadyRegistered');
-    }
-    if (status === 401 || status === 403) {
-      return t('team.messages.userNotFound');
-    }
-    if (typeof status === 'number' && status >= 500) {
-      return t('team.messages.serverError');
-    }
-    return t('team.messages.operationFailed');
-  }
-
-  // 如果后端返回了中文消息，直接使用
-  if (/[\u4e00-\u9fa5]/.test(message)) {
-    return message;
-  }
-
-  return t('team.messages.operationFailed');
-};
-
-const handleSaveMember = async () => {
-  // 重置错误信息
-  formError.value = '';
-
-  // 验证必填字段
-  if (!newMember.name || !newMember.email || !newMember.department) {
-    formError.value = t('team.messages.requiredFields');
-    return;
-  }
-
-  // 验证角色已选择
-  if (!newMember.role) {
-    formError.value = t('team.form.rolePlaceholder');
-    return;
-  }
-
-  // 防止重复提交
-  if (submitting.value) return;
-  submitting.value = true;
-
-  // Parse skills from comma-separated input
-  const skillsArray = skillsInput.value
-    .split(',')
-    .map(s => s.trim())
-    .filter(s => s.length > 0);
-
-  try {
-    if (isEditMode.value && editingUserId.value) {
-      // Update existing user
-      await userStore.updateUser(editingUserId.value, {
-        name: newMember.name,
-        email: newMember.email,
-        role: newMember.role,
-        department: newMember.department,
-        skills: skillsArray
-      });
-      alert(t('team.messages.updateSuccess'));
-    } else {
-      // Add new user
-      const avatar = newMember.name;
-      await userStore.addUser({
-        ...newMember,
-        skills: skillsArray,
-        avatar,
-        joinedAt: new Date().toISOString()
-      });
-      alert(t('team.messages.createSuccess'));
-    }
-
-    // Close modal and reset form
-    closeModal();
-
-    // Refresh chart after a short delay
-    setTimeout(() => {
-      initWorkloadChart();
-    }, 200);
-  } catch (error) {
-    console.error('Failed to save member:', error);
-    formError.value = mapSaveMemberError(error);
-  } finally {
-    submitting.value = false;
-  }
-};
-
-// 提交表单方法（通过按钮点击触发）
-const submitForm = () => {
-  handleSaveMember();
-};
-
-// handleDeleteMember removed: members are now managed via HR sync,
-// individual delete is no longer exposed in the UI.
 
 const adminCount = computed(() => users.value.filter(u => u.role?.replace(/_/g, '-') === 'admin').length);
 const pmCount = computed(() => users.value.filter(u => u.role?.replace(/_/g, '-') === 'project-manager').length);
+const deptPmCount = computed(() => users.value.filter(u => u.role?.replace(/_/g, '-') === 'dept-project-manager').length);
+void deptPmCount; // 暂未在模板中使用,保留供后续"按角色统计"卡
 // 统计参与项目的总成员数（与 Dashboard 保持一致）
 const memberCount = computed(() => {
   const projects = projectStore.projects;
@@ -852,10 +576,22 @@ const memberSearch = ref<string>('');
 const memberRoleFilter = ref<string>('');
 const companyFilter = ref<string>('');
 
-const allDepartments = computed(() => {
-  const depts = new Set(users.value.map(u => u.department).filter(Boolean));
-  return [...depts].sort();
-});
+// 角色变更弹窗状态
+const roleChangeDialogVisible = ref(false);
+const roleChangeTarget = ref<User | null>(null);
+const openRoleChangeDialog = (user: User) => {
+  roleChangeTarget.value = user;
+  roleChangeDialogVisible.value = true;
+};
+const onRoleChangeSuccess = async () => {
+  // 角色变更后,后端 tokenVersion + 1 → 目标用户旧 token 失效
+  // 当前 admin 自己的 users 列表也要刷新
+  try {
+    await userStore.refreshUsers();
+  } catch (e) {
+    console.error('角色变更后刷新用户列表失败', e);
+  }
+};
 
 /**
  * 按顶部筛选条件过滤用户
@@ -960,8 +696,9 @@ function roleLabel(role: string): string {
   const normalized = role?.replace(/_/g, '-');
   const map: Record<string, string> = {
     'admin': '管理员',
+    'dept-project-manager': '部门项目负责人',
     'project-manager': '项目经理',
-    'member': '成员',
+    'member': '项目人员',
     'viewer': '观察者',
   };
   return map[normalized] || role;
@@ -971,6 +708,7 @@ function roleBadgeVariant(role: string): 'default' | 'primary' | 'danger' | 'suc
   const normalized = role?.replace(/_/g, '-');
   const map: Record<string, 'danger' | 'warning' | 'primary' | 'default'> = {
     'admin': 'danger',
+    'dept-project-manager': 'warning',
     'project-manager': 'warning',
     'member': 'primary',
     'viewer': 'default',

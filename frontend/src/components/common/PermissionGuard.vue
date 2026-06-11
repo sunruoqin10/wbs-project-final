@@ -23,7 +23,9 @@ const hasPermission = computed(() => {
   }
 
   if (props.projectId && props.projectPermission) {
-    return permissionStore.hasProjectPermission(props.projectId, props.projectPermission);
+    // 项目级权限:既要有权限码,又要能查看该项目
+    return permissionStore.hasPermission(props.projectPermission)
+      && permissionStore.canViewProject(props.projectId);
   }
 
   if (props.permission) {

@@ -2,9 +2,11 @@ package com.wbs.project.service;
 
 import com.wbs.project.entity.Project;
 import com.wbs.project.entity.Task;
+import com.wbs.project.entity.User;
 import com.wbs.project.mapper.ProjectMapper;
 import com.wbs.project.mapper.ProjectMemberMapper;
 import com.wbs.project.mapper.TaskMapper;
+import com.wbs.project.mapper.UserMapper;
 import lombok.RequiredArgsConstructor;
 import org.springframework.context.annotation.Lazy;
 import org.springframework.stereotype.Service;
@@ -28,6 +30,8 @@ public class ProjectService {
     private final TaskService taskService;
     private final TaskMapper taskMapper;
     private final EmailNotificationService emailNotificationService;
+    private final UserMapper userMapper;
+    private final PermissionService permissionService;
 
     /**
      * 查询所有项目（包含成员信息）
@@ -37,6 +41,65 @@ public class ProjectService {
         // 为每个项目加载成员列表
         projects.forEach(this::loadProjectMembers);
         return projects;
+    }
+
+    /**
+     * 角色管理 v2:按当前用户的数据范围查询项目
+     * - admin:全部
+     * - dept-project-manager: managed_dept_codes IN dept_code
+     * - project-manager / member / viewer: 我参与的项目 + pm 加 owner 项目
+     */
+    public List<Project> getAllProjectsForUser(String currentUserId) {
+        if (currentUserId == null) {
+            return List.of();
+        }
+        if (permissionService.isAdmin(currentUserId)) {
+            return getAllProjects();
+        }
+
+        User u = userMapper.selectById(currentUserId);
+        if (u == null) {
+            return List.of();
+        }
+
+        List<Project> result = new ArrayList<>();
+
+        if (permissionService.isDeptProjectManager(currentUserId)) {
+            // 部门项目负责人:managed_dept_codes 对应的项目
+            result.addAll(getProjectsByManagedDepts(u));
+        } else {
+            // pm/member/viewer:参与项目(pm 再加 owner 项目)
+            List<String> memberOf = projectMemberMapper.selectProjectIdsByUserId(currentUserId);
+            if (!memberOf.isEmpty()) {
+                result.addAll(projectMapper.selectByIds(memberOf));
+            }
+            if (permissionService.isProjectManager(currentUserId)) {
+                List<String> ownedIds = projectMapper.selectIdsByOwner(currentUserId);
+                if (!ownedIds.isEmpty()) {
+                    result.addAll(projectMapper.selectByIds(ownedIds));
+                }
+            }
+        }
+
+        // 去重
+        java.util.LinkedHashMap<String, Project> dedup = new java.util.LinkedHashMap<>();
+        for (Project p : result) {
+            dedup.putIfAbsent(p.getId(), p);
+        }
+        List<Project> finalList = new ArrayList<>(dedup.values());
+        finalList.forEach(this::loadProjectMembers);
+        return finalList;
+    }
+
+    /**
+     * 部门项目负责人:按 managed_dept_codes 查询项目
+     */
+    private List<Project> getProjectsByManagedDepts(User u) {
+        java.util.List<String> codes = permissionService.parseManagedDeptCodes(u);
+        if (codes.isEmpty()) {
+            return List.of();
+        }
+        return projectMapper.selectByDeptCodes(codes);
     }
 
     /**

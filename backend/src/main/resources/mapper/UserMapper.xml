@@ -18,6 +18,9 @@
         <result column="skills" property="skills"/>
         <result column="password" property="password"/>
         <result column="status" property="status"/>
+        <result column="managed_dept_codes" property="managedDeptCodes"/>
+        <result column="managed_company_cd" property="managedCompanyCd"/>
+        <result column="token_version" property="tokenVersion"/>
         <result column="joined_at" property="joinedAt"/>
         <result column="created_at" property="createdAt"/>
         <result column="updated_at" property="updatedAt"/>
@@ -27,6 +30,7 @@
         id, name, email, avatar, role, department,
         dept_code, sub_org_cd, sub_org_nam, company_cd, chinese_nam,
         skills, password, status,
+        managed_dept_codes, managed_company_cd, token_version,
         joined_at, created_at, updated_at
     </sql>
 
@@ -225,5 +229,24 @@
           )
         ORDER BY u.id;
     </select>
+
+    <!-- 角色管理 v2：更新角色与管辖范围，token_version +1 强制 token 失效 -->
+    <update id="updateRoleAndScope">
+        UPDATE sys_user
+           SET role               = #{role},
+               managed_dept_codes = #{managedDeptCodes},
+               managed_company_cd = #{managedCompanyCd},
+               token_version      = token_version + 1,
+               updated_at         = NOW()
+         WHERE id = #{id}
+    </update>
+
+    <!-- 角色管理 v2：仅 bump token_version（用于兼容期旧 project-manager 降级） -->
+    <update id="bumpTokenVersion">
+        UPDATE sys_user
+           SET token_version = token_version + 1,
+               updated_at    = NOW()
+         WHERE id = #{id}
+    </update>
 
 </mapper>

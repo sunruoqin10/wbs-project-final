@@ -33,4 +33,7 @@ public class Project {
     private Integer totalDelayedDays;      // 总延期天数
     private Boolean isDelayed;             // 是否有延期任务
     private Integer estimatedHours;        // 预估工时
+
+    // === 角色管理 v2 扩展字段（2026-06-11） ===
+    private String deptCode;               // 项目归属部门编码(对应 mdm_if_or_a.ORG_CD),用于部门负责人数据范围过滤
 }
