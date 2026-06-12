@@ -24,6 +24,12 @@
           <div>
             <h1 class="text-2xl font-bold text-secondary-900">{{ project.name }}</h1>
             <p class="mt-1 text-sm text-secondary-600">{{ project.description }}</p>
+            <div v-if="creator" class="mt-2 flex items-center gap-2 text-xs text-secondary-500">
+              <span>{{ $t('projectDetail.projectCreator', '创建者') }}:</span>
+              <UserAvatar :name="creator.name" :seed="creator.avatar" size="xs" />
+              <span class="font-medium text-secondary-700">{{ creator.name }}</span>
+              <span class="font-mono text-secondary-400">{{ creator.id }}</span>
+            </div>
           </div>
         </div>
         <div class="flex items-center gap-3">
@@ -111,6 +117,7 @@
                   </Badge>
                 </div>
                 <p class="text-sm text-secondary-600">{{ getRoleLabel(member.role) }}</p>
+                <p class="mt-0.5 font-mono text-xs text-secondary-500">{{ member.id }}</p>
               </div>
             </div>
           </div>
@@ -185,6 +192,7 @@
             </button>
 
             <button
+              v-if="permissionStore.canCreateTask(projectId)"
               @click="createNewTask"
               :disabled="project?.status === 'on-hold'"
               :class="[
@@ -279,19 +287,19 @@ const projectTasks = computed(() => taskStore.tasksByProject(projectId.value));
 const members = computed(() => {
   return project.value ? userStore.getUsersByIds(project.value.memberIds) : [];
 });
+// 创建者(独立于 owner / members)
+const creator = computed(() => {
+  const createdBy = project.value?.createdBy;
+  if (!createdBy) return null;
+  return userStore.users.find(u => u.id === createdBy) || null;
+});
 
 // 检查用户是否有权限访问当前项目
+// 复用 permissionStore.canViewProject，覆盖 admin / dept-project-manager(部门内) /
+// project-manager(owner) / member / viewer 的完整数据范围。
 const hasAccessToProject = computed(() => {
   if (!project.value) return false;
-  if (permissionStore.currentRole === 'admin' || permissionStore.currentRole === 'project-manager') return true;
-  
-  const currentUserId = userStore.currentUserId;
-  if (!currentUserId) return false;
-  
-  const isOwner = project.value.ownerId === currentUserId;
-  const isMember = project.value.memberIds?.includes(currentUserId) || false;
-  
-  return isOwner || isMember;
+  return permissionStore.canViewProject(projectId.value);
 });
 
 // 计算叶子任务数量（没有子任务的任务）
