@@ -528,9 +528,23 @@ const myOwnTasks = computed(() =>
   allTasks.value.filter(t => myTaskIds.value.has(t.id))
 );
 
+/** 有子任务的任务ID集合——父任务的状态/日期由子任务自动推算，不应独立计入统计 */
+const parentTaskIds = computed(() => {
+  const ids = new Set<string>();
+  for (const t of allTasks.value) {
+    if (t.parentTaskId) ids.add(t.parentTaskId);
+  }
+  return ids;
+});
+
+/** 用户自己的、且非父任务的叶子任务（用于统计卡计数） */
+const myOwnLeafTasks = computed(() =>
+  myOwnTasks.value.filter(t => !parentTaskIds.value.has(t.id))
+);
+
 const dueSoonTasks = computed(() => {
   const now = dayjs();
-  return myOwnTasks.value.filter(t => {
+  return myOwnLeafTasks.value.filter(t => {
     if (!t.endDate) return false;
     if (t.status === 'done') return false;
     const diff = dayjs(t.endDate).diff(now, 'day');
@@ -542,19 +556,19 @@ const statCards = computed(() => [
   {
     key: 'todo',
     label: t('taskStatus.todo', '待办'),
-    value: myOwnTasks.value.filter(t => t.status === 'todo').length,
+    value: myOwnLeafTasks.value.filter(t => t.status === 'todo').length,
     color: 'text-secondary-700'
   },
   {
     key: 'in-progress',
     label: t('taskStatus.inProgress', '进行中'),
-    value: myOwnTasks.value.filter(t => t.status === 'in-progress').length,
+    value: myOwnLeafTasks.value.filter(t => t.status === 'in-progress').length,
     color: 'text-primary-600'
   },
   {
     key: 'done',
     label: t('taskStatus.done', '已完成'),
-    value: myOwnTasks.value.filter(t => t.status === 'done').length,
+    value: myOwnLeafTasks.value.filter(t => t.status === 'done').length,
     color: 'text-success-600'
   },
   {
