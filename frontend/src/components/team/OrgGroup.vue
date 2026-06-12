@@ -85,13 +85,15 @@
                   type="button"
                   :class="[
                     'rounded px-2 py-0.5 text-xs',
-                    isAdmin
+                    canChangeRoleFor(user)
                       ? 'text-primary-600 hover:bg-primary-50 hover:text-primary-700'
                       : 'cursor-not-allowed text-secondary-400'
                   ]"
-                  :disabled="!isAdmin"
-                  :title="isAdmin ? $t('team.roleChange.title') : $t('team.roleChange.adminOnly')"
-                  @click="isAdmin && emit('open-role-change', user)"
+                  :disabled="!canChangeRoleFor(user)"
+                  :title="canChangeRoleFor(user)
+                    ? (permissionStore.isAdmin() ? $t('team.roleChange.title') : '变更本部门用户角色')
+                    : $t('team.roleChange.adminOnly')"
+                  @click="canChangeRoleFor(user) && emit('open-role-change', user)"
                 >
                   {{ $t('team.roleChange.title') }}
                 </button>
@@ -139,7 +141,20 @@ const emit = defineEmits<{
 
 const { t: $t } = useI18n();
 const permissionStore = usePermissionStore();
-const isAdmin = computed(() => permissionStore.isAdmin());
+
+/** 当前操作者是否可以变更指定用户的角色（与 Team.vue canChangeRoleFor 逻辑一致） */
+function canChangeRoleFor(user: User): boolean {
+  if (permissionStore.isAdmin()) return true;
+  if (permissionStore.isDeptProjectManager()) {
+    // dept-pm 不能动 admin 和 dept-pm（包括自己）
+    if (user.role === 'admin' || user.role === 'dept-project-manager') return false;
+    // 必须本部门内
+    const actorCodes = permissionStore.managedDeptCodes;
+    if (!user.deptCode || !actorCodes.includes(user.deptCode)) return false;
+    return true;
+  }
+  return false;
+}
 
 const expanded = ref(false); // 节点默认收起,点击展开后看到本部门成员卡片
 const visibleCount = ref(12);

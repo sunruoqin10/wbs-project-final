@@ -155,6 +155,10 @@ class ApiService {
     return request<Task[]>('/tasks/mine');
   }
 
+  async getMyTaskTree(): Promise<Task[]> {
+    return request<Task[]>('/tasks/mine/tree');
+  }
+
   async getTask(id: string | number): Promise<Task> {
     return request<Task>(`/tasks/${id}`);
   }
@@ -408,13 +412,27 @@ class ApiService {
   // ============ 角色管理 v2 ============
 
   /**
-   * 角色变更（仅 admin 可调用）
+   * 角色变更
+   * - admin 可改任何用户
+   * - dept-pm 可改本部门内非 admin 用户(2026-06-12 放开)
    * 触发 tokenVersion + 1,目标用户旧 token 失效
    */
   async changeUserRole(id: string, req: RoleChangeRequest): Promise<User> {
     return request<User>(`/users/${id}/role`, {
       method: 'PUT',
       body: JSON.stringify(req),
+    });
+  }
+
+  /**
+   * 仅更新 PM 的 managed_project_ids(2026-06-12 新增)
+   * 供 dept-pm 单独管理 PM 的项目列表
+   * 触发 tokenVersion + 1
+   */
+  async updateManagedProjects(id: string, managedProjectIds: string[]): Promise<User> {
+    return request<User>(`/users/${id}/managed-projects`, {
+      method: 'PUT',
+      body: JSON.stringify({ managedProjectIds }),
     });
   }
 

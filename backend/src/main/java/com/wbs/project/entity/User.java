@@ -29,8 +29,9 @@ public class User {
     private String chineseNam;   // 中文姓名（来自 mdm_if_pa_a.CHINESE_NAM）
     private String status = "C"; // 在职状态: C=在职, H=休职, T=离职（来自 mdm_if_pa_a.ACT_CLSS_CD）
 
-    // === 角色管理 v2 扩展字段（2026-06-11） ===
+    // === 角色管理 v2 扩展字段(2026-06-11) ===
     private String managedDeptCodes;  // JSON 字符串,该用户作为部门项目负责人管理的部门编码列表(仅 role=dept-project-manager 有效)
     private String managedCompanyCd;  // 该用户作为部门项目负责人的公司编码(需与 user.companyCd 一致)
+    private String managedProjectIds; // JSON 字符串,该用户作为项目经理管理的项目 ID 列表(仅 role=project-manager 有效,2026-06-12 新增)
     private Integer tokenVersion = 0; // JWT 版本号,角色/管辖范围变更时 +1,AuthInterceptor 校验不一致则 401
 }

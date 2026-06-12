@@ -8,6 +8,7 @@ import com.wbs.project.enums.UserRole;
 import com.wbs.project.exception.BusinessException;
 import com.wbs.project.mapper.RoleChangeLogMapper;
 import com.wbs.project.mapper.UserMapper;
+import com.wbs.project.service.PermissionService;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
@@ -27,6 +28,7 @@ public class UserService {
 
     private final UserMapper userMapper;
     private final RoleChangeLogMapper roleChangeLogMapper;
+    private final PermissionService permissionService;
     private final ObjectMapper objectMapper = new ObjectMapper();
 
     /**
@@ -163,13 +165,6 @@ public class UserService {
             throw new RuntimeException("用户不存在");
         }
 
-        // 角色管理 v2 兼容期：旧 project-manager 角色自动降级为 member
-        if (UserRole.PROJECT_MANAGER.code.equals(user.getRole())) {
-            log.warn("用户 {} 仍持有废弃的 project-manager 角色,降级为 member", userId);
-            userMapper.updateRoleAndScope(userId, UserRole.MEMBER.code, null, null);
-            user = userMapper.selectById(userId);
-        }
-
         // 明文密码比对
         if (!password.equals(user.getPassword())) {
             throw new RuntimeException("密码错误");
@@ -279,6 +274,7 @@ public class UserService {
                                 String newRole,
                                 List<String> managedDeptCodes,
                                 String managedCompanyCd,
+                                List<String> managedProjectIds,
                                 String reason) {
         User target = userMapper.selectById(targetUserId);
         if (target == null) {
@@ -286,12 +282,15 @@ public class UserService {
         }
 
         UserRole newRoleEnum = UserRole.fromCode(newRole);
-        if (newRoleEnum == UserRole.PROJECT_MANAGER) {
-            throw new BusinessException(400, "project-manager 角色已废弃,请使用 dept-project-manager/member");
+
+        // 权限校验(2026-06-12):admin 可改任何人;dept-pm 仅可改本部门非 admin 用户
+        if (!permissionService.canChangeRoleInDept(operatorId, targetUserId, newRole)) {
+            throw new BusinessException(403, "无权修改该用户角色");
         }
 
         // 校验 dept-project-manager 必须指定 managed_company_cd
         String jsonCodes = null;
+        String jsonProjects = null;
         if (newRoleEnum == UserRole.DEPT_PROJECT_MANAGER) {
             if (managedDeptCodes == null || managedDeptCodes.isEmpty()) {
                 throw new BusinessException(400, "dept-project-manager 必须指定至少一个管辖部门");
@@ -307,10 +306,26 @@ public class UserService {
             } catch (Exception e) {
                 throw new BusinessException(500, "managedDeptCodes 序列化失败: " + e.getMessage());
             }
-        } else {
-            // 切到非 dept-pm 角色时清空 managed_*
+        } else if (newRoleEnum == UserRole.PROJECT_MANAGER) {
+            // 切到 PM(2026-06-12):managedProjectIds 可选(可以稍后单独调 updateManagedProjects)
+            if (managedProjectIds != null) {
+                try {
+                    jsonProjects = objectMapper.writeValueAsString(managedProjectIds);
+                } catch (Exception e) {
+                    throw new BusinessException(500, "managedProjectIds 序列化失败: " + e.getMessage());
+                }
+            }
+            // 切到 PM 时清空 dept-pm 字段
+            managedDeptCodes = null;
             managedCompanyCd = null;
             jsonCodes = null;
+        } else {
+            // 切到 member / viewer 时清空所有 managed_*
+            managedDeptCodes = null;
+            managedCompanyCd = null;
+            managedProjectIds = null;
+            jsonCodes = null;
+            jsonProjects = null;
         }
 
         // 写审计
@@ -328,11 +343,37 @@ public class UserService {
         roleChangeLogMapper.insert(changeLog);
 
         // 更新用户(role + managed_* + token_version+1)
-        userMapper.updateRoleAndScope(targetUserId, newRoleEnum.code, jsonCodes, managedCompanyCd);
-        log.info("角色变更: operator={}, target={}, {} -> {}, deptCodes={}, companyCd={}, reason={}",
-                operatorId, targetUserId, changeLog.getOldRole(), changeLog.getNewRole(), jsonCodes, managedCompanyCd, reason);
+        userMapper.updateRoleAndScope(targetUserId, newRoleEnum.code, jsonCodes, managedCompanyCd, jsonProjects);
+        log.info("角色变更: operator={}, target={}, {} -> {}, deptCodes={}, companyCd={}, projectIds={}, reason={}",
+                operatorId, targetUserId, changeLog.getOldRole(), changeLog.getNewRole(),
+                jsonCodes, managedCompanyCd, jsonProjects, reason);
 
         return userMapper.selectById(targetUserId);
+    }
+
+    /**
+     * 仅更新 PM 的 managed_project_ids(2026-06-12 新增)
+     * 不动 role,只刷项目列表;权限由 Controller 层用 isAdmin/isDeptProjectManager 校验
+     */
+    @Transactional
+    public void updateManagedProjects(String targetUserId, List<String> managedProjectIds) {
+        User target = userMapper.selectById(targetUserId);
+        if (target == null) {
+            throw new BusinessException(404, "用户不存在: " + targetUserId);
+        }
+        if (!UserRole.PROJECT_MANAGER.code.equals(target.getRole())) {
+            throw new BusinessException(400, "只能给 project-manager 角色分配项目");
+        }
+        String json = null;
+        if (managedProjectIds != null) {
+            try {
+                json = objectMapper.writeValueAsString(managedProjectIds);
+            } catch (Exception e) {
+                throw new BusinessException(500, "managedProjectIds 序列化失败: " + e.getMessage());
+            }
+        }
+        userMapper.updateManagedProjects(targetUserId, json);
+        log.info("PM 项目分配更新: target={}, projectIds={}", targetUserId, json);
     }
 
     /**

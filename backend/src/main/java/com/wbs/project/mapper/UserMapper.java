@@ -126,7 +126,16 @@ public interface UserMapper {
     int updateRoleAndScope(@Param("id") String id,
                            @Param("role") String role,
                            @Param("managedDeptCodes") String managedDeptCodes,
-                           @Param("managedCompanyCd") String managedCompanyCd);
+                           @Param("managedCompanyCd") String managedCompanyCd,
+                           @Param("managedProjectIds") String managedProjectIds);
+
+    /**
+     * 仅更新 managed_project_ids(角色管理 v2 - 2026-06-12 PM 项目分配用)
+     * 同步 bump token_version
+     * @return 更新行数
+     */
+    int updateManagedProjects(@Param("id") String id,
+                              @Param("managedProjectIds") String managedProjectIds);
 
     /**
      * 仅 bump token_version（用于旧 project-manager 兼容期降级）

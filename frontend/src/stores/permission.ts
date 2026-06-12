@@ -175,12 +175,13 @@ export const usePermissionStore = defineStore('permission', () => {
 
   /**
    * 是否能编辑该项目
-   * 规则：admin 任意;创建者 总可编辑;dept-pm(部门内);pm(owner);其他不可
+   * 规则：admin 任意;创建者 总可编辑;dept-pm(部门内);pm(owner / managed_projects);其他不可(2026-06-12 PM 加)
    */
   const canEditProject = (projectId: string): boolean => {
     if (isAdmin()) return true;
     if (isProjectCreator(projectId)) return true;
     if (isProjectOwner(projectId)) return true;
+    if (isManagedProject(projectId)) return true;
     const project = projectStore.projectById(projectId);
     if (isDeptProjectManager() && project && isDeptManager(project.deptCode)) return true;
     return false;
@@ -202,23 +203,41 @@ export const usePermissionStore = defineStore('permission', () => {
 
   /**
    * 是否能创建项目
+   * 规则:admin 任意;dept-pm 需有 managed_dept_codes;pm 需有 dept_code(2026-06-12 PM 加)
    */
   const canCreateProject = (): boolean => {
     if (isAdmin()) return true;
     if (isDeptProjectManager()) {
       return managedDeptCodes.value.length > 0;
     }
+    if (isProjectManager()) {
+      const me = userStore.currentUser;
+      return !!me && !!me.deptCode && me.deptCode.length > 0;
+    }
     return false;
   };
 
   /**
+   * PM 是否管理该项目(2026-06-12 PM 角色重新启用)
+   * 数据源: project.id IN user.managedProjectIds
+   */
+  const isManagedProject = (projectId: string): boolean => {
+    const me = userStore.currentUser;
+    if (!me || me.role !== 'project-manager') return false;
+    const ids = me.managedProjectIds || [];
+    return ids.includes(projectId);
+  };
+
+  /**
    * 任务内容管理(创建/编辑/删除任务标题/描述/负责人/状态/日期):
-   * admin + 项目创建者 + 项目负责人(owner)。部门项目负责人不能再管任务。
+   * admin + 项目创建者 + 项目负责人(owner) + 项目经理(managed_projects)。
+   * 部门项目负责人不能再管任务。
    */
   const canManageTaskContent = (projectId: string): boolean => {
     if (isAdmin()) return true;
     if (isProjectCreator(projectId)) return true;
     if (isProjectOwner(projectId)) return true;
+    if (isManagedProject(projectId)) return true;
     return false;
   };
 
@@ -367,6 +386,7 @@ export const usePermissionStore = defineStore('permission', () => {
     isProjectOwner,
     isProjectCreator,
     isProjectMember,
+    isManagedProject,
     canViewProject,
     canEditProject,
     canDeleteProject,

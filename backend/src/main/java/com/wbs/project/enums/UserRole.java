@@ -5,10 +5,10 @@ import lombok.Getter;
 /**
  * 用户角色枚举
  *
- * 5 个角色 + 数据范围：
+ * 5 个角色 + 数据范围(2026-06-12 重写 PM 角色):
  * - ADMIN               : 全员
- * - DEPT_PROJECT_MANAGER: 我所管理部门(dept_code IN managed_dept_codes)
- * - PROJECT_MANAGER     : 我 owner 的项目(owner_id == self)。已废弃,迁移后会清空,保留枚举兼容
+ * - DEPT_PROJECT_MANAGER: 我所管理部门(dept_code IN managed_dept_codes);可指派 PM
+ * - PROJECT_MANAGER     : 我所管项目(id IN managed_project_ids);PM 之间互不可见
  * - MEMBER              : 我参与的项目(member_id == self)
  * - VIEWER              : 我参与的项目(只读)
  */
@@ -16,8 +16,7 @@ import lombok.Getter;
 public enum UserRole {
     ADMIN("admin", "管理员"),
     DEPT_PROJECT_MANAGER("dept-project-manager", "部门项目负责人"),
-    @Deprecated
-    PROJECT_MANAGER("project-manager", "项目负责人(已废弃)"),
+    PROJECT_MANAGER("project-manager", "项目经理"),
     MEMBER("member", "项目人员"),
     VIEWER("viewer", "观察者");
 

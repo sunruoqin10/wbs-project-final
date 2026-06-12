@@ -129,4 +129,14 @@
         ORDER BY created_at DESC
     </select>
 
+    <!-- 角色管理 v2：按 PM 的 managed_project_ids 查项目 ID 列表(2026-06-12) -->
+    <select id="selectIdsByManagedProjectIds" resultType="java.lang.String">
+        SELECT id FROM sys_project
+        WHERE JSON_CONTAINS(
+            (SELECT managed_project_ids FROM sys_user WHERE id = #{userId}),
+            JSON_QUOTE(id)
+        )
+        ORDER BY created_at DESC
+    </select>
+
 </mapper>

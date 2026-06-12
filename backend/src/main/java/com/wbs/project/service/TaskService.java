@@ -14,9 +14,7 @@ import org.springframework.transaction.annotation.Transactional;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.time.temporal.ChronoUnit;
-import java.util.ArrayList;
-import java.util.List;
-import java.util.UUID;
+import java.util.*;
 import java.util.stream.Collectors;
 
 /**
@@ -114,6 +112,69 @@ public class TaskService {
      */
     public List<Task> getTasksByAssigneeId(String assigneeId) {
         return taskMapper.selectByAssigneeId(assigneeId);
+    }
+
+    /**
+     * 获取"我的任务"树状结构所需的全量任务
+     * 返回：用户自己的任务 + 祖先链(递归向上) + 直接子任务(含非用户负责人的)
+     * 前端用 parentTaskId 字段自行构建树
+     */
+    public List<Task> getMyTaskTree(String assigneeId) {
+        // 1. 用户自己的任务
+        List<Task> userTasks = taskMapper.selectByAssigneeId(assigneeId);
+        if (userTasks.isEmpty()) {
+            return userTasks;
+        }
+
+        Set<String> collectedIds = new HashSet<>();
+        for (Task t : userTasks) {
+            collectedIds.add(t.getId());
+        }
+
+        // 2. 递归向上查找祖先任务(父→祖父→...)
+        List<Task> currentLevel = new ArrayList<>(userTasks);
+        Set<String> ancestorIds = new LinkedHashSet<>();
+        while (true) {
+            List<String> parentIds = currentLevel.stream()
+                    .map(Task::getParentTaskId)
+                    .filter(Objects::nonNull)
+                    .filter(id -> !collectedIds.contains(id))
+                    .distinct()
+                    .collect(Collectors.toList());
+            if (parentIds.isEmpty()) break;
+
+            List<Task> parents = taskMapper.selectByIds(parentIds);
+            if (parents.isEmpty()) break;
+
+            for (Task p : parents) {
+                collectedIds.add(p.getId());
+                ancestorIds.add(p.getId());
+            }
+            currentLevel = parents;
+        }
+
+        // 3. 查找用户任务的直接子任务(这些子任务可能不是用户负责的)
+        Set<String> childIds = new LinkedHashSet<>();
+        for (Task t : userTasks) {
+            List<Task> children = taskMapper.selectByParentTaskId(t.getId());
+            for (Task c : children) {
+                if (!collectedIds.contains(c.getId())) {
+                    collectedIds.add(c.getId());
+                    childIds.add(c.getId());
+                }
+            }
+        }
+
+        // 4. 合并返回
+        List<Task> result = new ArrayList<>(userTasks);
+        if (!ancestorIds.isEmpty()) {
+            result.addAll(taskMapper.selectByIds(new ArrayList<>(ancestorIds)));
+        }
+        if (!childIds.isEmpty()) {
+            result.addAll(taskMapper.selectByIds(new ArrayList<>(childIds)));
+        }
+
+        return result;
     }
 
     /**

@@ -3,7 +3,7 @@ import { ref, computed, watch } from 'vue';
 import { useI18n } from 'vue-i18n';
 import { usePermissionStore } from '@/stores/permission';
 import apiService from '@/services/api';
-import type { OrgNode, RoleChangeRequest, RoleChangeLog, UserRole } from '@/types';
+import type { OrgNode, RoleChangeRequest, RoleChangeLog, UserRole, Project } from '@/types';
 
 interface Props {
   visible: boolean;
@@ -15,12 +15,14 @@ interface Props {
   userCompanyCd?: string;
   /** 员工所属部门代码，作为管辖部门的默认值 */
   userDeptCode?: string;
+  currentManagedProjectIds?: string[];
 }
 const props = withDefaults(defineProps<Props>(), {
   currentManagedDeptCodes: () => [],
   currentManagedCompanyCd: '',
   userCompanyCd: '',
   userDeptCode: '',
+  currentManagedProjectIds: () => [],
 });
 const emit = defineEmits<{
   (e: 'update:visible', val: boolean): void;
@@ -33,6 +35,7 @@ const permissionStore = usePermissionStore();
 const newRole = ref<string>(props.currentRole);
 const managedDeptCodes = ref<string[]>([...props.currentManagedDeptCodes]);
 const managedCompanyCd = ref<string>(props.currentManagedCompanyCd);
+const managedProjectIds = ref<string[]>([...props.currentManagedProjectIds]);
 const reason = ref<string>('');
 const loading = ref(false);
 const errorMsg = ref('');
@@ -45,7 +48,40 @@ const history = ref<RoleChangeLog[]>([]);
 const historyLoading = ref(false);
 const showHistory = ref(false);
 
-// 候选部门(扁平化 org 树,getOrgTree 返回单根节点,递归走 children)
+const projectsInManagedDepts = ref<Project[]>([]);
+const projectsLoading = ref(false);
+
+// ========== 权限(2026-06-12) ==========
+// actor: 谁打开这个对话框
+// - admin: 任意目标,可改成任意角色
+// - dept-pm: 仅本部门目标,只能改成 {project-manager, member, viewer}
+const isAdminActor = computed(() => permissionStore.isAdmin());
+const isDeptPmActor = computed(() => permissionStore.isDeptProjectManager());
+const canChangeRole = computed(() => isAdminActor.value || isDeptPmActor.value);
+// 候选角色
+const availableRoles = computed<Array<{ value: UserRole; label: string; disabled?: boolean; hint?: string }>>(() => {
+  if (isAdminActor.value) {
+    return [
+      { value: 'admin', label: t('roles.admin') },
+      { value: 'dept-project-manager', label: t('roles.deptProjectManager') },
+      { value: 'project-manager', label: t('roles.projectManager') },
+      { value: 'member', label: t('roles.member') },
+      { value: 'viewer', label: t('roles.viewer') }
+    ];
+  }
+  if (isDeptPmActor.value) {
+    return [
+      { value: 'project-manager', label: t('roles.projectManager') },
+      { value: 'member', label: t('roles.member') },
+      { value: 'viewer', label: t('roles.viewer') }
+    ];
+  }
+  return [];
+});
+
+const showManagedDeptFields = computed(() => newRole.value === 'dept-project-manager');
+const showManagedProjectFields = computed(() => newRole.value === 'project-manager');
+
 const flatDepts = computed(() => {
   const result: { code: string; name: string; companyCd?: string }[] = [];
   const walk = (node: OrgNode | null) => {
@@ -59,16 +95,12 @@ const flatDepts = computed(() => {
   return result;
 });
 
-const showManagedFields = computed(() => newRole.value === 'dept-project-manager');
-
-// 管辖公司显示名称（从组织树顶层节点查找）
 const managedCompanyName = computed(() => {
   if (!managedCompanyCd.value || !orgTree.value?.children) return managedCompanyCd.value;
   const company = orgTree.value.children.find(c => c.code === managedCompanyCd.value);
   return company?.name || managedCompanyCd.value;
 });
 
-// 管辖部门显示名称（从组织树查找）
 const managedDeptNames = computed(() => {
   return managedDeptCodes.value.map(code => {
     const dept = flatDepts.value.find(d => d.code === code);
@@ -76,7 +108,12 @@ const managedDeptNames = computed(() => {
   });
 });
 
-const isAdmin = computed(() => permissionStore.isAdmin());
+const managedProjectNames = computed(() => {
+  return managedProjectIds.value.map(id => {
+    const p = projectsInManagedDepts.value.find(p => p.id === id);
+    return p?.name || id;
+  });
+});
 
 watch(() => props.visible, async (v) => {
   if (v) {
@@ -85,12 +122,17 @@ watch(() => props.visible, async (v) => {
       ? [...props.currentManagedDeptCodes]
       : (props.userDeptCode ? [props.userDeptCode] : []);
     managedCompanyCd.value = props.currentManagedCompanyCd || props.userCompanyCd;
+    managedProjectIds.value = [...props.currentManagedProjectIds];
     reason.value = '';
     errorMsg.value = '';
     showHistory.value = false;
     await loadOrgTree();
-    if (isAdmin.value) {
+    if (isAdminActor.value) {
       await loadHistory();
+    }
+    // 若当前角色是 PM,加载他所属部门下的项目供"指派项目"用
+    if (props.currentRole === 'project-manager' || newRole.value === 'project-manager') {
+      await loadProjectsInActorManagedDepts();
     }
   }
 });
@@ -123,9 +165,46 @@ const loadHistory = async () => {
   }
 };
 
+/**
+ * 加载 actor 管辖部门下的所有项目(2026-06-12 PM 项目分配用)
+ * 数据源:
+ *   - admin: 全部项目
+ *   - dept-pm: managed_dept_codes 下的项目
+ */
+const loadProjectsInActorManagedDepts = async () => {
+  try {
+    projectsLoading.value = true;
+    const allProjects = await apiService.getProjects();
+    if (isAdminActor.value) {
+      projectsInManagedDepts.value = allProjects;
+    } else {
+      const codes = permissionStore.managedDeptCodes;
+      projectsInManagedDepts.value = allProjects.filter(p => p.deptCode && codes.includes(p.deptCode));
+    }
+  } catch (e) {
+    console.error('加载项目列表失败', e);
+    projectsInManagedDepts.value = [];
+  } finally {
+    projectsLoading.value = false;
+  }
+};
+
+const toggleProject = (projectId: string) => {
+  const idx = managedProjectIds.value.indexOf(projectId);
+  if (idx >= 0) {
+    managedProjectIds.value.splice(idx, 1);
+  } else {
+    managedProjectIds.value.push(projectId);
+  }
+};
+
+const isProjectSelected = (projectId: string): boolean => {
+  return managedProjectIds.value.includes(projectId);
+};
+
 const handleSubmit = async () => {
-  if (!isAdmin.value) {
-    errorMsg.value = '仅管理员可修改角色';
+  if (!canChangeRole.value) {
+    errorMsg.value = '您无权修改该用户角色';
     return;
   }
   if (newRole.value === 'dept-project-manager') {
@@ -145,6 +224,7 @@ const handleSubmit = async () => {
       newRole: newRole.value as UserRole,
       managedDeptCodes: newRole.value === 'dept-project-manager' ? managedDeptCodes.value : undefined,
       managedCompanyCd: newRole.value === 'dept-project-manager' ? managedCompanyCd.value : undefined,
+      managedProjectIds: newRole.value === 'project-manager' ? managedProjectIds.value : undefined,
       reason: reason.value || undefined,
     };
     await apiService.changeUserRole(props.userId, req);
@@ -175,18 +255,20 @@ const formatTime = (iso: string): string => {
     <div class="w-full max-w-2xl rounded-lg bg-white shadow-xl max-h-[90vh] flex flex-col">
       <!-- Header -->
       <div class="flex items-center justify-between border-b border-secondary-200 px-6 py-4">
-        <h3 class="text-lg font-semibold text-secondary-900">{{ t('team.roleChange.title') }}</h3>
+        <h3 class="text-lg font-semibold text-secondary-900">
+          {{ isAdminActor ? t('team.roleChange.title') : '部门内变更角色' }}
+        </h3>
         <button class="text-secondary-400 hover:text-secondary-600" @click="handleCancel">
           <svg class="h-6 w-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" />
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M12 12m12 6l-12-12" />
           </svg>
         </button>
       </div>
 
       <!-- Body -->
       <div class="overflow-y-auto px-6 py-4 space-y-4">
-        <div v-if="!isAdmin" class="rounded-lg border border-red-200 bg-red-50 p-3 text-sm text-red-700">
-          仅管理员可修改角色
+        <div v-if="!canChangeRole" class="rounded-lg border border-red-200 bg-red-50 p-3 text-sm text-red-700">
+          您无权修改该用户角色
         </div>
         <div class="rounded-lg border border-amber-200 bg-amber-50 p-3 text-sm text-amber-800">
           {{ t('team.roleChange.warning') }}
@@ -199,19 +281,18 @@ const formatTime = (iso: string): string => {
           </label>
           <select
             v-model="newRole"
-            :disabled="!isAdmin"
+            :disabled="!canChangeRole"
             class="w-full rounded-lg border border-secondary-300 px-3 py-2 text-sm focus:border-primary-500 focus:outline-none focus:ring-1 focus:ring-primary-500 disabled:bg-secondary-50"
           >
-            <option value="admin">{{ t('roles.admin') }}</option>
-            <option value="dept-project-manager">{{ t('roles.deptProjectManager') }}</option>
-            <option value="project-manager" disabled>{{ t('roles.projectManager') }} (已废弃)</option>
-            <option value="member">{{ t('roles.member') }}</option>
-            <option value="viewer">{{ t('roles.viewer') }}</option>
+            <option v-for="r in availableRoles" :key="r.value" :value="r.value">{{ r.label }}</option>
           </select>
+          <p v-if="isDeptPmActor" class="mt-1 text-xs text-secondary-500">
+            您只能将本部门用户改成"项目经理 / 项目人员 / 观察者",不能改成管理员或其他部门的用户。
+          </p>
         </div>
 
-        <!-- 管辖公司 -->
-        <div v-if="showManagedFields">
+        <!-- 管辖公司(dept-pm 必填) -->
+        <div v-if="showManagedDeptFields">
           <label class="mb-1 block text-sm font-medium text-secondary-700">
             {{ t('team.roleChange.managedCompanyCdLabel') }}
           </label>
@@ -224,8 +305,8 @@ const formatTime = (iso: string): string => {
           <p class="mt-1 text-xs text-secondary-400">管辖公司自动设为员工所属公司，不可修改</p>
         </div>
 
-        <!-- 管辖部门 -->
-        <div v-if="showManagedFields">
+        <!-- 管辖部门(dept-pm 必填) -->
+        <div v-if="showManagedDeptFields">
           <label class="mb-1 block text-sm font-medium text-secondary-700">
             {{ t('team.roleChange.managedDeptCodesLabel') }}
           </label>
@@ -240,6 +321,50 @@ const formatTime = (iso: string): string => {
             </template>
           </div>
           <p class="mt-1 text-xs text-secondary-400">管辖部门自动设为员工所属部门，不可修改</p>
+        </div>
+
+        <!-- 管辖项目(PM 角色多选,2026-06-12) -->
+        <div v-if="showManagedProjectFields">
+          <label class="mb-1 block text-sm font-medium text-secondary-700">
+            管辖项目(PM 权限范围)
+          </label>
+          <p class="mb-2 text-xs text-secondary-500">
+            勾选该 PM 可管理的项目;PM 之间互不可见,每个 PM 只看到自己勾选的项目
+          </p>
+          <div
+            v-if="projectsLoading"
+            class="rounded-lg border border-secondary-200 bg-secondary-50 px-3 py-2 text-sm text-secondary-500"
+          >
+            加载项目列表中...
+          </div>
+          <div
+            v-else-if="projectsInManagedDepts.length === 0"
+            class="rounded-lg border border-secondary-200 bg-secondary-50 px-3 py-2 text-sm text-secondary-500"
+          >
+            您管辖的部门下暂无项目
+          </div>
+          <div
+            v-else
+            class="max-h-48 overflow-y-auto rounded-lg border border-secondary-200 bg-white p-2"
+          >
+            <label
+              v-for="p in projectsInManagedDepts"
+              :key="p.id"
+              class="flex items-center gap-2 rounded px-2 py-1.5 text-sm hover:bg-secondary-50 cursor-pointer"
+            >
+              <input
+                type="checkbox"
+                :checked="isProjectSelected(p.id)"
+                @change="toggleProject(p.id)"
+                class="rounded border-secondary-300 text-primary-600"
+              />
+              <span class="text-secondary-900">{{ p.name }}</span>
+              <span class="text-xs text-secondary-400">({{ p.deptCode }})</span>
+            </label>
+          </div>
+          <p v-if="managedProjectNames.length > 0" class="mt-1 text-xs text-secondary-500">
+            已选: {{ managedProjectNames.join('、') }}
+          </p>
         </div>
 
         <!-- 变更原因 -->
@@ -259,8 +384,8 @@ const formatTime = (iso: string): string => {
           {{ errorMsg }}
         </div>
 
-        <!-- 变更历史 -->
-        <div>
+        <!-- 变更历史(仅 admin 可见) -->
+        <div v-if="isAdminActor">
           <button
             type="button"
             class="text-sm text-primary-600 hover:text-primary-700"
@@ -308,7 +433,7 @@ const formatTime = (iso: string): string => {
         </button>
         <button
           type="button"
-          :disabled="loading || !isAdmin"
+          :disabled="loading || !canChangeRole"
           class="rounded-lg bg-primary-600 px-4 py-2 text-sm font-medium text-white hover:bg-primary-700 disabled:opacity-50"
           @click="handleSubmit"
         >

@@ -87,7 +87,7 @@
         {{ $t('common.loading', '加载中...') }}
       </div>
 
-      <div v-else-if="filteredAndSortedTasks.length === 0" class="rounded-xl border border-dashed border-secondary-300 bg-secondary-50 p-12 text-center">
+      <div v-else-if="allTasks.length === 0" class="rounded-xl border border-dashed border-secondary-300 bg-secondary-50 p-12 text-center">
         <svg class="mx-auto h-12 w-12 text-secondary-300" fill="none" stroke="currentColor" viewBox="0 0 24 24">
           <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2m-6 9l2 2 4-4" />
         </svg>
@@ -95,17 +95,37 @@
       </div>
 
       <template v-else>
-        <!-- 平铺 -->
-        <div v-if="groupBy === 'none'" class="grid grid-cols-1 gap-3 md:grid-cols-2 xl:grid-cols-3">
-          <TaskCard
-            v-for="task in filteredAndSortedTasks"
-            :key="task.id"
-            :task="task"
-            @click="openDetail"
-          />
+        <!-- 平铺 - 树状 -->
+        <div v-if="groupBy === 'none'" class="space-y-1">
+          <template v-for="node in flatTreeNodes" :key="node.task.id">
+            <div :style="{ paddingLeft: node.depth * 24 + 'px' }" class="tree-node-wrapper">
+              <div class="flex items-start gap-1.5">
+                <button
+                  v-if="node.hasChildren"
+                  type="button"
+                  @click="toggleTreeExpand(node.task.id)"
+                  class="tree-expand-btn"
+                  :title="treeExpandedIds.has(node.task.id) ? '收起子任务' : '展开子任务'"
+                >
+                  <svg
+                    class="h-3.5 w-3.5 transition-transform duration-200"
+                    :class="{ 'rotate-90': treeExpandedIds.has(node.task.id) }"
+                    fill="none" stroke="currentColor" viewBox="0 0 24 24"
+                  >
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7" />
+                  </svg>
+                </button>
+                <span v-else class="inline-block w-5 flex-shrink-0" />
+                <div v-if="node.depth > 0" class="tree-line-indicator" />
+                <div class="flex-1 min-w-0">
+                  <TaskCard :task="node.task" @click="openDetail" />
+                </div>
+              </div>
+            </div>
+          </template>
         </div>
 
-        <!-- 按项目分组 -->
+        <!-- 按项目分组 - 树状 -->
         <div v-else-if="groupBy === 'project'" class="space-y-4">
           <Card v-for="group in groupedByProject" :key="group.projectId">
             <template #header>
@@ -120,21 +140,41 @@
                   </router-link>
                   <span v-else>{{ $t('myTasks.unassigned', '未关联项目') }}</span>
                 </h3>
-                <span class="text-xs text-secondary-500">{{ group.tasks.length }} {{ $t('myTasks.taskCount', '个任务') }}</span>
+                <span class="text-xs text-secondary-500">{{ group.totalNodes }} {{ $t('myTasks.taskCount', '个任务') }}</span>
               </div>
             </template>
-            <div class="grid grid-cols-1 gap-3 md:grid-cols-2 xl:grid-cols-3">
-              <TaskCard
-                v-for="task in group.tasks"
-                :key="task.id"
-                :task="task"
-                @click="openDetail"
-              />
+            <div class="space-y-1">
+              <template v-for="node in group.nodes" :key="node.task.id">
+                <div :style="{ paddingLeft: node.depth * 24 + 'px' }" class="tree-node-wrapper">
+                  <div class="flex items-start gap-1.5">
+                    <button
+                      v-if="node.hasChildren"
+                      type="button"
+                      @click="toggleTreeExpand(node.task.id)"
+                      class="tree-expand-btn"
+                      :title="treeExpandedIds.has(node.task.id) ? '收起子任务' : '展开子任务'"
+                    >
+                      <svg
+                        class="h-3.5 w-3.5 transition-transform duration-200"
+                        :class="{ 'rotate-90': treeExpandedIds.has(node.task.id) }"
+                        fill="none" stroke="currentColor" viewBox="0 0 24 24"
+                      >
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7" />
+                      </svg>
+                    </button>
+                    <span v-else class="inline-block w-5 flex-shrink-0" />
+                    <div v-if="node.depth > 0" class="tree-line-indicator" />
+                    <div class="flex-1 min-w-0">
+                      <TaskCard :task="node.task" @click="openDetail" />
+                    </div>
+                  </div>
+                </div>
+              </template>
             </div>
           </Card>
         </div>
 
-        <!-- 按状态分组 -->
+        <!-- 按状态分组 - 树状 -->
         <div v-else class="space-y-4">
           <Card v-for="group in groupedByStatus" :key="group.status">
             <template #header>
@@ -142,16 +182,36 @@
                 <h3 class="text-base font-semibold text-secondary-900">
                   <Badge :variant="group.variant">{{ group.label }}</Badge>
                 </h3>
-                <span class="text-xs text-secondary-500">{{ group.tasks.length }} {{ $t('myTasks.taskCount', '个任务') }}</span>
+                <span class="text-xs text-secondary-500">{{ group.totalNodes }} {{ $t('myTasks.taskCount', '个任务') }}</span>
               </div>
             </template>
-            <div class="grid grid-cols-1 gap-3 md:grid-cols-2 xl:grid-cols-3">
-              <TaskCard
-                v-for="task in group.tasks"
-                :key="task.id"
-                :task="task"
-                @click="openDetail"
-              />
+            <div class="space-y-1">
+              <template v-for="node in group.nodes" :key="node.task.id">
+                <div :style="{ paddingLeft: node.depth * 24 + 'px' }" class="tree-node-wrapper">
+                  <div class="flex items-start gap-1.5">
+                    <button
+                      v-if="node.hasChildren"
+                      type="button"
+                      @click="toggleTreeExpand(node.task.id)"
+                      class="tree-expand-btn"
+                      :title="treeExpandedIds.has(node.task.id) ? '收起子任务' : '展开子任务'"
+                    >
+                      <svg
+                        class="h-3.5 w-3.5 transition-transform duration-200"
+                        :class="{ 'rotate-90': treeExpandedIds.has(node.task.id) }"
+                        fill="none" stroke="currentColor" viewBox="0 0 24 24"
+                      >
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7" />
+                      </svg>
+                    </button>
+                    <span v-else class="inline-block w-5 flex-shrink-0" />
+                    <div v-if="node.depth > 0" class="tree-line-indicator" />
+                    <div class="flex-1 min-w-0">
+                      <TaskCard :task="node.task" @click="openDetail" />
+                    </div>
+                  </div>
+                </div>
+              </template>
             </div>
           </Card>
         </div>
@@ -175,13 +235,13 @@
       />
     </Drawer>
 
-    <!-- 编辑任务 Modal -->
+    <!-- 编辑/创建任务 Modal -->
     <TaskModal
       :open="modalOpen"
       :task="editingTask"
-      :project-id="editingTask?.projectId"
-      :parent-task-id="editingTask?.parentTaskId || undefined"
-      :parent-task-name="parentTaskName"
+      :project-id="editingTask ? editingTask.projectId : currentProjectId"
+      :parent-task-id="editingTask?.parentTaskId || currentParentTaskId || undefined"
+      :parent-task-name="editingTask?.parentTaskId ? parentTaskName : currentParentTaskName"
       @close="closeEditModal"
       @save="handleSave"
     />
@@ -204,11 +264,13 @@ import Drawer from '@/components/common/Drawer.vue';
 import apiService from '@/services/api';
 import { useProjectStore } from '@/stores/project';
 import { useTaskStore } from '@/stores/task';
+import { useUserStore } from '@/stores/user';
 import type { Task, Project } from '@/types';
 
 const { t } = useI18n();
 const projectStore = useProjectStore();
 const taskStore = useTaskStore();
+const userStore = useUserStore();
 
 // ===== 数据 =====
 const allTasks = ref<Task[]>([]);
@@ -218,8 +280,10 @@ const drawerOpen = ref(false);
 const selectedTask = ref<Task | null>(null);
 const modalOpen = ref(false);
 const editingTask = ref<Task | null>(null);
-// 父任务名缓存(MyTasks 只加载"我作为 assignee"的任务,父任务可能不在本地,
-// 编辑子任务时需要按需拉父任务详情以显示正确的名称)
+const isCreatingSubtask = ref(false);
+const currentParentTaskId = ref<string | null>(null);
+const currentParentTaskName = ref<string>('');
+const currentProjectId = ref<string>('');
 const parentTaskNameCache = ref<Record<string, string>>({});
 const parentTaskName = computed<string | undefined>(() => {
   const pid = editingTask.value?.parentTaskId;
@@ -231,97 +295,89 @@ const parentTaskName = computed<string | undefined>(() => {
 const statusFilter = ref<string>('all');
 const priorityFilter = ref<string>('all');
 const projectFilter = ref<string>('all');
-const statFilter = ref<string>('all'); // 顶部统计卡筛选:all / todo / in-progress / done / due-soon
+const statFilter = ref<string>('all');
 const sortBy = ref<string>('endDate');
 const groupBy = ref<'none' | 'project' | 'status'>('none');
 
-// ===== 加载 =====
-const loadData = async () => {
-  loading.value = true;
-  try {
-    const [myTasks, projects] = await Promise.all([
-      apiService.getMyTasks(),
-      // 任务可能引用 projectId 列表里没的项目,这里也单独拉项目列表供分组
-      projectStore.projects.length > 0
-        ? Promise.resolve(projectStore.projects)
-        : apiService.getProjects()
-    ]);
-    allTasks.value = myTasks;
-    accessibleProjects.value = projects;
-  } catch (err) {
-    console.error('加载我的任务失败', err);
-    allTasks.value = [];
-  } finally {
-    loading.value = false;
+// ===== 树状结构状态 =====
+const treeExpandedIds = ref<Set<string>>(new Set());
+
+// ----- 树工具函数 -----
+
+interface FlatTreeNode {
+  task: Task;
+  depth: number;
+  hasChildren: boolean;
+}
+
+/** 构建 childrenMap: parentTaskId → children（按标题排序） */
+function buildChildrenMap(tasks: Task[]): Map<string, Task[]> {
+  const map = new Map<string, Task[]>();
+  for (const t of tasks) {
+    const key = t.parentTaskId || '__root__';
+    if (!map.has(key)) map.set(key, []);
+    map.get(key)!.push(t);
   }
-};
+  for (const [, children] of map) {
+    children.sort((a, b) => a.title.localeCompare(b.title));
+  }
+  return map;
+}
 
-const refresh = () => {
-  loadData();
-};
-
-onMounted(() => {
-  loadData();
-});
-
-// ===== 顶部统计 =====
-const PRIORITY_ORDER: Record<string, number> = { urgent: 0, high: 1, medium: 2, low: 3 };
-
-const dueSoonTasks = computed(() => {
-  const now = dayjs();
-  return allTasks.value.filter(t => {
-    if (!t.endDate) return false;
-    if (t.status === 'done') return false;
-    const diff = dayjs(t.endDate).diff(now, 'day');
-    return diff >= 0 && diff <= 3;
+/** 在给定 tasks 集合内查找根节点 */
+function findRootsInSet(tasks: Task[], taskIdSet: Set<string>): Task[] {
+  return tasks.filter(t => {
+    if (!t.parentTaskId) return true;
+    return !taskIdSet.has(t.parentTaskId);
   });
+}
+
+/** 平铺树：先序遍历，展开的节点递归子节点 */
+function flattenTree(
+  roots: Task[],
+  childrenMap: Map<string, Task[]>,
+  expandedIds: Set<string>
+): FlatTreeNode[] {
+  const result: FlatTreeNode[] = [];
+
+  function walk(task: Task, depth: number) {
+    const children = childrenMap.get(task.id) || [];
+    result.push({ task, depth, hasChildren: children.length > 0 });
+    if (expandedIds.has(task.id) && children.length > 0) {
+      for (const child of children) {
+        walk(child, depth + 1);
+      }
+    }
+  }
+
+  for (const root of roots) {
+    walk(root, 0);
+  }
+
+  return result;
+}
+
+function toggleTreeExpand(taskId: string) {
+  const next = new Set(treeExpandedIds.value);
+  if (next.has(taskId)) {
+    next.delete(taskId);
+  } else {
+    next.add(taskId);
+  }
+  treeExpandedIds.value = next;
+}
+
+// ----- 筛选 & 基础 computed -----
+
+/** 当前用户的任务ID集合（用于统计卡计数，仅统计用户自己的任务） */
+const myTaskIds = computed(() => {
+  const uid = userStore.currentUser?.id;
+  if (!uid) return new Set<string>();
+  return new Set(allTasks.value.filter(t => t.assigneeId === uid).map(t => t.id));
 });
 
-const statCards = computed(() => [
-  {
-    key: 'todo',
-    label: t('taskStatus.todo', '待办'),
-    value: allTasks.value.filter(t => t.status === 'todo').length,
-    color: 'text-secondary-700'
-  },
-  {
-    key: 'in-progress',
-    label: t('taskStatus.inProgress', '进行中'),
-    value: allTasks.value.filter(t => t.status === 'in-progress').length,
-    color: 'text-primary-600'
-  },
-  {
-    key: 'done',
-    label: t('taskStatus.done', '已完成'),
-    value: allTasks.value.filter(t => t.status === 'done').length,
-    color: 'text-success-600'
-  },
-  {
-    key: 'due-soon',
-    label: t('myTasks.stat.dueSoon', '即将到期(≤3天)'),
-    value: dueSoonTasks.value.length,
-    color: 'text-warning-600'
-  }
-]);
-
-const toggleStatFilter = (key: string) => {
-  // 同样的 stat 再次点击取消,否则切到该 stat
-  if (statFilter.value === key) {
-    statFilter.value = 'all';
-  } else {
-    statFilter.value = key;
-  }
-};
-
-const clearFilters = () => {
-  statusFilter.value = 'all';
-  priorityFilter.value = 'all';
-  projectFilter.value = 'all';
-  statFilter.value = 'all';
-};
-
-// ===== 主筛选 =====
-const filteredAndSortedTasks = computed(() => {
+/** 按筛选条件过滤后的任务 */
+const filteredTasks = computed(() => {
   let list = [...allTasks.value];
 
   if (statusFilter.value !== 'all') {
@@ -345,36 +401,23 @@ const filteredAndSortedTasks = computed(() => {
     list = list.filter(t => t.status === statFilter.value);
   }
 
-  // 排序
-  list.sort((a, b) => {
-    if (sortBy.value === 'priority') {
-      const pa = PRIORITY_ORDER[a.priority] ?? 99;
-      const pb = PRIORITY_ORDER[b.priority] ?? 99;
-      return pa - pb;
-    }
-    if (sortBy.value === 'status') {
-      return (a.status || '').localeCompare(b.status || '');
-    }
-    if (sortBy.value === 'project') {
-      const ap = a.projectId || '';
-      const bp = b.projectId || '';
-      if (ap !== bp) return ap.localeCompare(bp);
-      // 同一项目内按截止日期升序
-      return (a.endDate || '').localeCompare(b.endDate || '');
-    }
-    // 默认:按截止日期升序(已完成排后面,无截止日期排最末)
-    const aDone = a.status === 'done' ? 1 : 0;
-    const bDone = b.status === 'done' ? 1 : 0;
-    if (aDone !== bDone) return aDone - bDone;
-    const aDate = a.endDate || '9999-12-31';
-    const bDate = b.endDate || '9999-12-31';
-    return aDate.localeCompare(bDate);
-  });
-
   return list;
 });
 
-// ===== 分组 =====
+// ----- 平铺模式 -----
+
+const flatTreeNodes = computed(() => {
+  if (allTasks.value.length === 0) return [];
+  const filtered = filteredTasks.value;
+  const filteredIds = new Set(filtered.map(t => t.id));
+  const roots = findRootsInSet(filtered, filteredIds);
+  roots.sort((a, b) => a.title.localeCompare(b.title));
+  const cMap = buildChildrenMap(filtered);
+  return flattenTree(roots, cMap, treeExpandedIds.value);
+});
+
+// ----- 按项目分组 -----
+
 const projectById = computed(() => {
   const m = new Map<string, Project>();
   for (const p of accessibleProjects.value) m.set(p.id, p);
@@ -382,33 +425,160 @@ const projectById = computed(() => {
 });
 
 const groupedByProject = computed(() => {
-  const map = new Map<string, { projectId: string; projectName: string; tasks: Task[] }>();
-  for (const t of filteredAndSortedTasks.value) {
+  const map = new Map<string, { projectId: string; projectName: string; nodes: FlatTreeNode[]; totalNodes: number }>();
+  const filtered = filteredTasks.value;
+  const cMap = buildChildrenMap(filtered);
+
+  // 按项目归类
+  const byProject = new Map<string, Task[]>();
+  for (const t of filtered) {
     const key = t.projectId || '_none';
-    if (!map.has(key)) {
-      const p = t.projectId ? projectById.value.get(t.projectId) : null;
-      map.set(key, {
-        projectId: key,
-        projectName: p?.name || t.projectId || '',
-        tasks: []
-      });
-    }
-    map.get(key)!.tasks.push(t);
+    if (!byProject.has(key)) byProject.set(key, []);
+    byProject.get(key)!.push(t);
   }
+
+  for (const [projectId, projectTasks] of byProject) {
+    const projectIds = new Set(projectTasks.map(t => t.id));
+    const roots = findRootsInSet(projectTasks, projectIds);
+    roots.sort((a, b) => a.title.localeCompare(b.title));
+    const nodes = flattenTree(roots, cMap, treeExpandedIds.value);
+    const p = projectId !== '_none' ? projectById.value.get(projectId) : null;
+    map.set(projectId, {
+      projectId,
+      projectName: p?.name || projectId,
+      nodes,
+      totalNodes: nodes.length
+    });
+  }
+
   return Array.from(map.values());
 });
 
+// ----- 按状态分组 -----
+
 const groupedByStatus = computed(() => {
-  const order: Array<{ status: Task['status']; label: string; variant: 'default' | 'primary' | 'success' }> = [
+  const statusOrder: Array<{ status: Task['status']; label: string; variant: 'default' | 'primary' | 'success' }> = [
     { status: 'todo', label: t('taskStatus.todo', '待办'), variant: 'default' },
     { status: 'in-progress', label: t('taskStatus.inProgress', '进行中'), variant: 'primary' },
     { status: 'done', label: t('taskStatus.done', '已完成'), variant: 'success' }
   ];
-  return order.map(g => ({
-    ...g,
-    tasks: filteredAndSortedTasks.value.filter(t => t.status === g.status)
-  })).filter(g => g.tasks.length > 0);
+
+  const filtered = filteredTasks.value;
+  const filteredIds = new Set(filtered.map(t => t.id));
+  const cMap = buildChildrenMap(filtered);
+
+  return statusOrder.map(g => {
+    // 某个状态下的根节点：属于该状态 AND (无parent 或 parent不在filtered中)
+    const statusTasks = filtered.filter(t => t.status === g.status);
+    const roots = findRootsInSet(statusTasks, filteredIds);
+    roots.sort((a, b) => a.title.localeCompare(b.title));
+    const nodes = flattenTree(roots, cMap, treeExpandedIds.value);
+    return {
+      ...g,
+      nodes,
+      totalNodes: nodes.length
+    };
+  }).filter(g => g.nodes.length > 0);
 });
+
+// ===== 加载 =====
+const loadData = async () => {
+  loading.value = true;
+  try {
+    const [treeData, projects] = await Promise.all([
+      apiService.getMyTaskTree(),
+      projectStore.projects.length > 0
+        ? Promise.resolve(projectStore.projects)
+        : apiService.getProjects()
+    ]);
+    allTasks.value = treeData;
+    accessibleProjects.value = projects;
+
+    // 首次加载时自动展开根节点
+    if (treeExpandedIds.value.size === 0 && treeData.length > 0) {
+      const filteredIds = new Set(treeData.map(t => t.id));
+      const rootIds = new Set<string>();
+      for (const t of treeData) {
+        if (!t.parentTaskId || !filteredIds.has(t.parentTaskId)) {
+          rootIds.add(t.id);
+        }
+      }
+      treeExpandedIds.value = rootIds;
+    }
+  } catch (err) {
+    console.error('加载我的任务失败', err);
+    allTasks.value = [];
+  } finally {
+    loading.value = false;
+  }
+};
+
+const refresh = () => {
+  treeExpandedIds.value = new Set();
+  loadData();
+};
+
+onMounted(() => {
+  loadData();
+});
+
+// ===== 顶部统计（仅统计用户自己的任务） =====
+
+const myOwnTasks = computed(() =>
+  allTasks.value.filter(t => myTaskIds.value.has(t.id))
+);
+
+const dueSoonTasks = computed(() => {
+  const now = dayjs();
+  return myOwnTasks.value.filter(t => {
+    if (!t.endDate) return false;
+    if (t.status === 'done') return false;
+    const diff = dayjs(t.endDate).diff(now, 'day');
+    return diff >= 0 && diff <= 3;
+  });
+});
+
+const statCards = computed(() => [
+  {
+    key: 'todo',
+    label: t('taskStatus.todo', '待办'),
+    value: myOwnTasks.value.filter(t => t.status === 'todo').length,
+    color: 'text-secondary-700'
+  },
+  {
+    key: 'in-progress',
+    label: t('taskStatus.inProgress', '进行中'),
+    value: myOwnTasks.value.filter(t => t.status === 'in-progress').length,
+    color: 'text-primary-600'
+  },
+  {
+    key: 'done',
+    label: t('taskStatus.done', '已完成'),
+    value: myOwnTasks.value.filter(t => t.status === 'done').length,
+    color: 'text-success-600'
+  },
+  {
+    key: 'due-soon',
+    label: t('myTasks.stat.dueSoon', '即将到期(≤3天)'),
+    value: dueSoonTasks.value.length,
+    color: 'text-warning-600'
+  }
+]);
+
+const toggleStatFilter = (key: string) => {
+  if (statFilter.value === key) {
+    statFilter.value = 'all';
+  } else {
+    statFilter.value = key;
+  }
+};
+
+const clearFilters = () => {
+  statusFilter.value = 'all';
+  priorityFilter.value = 'all';
+  projectFilter.value = 'all';
+  statFilter.value = 'all';
+};
 
 // ===== 抽屉 / 编辑 =====
 const openDetail = (task: Task) => {
@@ -416,13 +586,9 @@ const openDetail = (task: Task) => {
   drawerOpen.value = true;
 };
 
-/**
- * 确保父任务详情已加载(用于"我的任务"页:子任务的父任务可能不在本地 cache)
- * 优先用本地 allTasks 查;查不到则调 /tasks/:id 拉一条;失败时不阻塞,fallback 由 modal 自行处理
- */
 const ensureParentTaskLoaded = async (parentTaskId: string) => {
   if (!parentTaskId) return;
-  if (parentTaskNameCache.value[parentTaskId]) return; // 已缓存
+  if (parentTaskNameCache.value[parentTaskId]) return;
   const local = allTasks.value.find(t => t.id === parentTaskId);
   if (local) {
     parentTaskNameCache.value[parentTaskId] = local.title;
@@ -451,25 +617,34 @@ const openEditModal = async (task: Task) => {
 const closeEditModal = () => {
   modalOpen.value = false;
   editingTask.value = null;
+  isCreatingSubtask.value = false;
+  currentParentTaskId.value = null;
+  currentParentTaskName.value = '';
+  currentProjectId.value = '';
 };
 
-/**
- * 处理 TaskModal 的 @save 事件 —— 调 taskStore.updateTask 真正落库
- * (与 TaskBoard.handleSaveTask 同模式;TaskModal 自己只 emit,不调 API)
- */
 const taskSaving = ref(false);
 const handleSave = async (taskData: Partial<Task>) => {
   if (taskSaving.value) return;
-  if (!editingTask.value) return; // 本视图只支持编辑现有任务
   taskSaving.value = true;
   try {
-    await taskStore.updateTask(editingTask.value.id, {
-      ...taskData,
-      status: taskData.status || editingTask.value.status
-    });
+    if (editingTask.value) {
+      await taskStore.updateTask(editingTask.value.id, {
+        ...taskData,
+        status: taskData.status || editingTask.value.status
+      });
+    } else if (isCreatingSubtask.value && currentParentTaskId.value) {
+      await taskStore.createTask({
+        ...taskData,
+        projectId: taskData.projectId || currentProjectId.value,
+        parentTaskId: currentParentTaskId.value,
+        status: taskData.status || 'todo'
+      });
+    } else {
+      return;
+    }
   } catch (err) {
     console.error('保存任务失败', err);
-    // 即使失败也关闭 modal,让用户看到任务列表状态
   } finally {
     taskSaving.value = false;
     closeEditModal();
@@ -482,13 +657,55 @@ const handleDelete = async (_task: Task) => {
   await loadData();
 };
 
-const handleCreateSubtask = (_parentId: string) => {
-  // 子任务的创建受父任务负责人 + 父任务 assignee 限制,在 ProjectTask 模态中处理
-  // 这里先关闭抽屉,让用户跳到项目内去创建(保持职责单一)
+const handleCreateSubtask = (parentId: string) => {
+  const parentTask = selectedTask.value;
+  if (!parentTask || parentTask.id !== parentId) return;
   drawerOpen.value = false;
+  setTimeout(() => {
+    isCreatingSubtask.value = true;
+    currentParentTaskId.value = parentId;
+    currentParentTaskName.value = parentTask.title;
+    currentProjectId.value = parentTask.projectId;
+    editingTask.value = null;
+    modalOpen.value = true;
+  }, 200);
 };
 
 const viewSubtask = (_subtask: Task) => {
-  // 抽屉内部已切到子任务的详情;不重置 selectedTask,让 TaskDetail 自己处理
+  // 抽屉内部已切到子任务的详情
 };
 </script>
+
+<style scoped>
+/* === 树状视图样式 === */
+.tree-expand-btn {
+  flex-shrink: 0;
+  width: 20px;
+  height: 20px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 4px;
+  color: #6b7280;
+  cursor: pointer;
+  background: transparent;
+  border: none;
+  margin-top: 12px;
+  transition: all 0.15s ease;
+}
+.tree-expand-btn:hover {
+  background: #eff6ff;
+  color: #2563eb;
+}
+
+.tree-line-indicator {
+  flex-shrink: 0;
+  width: 16px;
+  height: 100%;
+  min-height: 60px;
+  margin-top: 4px;
+  border-left: 2px solid #e5e7eb;
+  border-bottom: 2px solid #e5e7eb;
+  border-bottom-left-radius: 6px;
+}
+</style>

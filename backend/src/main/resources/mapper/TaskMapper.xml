@@ -73,6 +73,15 @@
         ORDER BY created_at DESC
     </select>
 
+    <select id="selectByIds" resultMap="BaseResultMap">
+        SELECT <include refid="Base_Column_List"/>
+        FROM sys_task
+        WHERE id IN
+        <foreach collection="ids" item="id" open="(" separator="," close=")">
+            #{id}
+        </foreach>
+    </select>
+
     <insert id="insert" parameterType="com.wbs.project.entity.Task">
         INSERT INTO sys_task (id, project_id, parent_task_id, title, description, status, priority, assignee_id,
                              start_date, end_date, estimated_hours, actual_hours, progress, created_at, updated_at,

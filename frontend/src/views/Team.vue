@@ -143,15 +143,15 @@
                           type="button"
                           :class="[
                             'rounded px-2 py-0.5 text-xs',
-                            permissionStore.isAdmin()
+                            canChangeRoleFor(user)
                               ? 'text-primary-600 hover:bg-primary-50 hover:text-primary-700'
                               : 'cursor-not-allowed text-secondary-400'
                           ]"
-                          :disabled="!permissionStore.isAdmin()"
-                          :title="permissionStore.isAdmin()
-                            ? $t('team.roleChange.title')
+                          :disabled="!canChangeRoleFor(user)"
+                          :title="canChangeRoleFor(user)
+                            ? (permissionStore.isAdmin() ? $t('team.roleChange.title') : '变更本部门用户角色')
                             : $t('team.roleChange.adminOnly')"
-                          @click="permissionStore.isAdmin() && openRoleChangeDialog(user)"
+                          @click="canChangeRoleFor(user) && openRoleChangeDialog(user)"
                         >
                           {{ $t('team.roleChange.title') }}
                         </button>
@@ -243,15 +243,15 @@
                               type="button"
                               :class="[
                                 'rounded px-2 py-0.5 text-xs',
-                                permissionStore.isAdmin()
+                                canChangeRoleFor(user)
                                   ? 'text-primary-600 hover:bg-primary-50 hover:text-primary-700'
                                   : 'cursor-not-allowed text-secondary-400'
                               ]"
-                              :disabled="!permissionStore.isAdmin()"
-                              :title="permissionStore.isAdmin()
-                                ? $t('team.roleChange.title')
+                              :disabled="!canChangeRoleFor(user)"
+                              :title="canChangeRoleFor(user)
+                                ? (permissionStore.isAdmin() ? $t('team.roleChange.title') : '变更本部门用户角色')
                                 : $t('team.roleChange.adminOnly')"
-                              @click="permissionStore.isAdmin() && openRoleChangeDialog(user)"
+                              @click="canChangeRoleFor(user) && openRoleChangeDialog(user)"
                             >
                               {{ $t('team.roleChange.title') }}
                             </button>
@@ -492,6 +492,7 @@
       :current-managed-company-cd="roleChangeTarget.managedCompanyCd || ''"
       :user-company-cd="roleChangeTarget.companyCd || ''"
       :user-dept-code="roleChangeTarget.deptCode || ''"
+      :current-managed-project-ids="roleChangeTarget.managedProjectIds || []"
       @success="onRoleChangeSuccess"
     />
   </MainLayout>
@@ -667,6 +668,24 @@ const roleChangeTarget = ref<User | null>(null);
 const openRoleChangeDialog = (user: User) => {
   roleChangeTarget.value = user;
   roleChangeDialogVisible.value = true;
+};
+
+/**
+ * 能否修改该用户的角色(2026-06-12)
+ * - admin: 任意
+ * - dept-pm: 本部门内非 admin、非 dept-pm 用户
+ */
+const canChangeRoleFor = (user: User): boolean => {
+  if (permissionStore.isAdmin()) return true;
+  if (permissionStore.isDeptProjectManager()) {
+    // dept-pm 不能动 admin 和 dept-pm（包括自己）
+    if (user.role === 'admin' || user.role === 'dept-project-manager') return false;
+    // 必须本部门内
+    const actorCodes = permissionStore.managedDeptCodes;
+    if (!user.deptCode || !actorCodes.includes(user.deptCode)) return false;
+    return true;
+  }
+  return false;
 };
 const onRoleChangeSuccess = async () => {
   // 角色变更后,后端 tokenVersion + 1 → 目标用户旧 token 失效

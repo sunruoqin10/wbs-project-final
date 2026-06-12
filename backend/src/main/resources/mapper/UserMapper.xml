@@ -20,6 +20,7 @@
         <result column="status" property="status"/>
         <result column="managed_dept_codes" property="managedDeptCodes"/>
         <result column="managed_company_cd" property="managedCompanyCd"/>
+        <result column="managed_project_ids" property="managedProjectIds"/>
         <result column="token_version" property="tokenVersion"/>
         <result column="joined_at" property="joinedAt"/>
         <result column="created_at" property="createdAt"/>
@@ -30,7 +31,7 @@
         id, name, email, avatar, role, department,
         dept_code, sub_org_cd, sub_org_nam, company_cd, chinese_nam,
         skills, password, status,
-        managed_dept_codes, managed_company_cd, token_version,
+        managed_dept_codes, managed_company_cd, managed_project_ids, token_version,
         joined_at, created_at, updated_at
     </sql>
 
@@ -98,13 +99,13 @@
            #{joinedAt}, #{createdAt}, #{updatedAt})
     </insert>
 
+    <!-- 注意: role / managed_* / token_version 不能通过此通用 update 修改,必须走 changeUserRole -->
     <update id="update" parameterType="com.wbs.project.entity.User">
         UPDATE sys_user
         <set>
             <if test="name != null">name = #{name},</if>
             <if test="email != null">email = #{email},</if>
             <if test="avatar != null">avatar = #{avatar},</if>
-            <if test="role != null">role = #{role},</if>
             <if test="department != null">department = #{department},</if>
             <if test="skills != null">skills = #{skills},</if>
             <if test="password != null">password = #{password},</if>
@@ -236,8 +237,18 @@
            SET role               = #{role},
                managed_dept_codes = #{managedDeptCodes},
                managed_company_cd = #{managedCompanyCd},
+               managed_project_ids = #{managedProjectIds},
                token_version      = token_version + 1,
                updated_at         = NOW()
+         WHERE id = #{id}
+    </update>
+
+    <!-- 角色管理 v2：仅更新 managed_project_ids(项目分配给 PM 用,不动角色),token_version +1 -->
+    <update id="updateManagedProjects">
+        UPDATE sys_user
+           SET managed_project_ids = #{managedProjectIds},
+               token_version       = token_version + 1,
+               updated_at          = NOW()
          WHERE id = #{id}
     </update>
 

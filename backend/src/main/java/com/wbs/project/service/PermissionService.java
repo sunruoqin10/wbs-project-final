@@ -157,7 +157,7 @@ public class PermissionService {
 
     /**
      * 是否能编辑该项目（标题/日期/负责人/部门/成员/状态）
-     * 规则：admin / 创建者 / dept-pm(部门内) / pm(owner) 允许;其他禁止
+     * 规则：admin / 创建者 / dept-pm(部门内) / pm(managed_projects) 允许;其他禁止(2026-06-12 PM 加)
      */
     public boolean canEditProject(String userId, String projectId) {
         if (userId == null || projectId == null) {
@@ -181,27 +181,16 @@ public class PermissionService {
                 && isDeptManager(userId, project.getDeptCode())) {
             return true;
         }
-        return false;
-    }
-
-    /**
-     * 是否能创建项目
-     * 规则：admin 任意;dept-pm 必须有所管部门;其他禁止
-     */
-    public boolean canCreateProject(String userId) {
-        if (isAdmin(userId)) {
+        if (isManagedProject(userId, projectId)) {
             return true;
-        }
-        if (isDeptProjectManager(userId)) {
-            User u = userMapper.selectById(userId);
-            return u != null && hasManagedDept(u);
         }
         return false;
     }
 
     /**
      * 任务内容管理权限(创建/编辑/删除任务标题/描述/负责人/状态/日期等):
-     * admin + 项目创建者 + 项目负责人(owner)。部门项目负责人不能再管任务(2026-06-12 收紧)。
+     * admin + 项目创建者 + 项目负责人(owner) + 项目经理(project in managed_project_ids)。
+     * 部门项目负责人不能再管任务(2026-06-12 收紧);2026-06-12 加入 PM 分支。
      */
     public boolean canManageTaskContent(String userId, String projectId) {
         if (userId == null || projectId == null) {
@@ -218,6 +207,9 @@ public class PermissionService {
             return true;
         }
         if (userId.equals(project.getOwnerId())) {
+            return true;
+        }
+        if (isProjectManager(userId) && isManagedProject(userId, projectId)) {
             return true;
         }
         return false;
@@ -444,6 +436,83 @@ public class PermissionService {
                 && isDeptManager(userId, project.getDeptCode());
     }
 
+    // ============ 项目经理管理(2026-06-12) ============
+
+    /**
+     * 给定用户(项目经理)是否管理指定 projectId
+     * 数据源: sys_user.managed_project_ids (JSON 数组)
+     */
+    public boolean isManagedProject(String userId, String projectId) {
+        if (userId == null || projectId == null) {
+            return false;
+        }
+        if (!isProjectManager(userId)) {
+            return false;
+        }
+        User u = userMapper.selectById(userId);
+        if (u == null) {
+            return false;
+        }
+        List<String> ids = parseProjectIds(u.getManagedProjectIds());
+        return ids.contains(projectId);
+    }
+
+    /**
+     * 是否能创建项目
+     * 规则: admin / dept-pm(managed_dept_codes) / pm(自己 dept_code) - 2026-06-12
+     */
+    public boolean canCreateProject(String userId) {
+        if (isAdmin(userId)) {
+            return true;
+        }
+        if (isDeptProjectManager(userId)) {
+            User u = userMapper.selectById(userId);
+            return u != null && hasManagedDept(u);
+        }
+        if (isProjectManager(userId)) {
+            // PM 必须有 dept_code(来自 HR 同步);有 dept 才能归属
+            User u = userMapper.selectById(userId);
+            return u != null && u.getDeptCode() != null && !u.getDeptCode().isEmpty();
+        }
+        return false;
+    }
+
+    /**
+     * 是否能改其他用户角色
+     * 规则: admin 任意 / dept-pm 仅可改本部门内 member/viewer/project-manager(不能动 admin 和 dept-pm,也不能把人提为 dept-pm)
+     */
+    public boolean canChangeRoleInDept(String actorId, String targetUserId, String newRole) {
+        if (actorId == null || targetUserId == null) {
+            return false;
+        }
+        if (isAdmin(actorId)) {
+            return true;
+        }
+        if (!isDeptProjectManager(actorId)) {
+            return false;
+        }
+        if (newRole == null) {
+            return false;
+        }
+        // dept-pm 只能赋予 project-manager / member / viewer（不能提为 admin 或 dept-pm）
+        if (UserRole.ADMIN.code.equals(newRole) || UserRole.DEPT_PROJECT_MANAGER.code.equals(newRole)) {
+            return false;
+        }
+        // 目标用户必须在本部门内
+        User target = userMapper.selectById(targetUserId);
+        if (target == null || target.getDeptCode() == null || target.getDeptCode().isEmpty()) {
+            return false;
+        }
+        if (!isDeptManager(actorId, target.getDeptCode())) {
+            return false;
+        }
+        // 目标用户当前角色不能是 admin 或 dept-project-manager（dept-pm 无权操作同级/上级角色）
+        if (UserRole.ADMIN.code.equals(target.getRole()) || UserRole.DEPT_PROJECT_MANAGER.code.equals(target.getRole())) {
+            return false;
+        }
+        return true;
+    }
+
     // ============ 工具方法 ============
 
     private java.util.Optional<String> getRole(String userId) {
@@ -469,6 +538,22 @@ public class PermissionService {
     private boolean hasManagedDept(User u) {
         List<String> codes = parseDeptCodes(u.getManagedDeptCodes());
         return !codes.isEmpty();
+    }
+
+    /**
+     * 解析 managed_project_ids JSON 字段(2026-06-12 新增)
+     * 失败或为空返回空列表
+     */
+    private List<String> parseProjectIds(String json) {
+        if (json == null || json.isEmpty()) {
+            return Collections.emptyList();
+        }
+        try {
+            return objectMapper.readValue(json, new TypeReference<List<String>>() {});
+        } catch (Exception e) {
+            log.warn("解析 managed_project_ids JSON 失败: {}", json, e);
+            return Collections.emptyList();
+        }
     }
 
     private String resolveProjectIdFromReport(String reportId) {
@@ -531,12 +616,13 @@ public class PermissionService {
             }
             return new ArrayList<>(ids);
         }
-        // pm / member / viewer: 参与的项目
-        ids.addAll(projectMemberMapper.selectProjectIdsByUserId(userId));
-        // pm 还要加上 owner 的项目
         if (isProjectManager(userId)) {
-            ids.addAll(projectMapper.selectIdsByOwner(userId));
+            // PM(2026-06-12):managed_project_ids 内的项目
+            ids.addAll(projectMapper.selectIdsByManagedProjectIds(userId));
+            return new ArrayList<>(ids);
         }
+        // member / viewer: 参与的项目
+        ids.addAll(projectMemberMapper.selectProjectIdsByUserId(userId));
         return new ArrayList<>(ids);
     }
 
@@ -549,5 +635,16 @@ public class PermissionService {
             return Collections.emptyList();
         }
         return parseDeptCodes(u.getManagedDeptCodes());
+    }
+
+    /**
+     * 解析用户的 managed_project_ids JSON 字段(2026-06-12)
+     * 失败或为空返回空列表
+     */
+    public List<String> parseManagedProjectIds(User u) {
+        if (u == null) {
+            return Collections.emptyList();
+        }
+        return parseProjectIds(u.getManagedProjectIds());
     }
 }

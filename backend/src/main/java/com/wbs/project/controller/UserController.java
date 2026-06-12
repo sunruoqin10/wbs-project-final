@@ -2,12 +2,14 @@ package com.wbs.project.controller;
 
 import com.wbs.project.annotation.RequireRole;
 import com.wbs.project.common.Result;
+import com.wbs.project.dto.ManagedProjectsRequest;
 import com.wbs.project.entity.ChangePasswordRequest;
 import com.wbs.project.entity.LoginRequest;
 import com.wbs.project.entity.LoginResponse;
 import com.wbs.project.entity.RoleChangeLog;
 import com.wbs.project.entity.RoleChangeRequest;
 import com.wbs.project.entity.User;
+import com.wbs.project.exception.BusinessException;
 import com.wbs.project.service.PermissionService;
 import com.wbs.project.service.UserService;
 import com.wbs.project.util.JwtUtil;
@@ -119,18 +121,46 @@ public class UserController {
 
     /**
      * 修改用户角色与管辖范围
-     * 仅 admin 可调用
+     * - admin 可改任何用户(含 admin 互改)
+     * - dept-project-manager 仅可改本部门内非 admin 用户(2026-06-12 放开)
      * 触发 tokenVersion + 1,旧 token 立即失效
      */
     @PutMapping("/{id}/role")
-    @RequireRole({"admin"})
     public Result<User> changeUserRole(@PathVariable String id,
                                         @RequestBody RoleChangeRequest req,
                                         HttpServletRequest request) {
         String operatorId = (String) request.getAttribute("userId");
         User updated = userService.changeUserRole(operatorId, id, req.getNewRole(),
-                req.getManagedDeptCodes(), req.getManagedCompanyCd(), req.getReason());
+                req.getManagedDeptCodes(), req.getManagedCompanyCd(),
+                req.getManagedProjectIds(), req.getReason());
         return Result.success("角色变更成功,目标用户需重新登录", updated);
+    }
+
+    /**
+     * 仅更新 PM 的 managed_project_ids(项目分配)
+     * 2026-06-12 新增,供 dept-pm 单独管理 PM 的项目列表
+     * 触发 tokenVersion + 1
+     */
+    @PutMapping("/{id}/managed-projects")
+    public Result<User> updateManagedProjects(@PathVariable String id,
+                                              @RequestBody ManagedProjectsRequest req,
+                                              HttpServletRequest request) {
+        String operatorId = (String) request.getAttribute("userId");
+        // 权限:admin / dept-pm(本部门内)
+        if (!permissionService.isAdmin(operatorId) && !permissionService.isDeptProjectManager(operatorId)) {
+            throw new BusinessException(403, "无权分配项目");
+        }
+        User target = userService.getUserById(id);
+        if (target == null) {
+            throw new BusinessException(404, "用户不存在: " + id);
+        }
+        // dept-pm 必须本部门内
+        if (!permissionService.isAdmin(operatorId)
+                && !permissionService.isDeptManager(operatorId, target.getDeptCode())) {
+            throw new BusinessException(403, "目标用户不在您管辖的部门内");
+        }
+        userService.updateManagedProjects(id, req.getManagedProjectIds());
+        return Result.success("项目分配成功", userService.getUserById(id));
     }
 
     /**

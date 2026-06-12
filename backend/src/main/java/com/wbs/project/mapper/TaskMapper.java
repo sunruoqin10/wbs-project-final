@@ -43,6 +43,11 @@ public interface TaskMapper {
     List<Task> selectByAssigneeId(@Param("assigneeId") String assigneeId);
 
     /**
+     * 根据ID列表批量查询任务（用于我的任务树状结构构建）
+     */
+    List<Task> selectByIds(@Param("ids") List<String> ids);
+
+    /**
      * 插入任务
      */
     int insert(Task task);

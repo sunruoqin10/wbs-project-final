@@ -79,6 +79,18 @@ public class TaskController {
         return Result.success(tasks);
     }
 
+    /**
+     * 当前登录用户任务树(用户任务+祖先链+直接子任务,供"我的任务"树状视图使用)
+     * 2026-06-12 新增
+     */
+    @GetMapping("/mine/tree")
+    public Result<List<Task>> getMyTaskTree(HttpServletRequest request) {
+        String currentUserId = (String) request.getAttribute("userId");
+        List<Task> tasks = taskService.getMyTaskTree(currentUserId);
+        taskService.updateDelayedStatus(tasks);
+        return Result.success(tasks);
+    }
+
     @PostMapping
     public Result<Task> createTask(
             @RequestBody Task task,

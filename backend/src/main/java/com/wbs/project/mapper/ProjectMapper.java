@@ -82,4 +82,10 @@ public interface ProjectMapper {
      * 根据 createdBy 集合查询项目 ID 列表（创建者数据范围——创建者始终可访问自己创建的项目）
      */
     java.util.List<String> selectIdsByCreatedBy(@Param("createdBy") String createdBy);
+
+    /**
+     * 根据 PM 的 managed_project_ids 查询项目 ID 列表(2026-06-12 新增)
+     * 注意:managed_project_ids 是 JSON 数组,用 JSON_CONTAINS 匹配
+     */
+    java.util.List<String> selectIdsByManagedProjectIds(@Param("userId") String userId);
 }

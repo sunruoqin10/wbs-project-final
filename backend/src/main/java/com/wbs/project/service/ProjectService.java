@@ -1,5 +1,6 @@
 package com.wbs.project.service;
 
+import com.fasterxml.jackson.databind.ObjectMapper;
 import com.wbs.project.entity.Project;
 import com.wbs.project.entity.Task;
 import com.wbs.project.entity.User;
@@ -8,6 +9,7 @@ import com.wbs.project.mapper.ProjectMemberMapper;
 import com.wbs.project.mapper.TaskMapper;
 import com.wbs.project.mapper.UserMapper;
 import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.context.annotation.Lazy;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -20,6 +22,7 @@ import java.util.UUID;
 /**
  * 项目Service
  */
+@Slf4j
 @Service
 @RequiredArgsConstructor
 public class ProjectService {
@@ -32,6 +35,7 @@ public class ProjectService {
     private final EmailNotificationService emailNotificationService;
     private final UserMapper userMapper;
     private final PermissionService permissionService;
+    private final ObjectMapper objectMapper = new ObjectMapper();
 
     /**
      * 查询所有项目（包含成员信息）
@@ -48,7 +52,8 @@ public class ProjectService {
      * - admin:全部
      * - 创建者:我创建的项目(独立于角色)
      * - dept-project-manager: managed_dept_codes IN dept_code
-     * - project-manager / member / viewer: 我参与的项目 + pm 加 owner 项目
+     * - project-manager: managed_project_ids 内的项目(2026-06-12 新语义;PM 之间互不可见)
+     * - member / viewer: 我参与的项目
      */
     public List<Project> getAllProjectsForUser(String currentUserId) {
         if (currentUserId == null) {
@@ -72,17 +77,17 @@ public class ProjectService {
             if (u != null) {
                 result.addAll(getProjectsByManagedDepts(u));
             }
+        } else if (permissionService.isProjectManager(currentUserId)) {
+            // 项目经理(2026-06-12):managed_project_ids 内的项目
+            List<String> managedIds = projectMapper.selectIdsByManagedProjectIds(currentUserId);
+            if (!managedIds.isEmpty()) {
+                result.addAll(projectMapper.selectByIds(managedIds));
+            }
         } else {
-            // pm/member/viewer:参与项目(pm 再加 owner 项目)
+            // member / viewer:参与项目
             List<String> memberOf = projectMemberMapper.selectProjectIdsByUserId(currentUserId);
             if (!memberOf.isEmpty()) {
                 result.addAll(projectMapper.selectByIds(memberOf));
-            }
-            if (permissionService.isProjectManager(currentUserId)) {
-                List<String> ownedIds = projectMapper.selectIdsByOwner(currentUserId);
-                if (!ownedIds.isEmpty()) {
-                    result.addAll(projectMapper.selectByIds(ownedIds));
-                }
             }
         }
 
@@ -195,6 +200,26 @@ public class ProjectService {
         if (!finalMemberIds.isEmpty()) {
             updateProjectMembers(project.getId(), finalMemberIds);
             project.setMemberIds(finalMemberIds);
+        }
+
+        // 2026-06-12:若创建者是 project-manager(项目经理),自动把项目追加到其 managed_project_ids
+        // 否则 PM 创建后看不到自己刚创建的项目,体验割裂
+        if (project.getCreatedBy() != null
+                && permissionService.isProjectManager(project.getCreatedBy())) {
+            User creator = userMapper.selectById(project.getCreatedBy());
+            if (creator != null) {
+                List<String> ids = permissionService.parseManagedProjectIds(creator);
+                if (!ids.contains(project.getId())) {
+                    ids.add(project.getId());
+                    try {
+                        String json = objectMapper.writeValueAsString(ids);
+                        userMapper.updateManagedProjects(creator.getId(), json);
+                    } catch (Exception e) {
+                        log.warn("追加 PM managed_project_ids 失败: userId={}, projectId={}",
+                                creator.getId(), project.getId(), e);
+                    }
+                }
+            }
         }
 
         // 发送邮件通知

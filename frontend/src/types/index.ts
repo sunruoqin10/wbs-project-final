@@ -19,6 +19,7 @@ export interface User {
   // === 角色管理 v2 扩展 ===
   managedDeptCodes?: string[];  // 管辖部门编码列表(仅 dept-project-manager 有效)
   managedCompanyCd?: string;    // 管辖公司编码(仅 dept-project-manager 有效)
+  managedProjectIds?: string[]; // 管辖项目 ID 列表(2026-06-12 新增,仅 project-manager 有效)
   tokenVersion?: number;        // JWT 版本号(角色变更后旧 token 失效)
 }
 
@@ -207,6 +208,7 @@ export interface RoleChangeRequest {
   newRole: UserRole;
   managedDeptCodes?: string[];
   managedCompanyCd?: string;
+  managedProjectIds?: string[]; // 2026-06-12 新增,仅 newRole=project-manager 有效
   reason?: string;
 }
 
