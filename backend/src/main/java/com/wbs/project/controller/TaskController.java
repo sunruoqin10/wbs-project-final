@@ -72,8 +72,15 @@ public class TaskController {
             @RequestBody Task task,
             HttpServletRequest request) {
         String currentUserId = (String) request.getAttribute("userId");
-        if (!permissionService.canCreateTask(currentUserId, task.getProjectId())) {
-            return Result.error(403, "无任务创建权限");
+        // 顶层任务 vs 子任务走不同的权限校验
+        if (task.getParentTaskId() != null && !task.getParentTaskId().isEmpty()) {
+            if (!permissionService.canAddSubtask(currentUserId, task.getParentTaskId())) {
+                return Result.error(403, "无添加子任务权限");
+            }
+        } else {
+            if (!permissionService.canCreateTask(currentUserId, task.getProjectId())) {
+                return Result.error(403, "无任务创建权限");
+            }
         }
         Task createdTask = taskService.createTask(task);
         return Result.success("任务创建成功", createdTask);
@@ -101,7 +108,7 @@ public class TaskController {
             @PathVariable String id,
             HttpServletRequest request) {
         String currentUserId = (String) request.getAttribute("userId");
-        if (!permissionService.canEditTask(currentUserId, id)) {
+        if (!permissionService.canDeleteTask(currentUserId, id)) {
             return Result.error(403, "无任务删除权限");
         }
         Task existingTask = taskService.getTaskById(id);

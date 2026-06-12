@@ -97,6 +97,7 @@ export interface Project {
   endDate: string;
   progress: number;
   ownerId: string;
+  createdBy?: string;     // 创建者(独立于 owner / member)
   memberIds?: string[];  // 可选，后端可能不返回
   estimatedHours?: number;  // 预估工时（可选）
   createdAt: string;

@@ -21,6 +21,7 @@ public class Project {
     private LocalDate endDate;
     private Integer progress;
     private String ownerId;
+    private String createdBy;            // 项目创建者(独立于 owner / member)
     private String color;
     private LocalDateTime createdAt;
     private LocalDateTime updatedAt;

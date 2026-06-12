@@ -199,6 +199,7 @@ export default {
     settings: '项目设置',
     members: '团队成员',
     projectOwner: '项目负责人',
+    projectCreator: '创建者',
     activity: '活动记录',
     status: '状态',
     priority: '优先级',

@@ -46,6 +46,7 @@ public class ProjectService {
     /**
      * 角色管理 v2:按当前用户的数据范围查询项目
      * - admin:全部
+     * - 创建者:我创建的项目(独立于角色)
      * - dept-project-manager: managed_dept_codes IN dept_code
      * - project-manager / member / viewer: 我参与的项目 + pm 加 owner 项目
      */
@@ -57,16 +58,20 @@ public class ProjectService {
             return getAllProjects();
         }
 
-        User u = userMapper.selectById(currentUserId);
-        if (u == null) {
-            return List.of();
-        }
-
         List<Project> result = new ArrayList<>();
+
+        // 创建者:始终包含自己创建的项目
+        List<String> createdIds = projectMapper.selectIdsByCreatedBy(currentUserId);
+        if (!createdIds.isEmpty()) {
+            result.addAll(projectMapper.selectByIds(createdIds));
+        }
 
         if (permissionService.isDeptProjectManager(currentUserId)) {
             // 部门项目负责人:managed_dept_codes 对应的项目
-            result.addAll(getProjectsByManagedDepts(u));
+            User u = userMapper.selectById(currentUserId);
+            if (u != null) {
+                result.addAll(getProjectsByManagedDepts(u));
+            }
         } else {
             // pm/member/viewer:参与项目(pm 再加 owner 项目)
             List<String> memberOf = projectMemberMapper.selectProjectIdsByUserId(currentUserId);

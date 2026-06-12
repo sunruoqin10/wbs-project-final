@@ -122,7 +122,7 @@ public class PermissionService {
 
     /**
      * 是否能查看该项目
-     * 规则：admin 全通;dept-pm 看所管部门项目;pm 看 owner 项目;member/viewer 看参与项目
+     * 规则：admin 全通;创建者 总可看;dept-pm 看所管部门项目;pm 看 owner 项目;member/viewer 看参与项目
      */
     public boolean canViewProject(String userId, String projectId) {
         if (userId == null || projectId == null) {
@@ -134,6 +134,10 @@ public class PermissionService {
         Project project = projectMapper.selectById(projectId);
         if (project == null) {
             return false;
+        }
+        // 创建者 始终可看(独立于 owner / member)
+        if (userId.equals(project.getCreatedBy())) {
+            return true;
         }
         // 项目负责人(owner) 可看
         if (userId.equals(project.getOwnerId())) {
@@ -153,7 +157,7 @@ public class PermissionService {
 
     /**
      * 是否能编辑该项目（标题/日期/负责人/部门/成员/状态）
-     * 规则：admin / dept-pm(部门内) / pm(owner) 允许;其他禁止
+     * 规则：admin / 创建者 / dept-pm(部门内) / pm(owner) 允许;其他禁止
      */
     public boolean canEditProject(String userId, String projectId) {
         if (userId == null || projectId == null) {
@@ -165,6 +169,10 @@ public class PermissionService {
         Project project = projectMapper.selectById(projectId);
         if (project == null) {
             return false;
+        }
+        // 创建者 始终可编辑
+        if (userId.equals(project.getCreatedBy())) {
+            return true;
         }
         if (isProjectOwner(userId, projectId)) {
             return true;
@@ -192,36 +200,99 @@ public class PermissionService {
     }
 
     /**
-     * 是否能在该项目下创建任务
+     * 任务内容管理权限(创建/编辑/删除任务标题/描述/负责人/状态/日期等):
+     * admin + 项目创建者 + 项目负责人(owner)。部门项目负责人不能再管任务(2026-06-12 收紧)。
      */
-    public boolean canCreateTask(String userId, String projectId) {
-        return canEditProject(userId, projectId);
-    }
-
-    /**
-     * 是否能编辑任务(任意字段)
-     * 规则同 canEditProject
-     */
-    public boolean canEditTask(String userId, String taskId) {
-        if (userId == null || taskId == null) {
+    public boolean canManageTaskContent(String userId, String projectId) {
+        if (userId == null || projectId == null) {
             return false;
         }
         if (isAdmin(userId)) {
             return true;
         }
-        // 通过 taskId 找 projectId
+        Project project = projectMapper.selectById(projectId);
+        if (project == null) {
+            return false;
+        }
+        if (userId.equals(project.getCreatedBy())) {
+            return true;
+        }
+        if (userId.equals(project.getOwnerId())) {
+            return true;
+        }
+        return false;
+    }
+
+    /**
+     * 是否能在该项目下创建任务
+     * 规则：admin / 项目创建者 / 项目负责人(owner)
+     */
+    public boolean canCreateTask(String userId, String projectId) {
+        return canManageTaskContent(userId, projectId);
+    }
+
+    /**
+     * 是否能在指定父任务下创建子任务
+     * 规则：admin / 项目创建者 / 项目负责人(owner) / 父任务的 assignee
+     * (2026-06-12:任务的负责人可为自己的任务添加子任务)
+     */
+    public boolean canAddSubtask(String userId, String parentTaskId) {
+        if (userId == null || parentTaskId == null) {
+            return false;
+        }
+        Task parent = taskMapper.selectById(parentTaskId);
+        if (parent == null) {
+            return false;
+        }
+        if (canManageTaskContent(userId, parent.getProjectId())) {
+            return true;
+        }
+        if (userId.equals(parent.getAssigneeId())) {
+            return true;
+        }
+        return false;
+    }
+
+    /**
+     * 是否能编辑任务(任意字段)
+     * 规则：admin / 项目创建者 / 项目负责人(owner) / 任务的 assignee(任务负责人可编辑自己的任务)
+     * 任务进度调整走 canEditTaskProgress,不受此影响
+     */
+    public boolean canEditTask(String userId, String taskId) {
+        if (userId == null || taskId == null) {
+            return false;
+        }
         Task task = taskMapper.selectById(taskId);
         if (task == null) {
             return false;
         }
-        String projectId = task.getProjectId();
-        if (isProjectOwner(userId, projectId)) {
+        if (canManageTaskContent(userId, task.getProjectId())) {
             return true;
         }
-        if (isDeptProjectManager(userId)) {
-            Project project = projectMapper.selectById(projectId);
-            return project != null && project.getDeptCode() != null
-                    && isDeptManager(userId, project.getDeptCode());
+        if (userId.equals(task.getAssigneeId())) {
+            return true;
+        }
+        return false;
+    }
+
+    /**
+     * 是否能删除任务
+     * 规则：admin / 项目创建者 / 项目负责人(owner) / 任务的 assignee
+     * (2026-06-12:任务负责人可删除自己的任务)
+     */
+    public boolean canDeleteTask(String userId, String taskId) {
+        if (userId == null || taskId == null) {
+            return false;
+        }
+        Task task = taskMapper.selectById(taskId);
+        if (task == null) {
+            return false;
+        }
+        if (canManageTaskContent(userId, task.getProjectId())) {
+            return true;
+        }
+        if (userId.equals(task.getAssigneeId())) {
+            return true;
         }
         return false;
     }
@@ -439,6 +510,7 @@ public class PermissionService {
 
     /**
      * 解析项目范围(用于 ProjectService.getProjects)
+     * 创建者创建的项目始终在范围内,与其当前角色无关
      */
     public List<String> getAccessibleProjectIds(String userId) {
         if (userId == null) {
@@ -448,6 +520,8 @@ public class PermissionService {
             return null; // null 表示全部
         }
         Set<String> ids = new HashSet<>();
+        // 创建者:始终包含自己创建的项目
+        ids.addAll(projectMapper.selectIdsByCreatedBy(userId));
         if (isDeptProjectManager(userId)) {
             User u = userMapper.selectById(userId);
             if (u != null) {

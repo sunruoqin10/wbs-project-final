@@ -77,4 +77,9 @@ public interface ProjectMapper {
      * 根据 ownerId 集合查询项目 ID 列表（角色管理 v2：project-manager 数据范围）
      */
     java.util.List<String> selectIdsByOwner(@Param("ownerId") String ownerId);
+
+    /**
+     * 根据 createdBy 集合查询项目 ID 列表（创建者数据范围——创建者始终可访问自己创建的项目）
+     */
+    java.util.List<String> selectIdsByCreatedBy(@Param("createdBy") String createdBy);
 }

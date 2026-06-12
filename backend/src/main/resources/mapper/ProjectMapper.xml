@@ -13,6 +13,7 @@
         <result column="end_date" property="endDate"/>
         <result column="progress" property="progress"/>
         <result column="owner_id" property="ownerId"/>
+        <result column="created_by" property="createdBy"/>
         <result column="color" property="color"/>
         <result column="dept_code" property="deptCode"/>
         <result column="created_at" property="createdAt"/>
@@ -20,7 +21,7 @@
     </resultMap>
 
     <sql id="Base_Column_List">
-        id, name, description, status, priority, start_date, end_date, progress, owner_id, color, dept_code, created_at, updated_at
+        id, name, description, status, priority, start_date, end_date, progress, owner_id, created_by, color, dept_code, created_at, updated_at
     </sql>
 
     <select id="selectAll" resultMap="BaseResultMap">
@@ -58,8 +59,8 @@
     </select>
 
     <insert id="insert" parameterType="com.wbs.project.entity.Project">
-        INSERT INTO sys_project (id, name, description, status, priority, start_date, end_date, progress, owner_id, color, dept_code, created_at, updated_at)
-        VALUES (#{id}, #{name}, #{description}, #{status}, #{priority}, #{startDate}, #{endDate}, #{progress}, #{ownerId}, #{color}, #{deptCode}, #{createdAt}, #{updatedAt})
+        INSERT INTO sys_project (id, name, description, status, priority, start_date, end_date, progress, owner_id, created_by, color, dept_code, created_at, updated_at)
+        VALUES (#{id}, #{name}, #{description}, #{status}, #{priority}, #{startDate}, #{endDate}, #{progress}, #{ownerId}, #{createdBy}, #{color}, #{deptCode}, #{createdAt}, #{updatedAt})
     </insert>
 
     <update id="update" parameterType="com.wbs.project.entity.Project">
@@ -118,6 +119,13 @@
     <select id="selectIdsByOwner" resultType="java.lang.String">
         SELECT id FROM sys_project
         WHERE owner_id = #{ownerId}
+        ORDER BY created_at DESC
+    </select>
+
+    <!-- 角色管理 v2：按 createdBy 查项目 ID 列表（创建者数据范围） -->
+    <select id="selectIdsByCreatedBy" resultType="java.lang.String">
+        SELECT id FROM sys_project
+        WHERE created_by = #{createdBy}
         ORDER BY created_at DESC
     </select>
 

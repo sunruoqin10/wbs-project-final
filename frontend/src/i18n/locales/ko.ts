@@ -199,6 +199,7 @@ export default {
     settings: '프로젝트 설정',
     members: '팀 구성원',
     projectOwner: '프로젝트 담당자',
+    projectCreator: '생성자',
     activity: '활동 기록',
     status: '상태',
     priority: '우선순위',

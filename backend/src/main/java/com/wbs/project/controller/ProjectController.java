@@ -74,6 +74,10 @@ public class ProjectController {
                 return Result.error(403, "项目部门必须为您管辖的部门");
             }
         }
+        // 记录创建者(独立于 owner / members),供数据范围和 UI 展示
+        if (currentUserId != null) {
+            project.setCreatedBy(currentUserId);
+        }
         Project createdProject = projectService.createProject(project);
         return Result.success("项目创建成功", createdProject);
     }

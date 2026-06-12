@@ -141,6 +141,15 @@ export const usePermissionStore = defineStore('permission', () => {
   };
 
   /**
+   * 是否为该项目的创建者
+   */
+  const isProjectCreator = (projectId: string): boolean => {
+    const project = projectStore.projectById(projectId);
+    if (!project) return false;
+    return project.createdBy === userStore.currentUserId;
+  };
+
+  /**
    * 是否为该项目的成员
    * 修复旧实现:isProjectMember 与 isProjectOwner 等价的问题
    */
@@ -152,10 +161,11 @@ export const usePermissionStore = defineStore('permission', () => {
 
   /**
    * 是否能查看该项目（综合判断：数据范围）
-   * 规则：admin 任意;dept-pm 看所管部门项目;pm 看 owner 项目;member/viewer 看参与项目
+   * 规则：admin 任意;创建者 总可看;dept-pm 看所管部门项目;pm 看 owner 项目;member/viewer 看参与项目
    */
   const canViewProject = (projectId: string): boolean => {
     if (isAdmin()) return true;
+    if (isProjectCreator(projectId)) return true;
     if (isProjectOwner(projectId)) return true;
     if (isProjectMember(projectId)) return true;
     const project = projectStore.projectById(projectId);
@@ -165,10 +175,11 @@ export const usePermissionStore = defineStore('permission', () => {
 
   /**
    * 是否能编辑该项目
-   * 规则：admin 任意;dept-pm(部门内);pm(owner);其他不可
+   * 规则：admin 任意;创建者 总可编辑;dept-pm(部门内);pm(owner);其他不可
    */
   const canEditProject = (projectId: string): boolean => {
     if (isAdmin()) return true;
+    if (isProjectCreator(projectId)) return true;
     if (isProjectOwner(projectId)) return true;
     const project = projectStore.projectById(projectId);
     if (isDeptProjectManager() && project && isDeptManager(project.deptCode)) return true;
@@ -201,17 +212,57 @@ export const usePermissionStore = defineStore('permission', () => {
   };
 
   /**
+   * 任务内容管理(创建/编辑/删除任务标题/描述/负责人/状态/日期):
+   * admin + 项目创建者 + 项目负责人(owner)。部门项目负责人不能再管任务。
+   */
+  const canManageTaskContent = (projectId: string): boolean => {
+    if (isAdmin()) return true;
+    if (isProjectCreator(projectId)) return true;
+    if (isProjectOwner(projectId)) return true;
+    return false;
+  };
+
+  /**
    * 是否能创建任务
    */
   const canCreateTask = (projectId: string): boolean => {
-    return canEditProject(projectId);
+    return canManageTaskContent(projectId);
   };
 
   /**
    * 是否能编辑任务(任意字段)
+   * 规则：admin / 项目创建者 / 项目负责人(owner) / 任务负责人(任务的 assignee)
+   * (2026-06-12:任务负责人可编辑自己的任务)
    */
-  const canEditTask = (projectId: string): boolean => {
-    return canEditProject(projectId);
+  const canEditTask = (task: { projectId: string; assigneeId?: string }): boolean => {
+    if (isAdmin()) return true;
+    if (canManageTaskContent(task.projectId)) return true;
+    if (task.assigneeId && task.assigneeId === userStore.currentUserId) return true;
+    return false;
+  };
+
+  /**
+   * 是否能删除任务
+   * 规则：admin / 项目创建者 / 项目负责人(owner) / 任务负责人(task.assigneeId)
+   * (2026-06-12:任务负责人可删除自己的任务)
+   */
+  const canDeleteTask = (task: { projectId: string; assigneeId?: string }): boolean => {
+    if (isAdmin()) return true;
+    if (canManageTaskContent(task.projectId)) return true;
+    if (task.assigneeId && task.assigneeId === userStore.currentUserId) return true;
+    return false;
+  };
+
+  /**
+   * 是否能在指定父任务下添加子任务
+   * 规则：admin / 项目创建者 / 项目负责人(owner) / 父任务的 assignee
+   * (2026-06-12:任务的负责人可为自己的任务添加子任务)
+   */
+  const canAddSubtask = (parentTask: { projectId: string; assigneeId?: string }): boolean => {
+    if (isAdmin()) return true;
+    if (canManageTaskContent(parentTask.projectId)) return true;
+    if (parentTask.assigneeId && parentTask.assigneeId === userStore.currentUserId) return true;
+    return false;
   };
 
   /**
@@ -225,13 +276,6 @@ export const usePermissionStore = defineStore('permission', () => {
     if (canEditProject(projectId)) return true;
     if (isMember() && assigneeId && assigneeId === userStore.currentUserId) return true;
     return false;
-  };
-
-  /**
-   * 是否能删除任务
-   */
-  const canDeleteTask = (projectId: string, _assigneeId?: string): boolean => {
-    return canEditTask(projectId);
   };
 
   /**
@@ -321,13 +365,16 @@ export const usePermissionStore = defineStore('permission', () => {
     isViewer,
     isDeptManager,
     isProjectOwner,
+    isProjectCreator,
     isProjectMember,
     canViewProject,
     canEditProject,
     canDeleteProject,
     canManageProjectMembers,
     canCreateProject,
+    canManageTaskContent,
     canCreateTask,
+    canAddSubtask,
     canEditTask,
     canEditTaskProgress,
     canDeleteTask,
