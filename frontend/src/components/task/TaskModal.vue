@@ -257,6 +257,7 @@ interface Props {
   initialStatus?: Task['status'];
   showParentTaskSelector?: boolean; // 控制是否显示父任务下拉菜单
   parentTaskId?: string; // 创建子任务时，默认选中的父任务ID（只读模式）
+  parentTaskName?: string; // 显式传入的父任务名(可选);若父任务不在本地 store 时由父组件传入(2026-06-12)
 }
 
 const props = defineProps<Props>();
@@ -343,8 +344,9 @@ const availableParentTasks = computed(() => {
   });
 });
 
-// 获取父任务名称（只读模式下显示）
+// 获取父任务名称（只读模式下显示）—— 优先用 props 显式传入,否则从 store 查
 const parentTaskName = computed(() => {
+  if (props.parentTaskName) return props.parentTaskName;
   if (!props.parentTaskId) return '';
   const parentTask = taskStore.getTaskById(props.parentTaskId);
   return parentTask?.title || '';

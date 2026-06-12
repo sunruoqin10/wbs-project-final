@@ -177,11 +177,11 @@
 
     <!-- 编辑任务 Modal -->
     <TaskModal
-      v-if="editingTask"
       :open="modalOpen"
       :task="editingTask"
-      :project-id="editingTask.projectId"
-      :parent-task-id="editingTask.parentTaskId || undefined"
+      :project-id="editingTask?.projectId"
+      :parent-task-id="editingTask?.parentTaskId || undefined"
+      :parent-task-name="parentTaskName"
       @close="closeEditModal"
       @save="handleSave"
     />
@@ -203,10 +203,12 @@ import TaskModal from '@/components/task/TaskModal.vue';
 import Drawer from '@/components/common/Drawer.vue';
 import apiService from '@/services/api';
 import { useProjectStore } from '@/stores/project';
+import { useTaskStore } from '@/stores/task';
 import type { Task, Project } from '@/types';
 
 const { t } = useI18n();
 const projectStore = useProjectStore();
+const taskStore = useTaskStore();
 
 // ===== 数据 =====
 const allTasks = ref<Task[]>([]);
@@ -216,6 +218,14 @@ const drawerOpen = ref(false);
 const selectedTask = ref<Task | null>(null);
 const modalOpen = ref(false);
 const editingTask = ref<Task | null>(null);
+// 父任务名缓存(MyTasks 只加载"我作为 assignee"的任务,父任务可能不在本地,
+// 编辑子任务时需要按需拉父任务详情以显示正确的名称)
+const parentTaskNameCache = ref<Record<string, string>>({});
+const parentTaskName = computed<string | undefined>(() => {
+  const pid = editingTask.value?.parentTaskId;
+  if (!pid) return undefined;
+  return parentTaskNameCache.value[pid];
+});
 
 // ===== 筛选 / 排序 / 分组 =====
 const statusFilter = ref<string>('all');
@@ -406,7 +416,33 @@ const openDetail = (task: Task) => {
   drawerOpen.value = true;
 };
 
-const openEditModal = (task: Task) => {
+/**
+ * 确保父任务详情已加载(用于"我的任务"页:子任务的父任务可能不在本地 cache)
+ * 优先用本地 allTasks 查;查不到则调 /tasks/:id 拉一条;失败时不阻塞,fallback 由 modal 自行处理
+ */
+const ensureParentTaskLoaded = async (parentTaskId: string) => {
+  if (!parentTaskId) return;
+  if (parentTaskNameCache.value[parentTaskId]) return; // 已缓存
+  const local = allTasks.value.find(t => t.id === parentTaskId);
+  if (local) {
+    parentTaskNameCache.value[parentTaskId] = local.title;
+    return;
+  }
+  try {
+    const task = await apiService.getTask(parentTaskId);
+    parentTaskNameCache.value = {
+      ...parentTaskNameCache.value,
+      [parentTaskId]: task.title || ''
+    };
+  } catch (err) {
+    console.warn('加载父任务失败:', parentTaskId, err);
+  }
+};
+
+const openEditModal = async (task: Task) => {
+  if (task.parentTaskId) {
+    await ensureParentTaskLoaded(task.parentTaskId);
+  }
   editingTask.value = task;
   modalOpen.value = true;
   drawerOpen.value = false;
@@ -417,10 +453,28 @@ const closeEditModal = () => {
   editingTask.value = null;
 };
 
-const handleSave = async (_task: Partial<Task>) => {
-  // TaskModal 内部已调 store 完成保存;此处仅刷新本视图
-  closeEditModal();
-  await loadData();
+/**
+ * 处理 TaskModal 的 @save 事件 —— 调 taskStore.updateTask 真正落库
+ * (与 TaskBoard.handleSaveTask 同模式;TaskModal 自己只 emit,不调 API)
+ */
+const taskSaving = ref(false);
+const handleSave = async (taskData: Partial<Task>) => {
+  if (taskSaving.value) return;
+  if (!editingTask.value) return; // 本视图只支持编辑现有任务
+  taskSaving.value = true;
+  try {
+    await taskStore.updateTask(editingTask.value.id, {
+      ...taskData,
+      status: taskData.status || editingTask.value.status
+    });
+  } catch (err) {
+    console.error('保存任务失败', err);
+    // 即使失败也关闭 modal,让用户看到任务列表状态
+  } finally {
+    taskSaving.value = false;
+    closeEditModal();
+    await loadData();
+  }
 };
 
 const handleDelete = async (_task: Task) => {
