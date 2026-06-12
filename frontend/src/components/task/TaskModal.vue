@@ -137,17 +137,21 @@
       </div>
 
       <div class="grid grid-cols-1 lg:grid-cols-2 gap-4">
-        <Select
-          v-model="formData.assigneeId"
-          label="负责人"
-          :error="errors.assigneeId"
-          required
-        >
-          <option value="">请选择负责人</option>
-          <option v-for="user in projectMembers" :key="user.id" :value="user.id">
-            {{ user.name }}
-          </option>
-        </Select>
+        <div>
+          <Select
+            v-model="formData.assigneeId"
+            label="负责人"
+            :error="errors.assigneeId"
+            :disabled="isSubtask"
+            :hint="isSubtask ? '子任务的负责人固定为父任务的负责人(即您本人),不可修改' : undefined"
+            required
+          >
+            <option value="">请选择负责人</option>
+            <option v-for="user in projectMembers" :key="user.id" :value="user.id">
+              {{ user.name }}
+            </option>
+          </Select>
+        </div>
 
         <div>
           <label class="mb-1 block text-sm font-medium text-secondary-700">
@@ -276,6 +280,9 @@ const hasSubtasks = computed(() => {
   return taskStore.getSubtasks(props.task.id).length > 0;
 });
 
+// 是否为子任务创建场景（子任务的负责人固定为当前用户，不可改）
+const isSubtask = computed(() => !!props.parentTaskId);
+
 // 判断任务状态是否为待办
 const isTodoStatus = computed(() => {
   return formData.status === 'todo';
@@ -302,6 +309,14 @@ const projectMembers = computed(() => {
     const currentAssignee = userStore.userById(props.task.assigneeId);
     if (currentAssignee && !members.find(m => m.id === currentAssignee.id)) {
       members.push(currentAssignee);
+    }
+  }
+
+  // 创建子任务时,当前用户(被锁定为子任务负责人)即使不在项目成员里也要展示出来
+  if (isSubtask.value && userStore.currentUserId) {
+    if (!members.find(m => m.id === userStore.currentUserId)) {
+      const me = userStore.userById(userStore.currentUserId);
+      if (me) members.push(me);
     }
   }
 
@@ -386,7 +401,10 @@ const resetForm = () => {
   formData.priority = 'medium';
   formData.startDate = new Date().toISOString().split('T')[0];
   formData.endDate = '';
-  formData.assigneeId = '';
+  // 创建子任务时,负责人锁定为当前用户(自己就是父任务的负责人)
+  formData.assigneeId = isSubtask.value
+    ? (userStore.currentUserId || '')
+    : '';
   formData.parentTaskId = props.parentTaskId || ''; // 保留父任务ID
   formData.estimatedHours = 0;
   formData.progress = 0;
@@ -437,7 +455,10 @@ const loadTaskData = () => {
     formData.priority = 'medium';
     formData.startDate = new Date().toISOString().split('T')[0];
     formData.endDate = '';
-    formData.assigneeId = '';
+    // 创建子任务时,负责人锁定为当前用户;顶层任务由用户选
+    formData.assigneeId = isSubtask.value
+      ? (userStore.currentUserId || '')
+      : '';
     formData.parentTaskId = props.parentTaskId || ''; // 如果有父任务ID，使用它
     // 新建任务时，如果是子任务，根据日期计算工时；如果是顶级任务，先设为0
     // 工时会在有子任务后自动更新

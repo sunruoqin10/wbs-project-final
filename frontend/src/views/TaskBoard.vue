@@ -14,7 +14,7 @@
             <p class="mt-1 text-sm text-secondary-600">{{ $t('taskBoard.title') }}</p>
           </div>
         </div>
-        <Button variant="primary" @click="openCreateModal">
+        <Button v-if="permissionStore.canCreateTask(projectId)" variant="primary" @click="openCreateModal">
           <svg class="mr-2 h-5 w-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4" />
           </svg>
@@ -67,6 +67,7 @@
                 <SubtaskPanel
                   v-if="isTaskExpanded(task.id) && hasSubtasks(task.id)"
                   :subtasks="getDirectSubtasks(task.id)"
+                  :can-add-subtask="permissionStore.canAddSubtask(task)"
                   @click-subtask="openTaskDetail"
                   @add-subtask="openCreateSubtaskModal(task.id)"
                 />
@@ -74,6 +75,7 @@
             </template>
           </draggable>
           <button
+            v-if="permissionStore.canCreateTask(projectId)"
             @click="openCreateModal('todo')"
             class="mt-3 flex w-full items-center justify-center rounded-lg border-2 border-dashed border-secondary-300 py-3 text-sm font-medium text-secondary-600 transition-colors hover:border-secondary-400 hover:bg-secondary-100"
           >
@@ -112,6 +114,7 @@
                 <SubtaskPanel
                   v-if="isTaskExpanded(task.id) && hasSubtasks(task.id)"
                   :subtasks="getDirectSubtasks(task.id)"
+                  :can-add-subtask="permissionStore.canAddSubtask(task)"
                   @click-subtask="openTaskDetail"
                   @add-subtask="openCreateSubtaskModal(task.id)"
                 />
@@ -119,6 +122,7 @@
             </template>
           </draggable>
           <button
+            v-if="permissionStore.canCreateTask(projectId)"
             @click="openCreateModal('in-progress')"
             class="mt-3 flex w-full items-center justify-center rounded-lg border-2 border-dashed border-secondary-300 py-3 text-sm font-medium text-secondary-600 transition-colors hover:border-secondary-400 hover:bg-secondary-100"
           >
@@ -157,6 +161,7 @@
                 <SubtaskPanel
                   v-if="isTaskExpanded(task.id) && hasSubtasks(task.id)"
                   :subtasks="getDirectSubtasks(task.id)"
+                  :can-add-subtask="permissionStore.canAddSubtask(task)"
                   @click-subtask="openTaskDetail"
                   @add-subtask="openCreateSubtaskModal(task.id)"
                 />
@@ -164,6 +169,7 @@
             </template>
           </draggable>
           <button
+            v-if="permissionStore.canCreateTask(projectId)"
             @click="openCreateModal('done')"
             class="mt-3 flex w-full items-center justify-center rounded-lg border-2 border-dashed border-secondary-300 py-3 text-sm font-medium text-secondary-600 transition-colors hover:border-secondary-400 hover:bg-secondary-100"
           >
@@ -222,6 +228,7 @@ import Badge from '@/components/common/Badge.vue';
 import Select from '@/components/common/Select.vue';
 import { useProjectStore } from '@/stores/project';
 import { useTaskStore } from '@/stores/task';
+import { usePermissionStore } from '@/stores/permission';
 import type { Task } from '@/types';
 
 const route = useRoute();
@@ -229,6 +236,7 @@ const router = useRouter();
 const { t } = useI18n();
 const projectStore = useProjectStore();
 const taskStore = useTaskStore();
+const permissionStore = usePermissionStore();
 
 const projectId = route.params.id as string;
 const modalOpen = ref(false);
@@ -361,6 +369,9 @@ const updateTaskStatus = (taskId: string, status: Task['status']) => {
 
 // Open create modal
 const openCreateModal = (status?: Task['status']) => {
+  if (!permissionStore.canCreateTask(projectId)) {
+    return;
+  }
   defaultStatus.value = status;
   editingTask.value = null;
   isCreatingSubtask.value = false;
@@ -369,6 +380,10 @@ const openCreateModal = (status?: Task['status']) => {
 
 // Open create subtask modal
 const openCreateSubtaskModal = (parentTaskId: string) => {
+  const parentTask = projectTasks.value.find(t => t.id === parentTaskId);
+  if (!parentTask || !permissionStore.canAddSubtask(parentTask)) {
+    return;
+  }
   defaultStatus.value = 'todo';
   editingTask.value = null;
   isCreatingSubtask.value = true;

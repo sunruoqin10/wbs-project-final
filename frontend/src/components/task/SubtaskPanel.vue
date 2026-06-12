@@ -11,6 +11,7 @@
 
     <!-- 快速添加子任务按钮 -->
     <button
+      v-if="canAddSubtask"
       @click.stop="$emit('add-subtask')"
       class="add-subtask-btn"
     >
@@ -28,6 +29,7 @@ import type { Task } from '@/types';
 
 interface Props {
   subtasks: Task[];
+  canAddSubtask?: boolean;
 }
 
 interface Emits {
@@ -35,7 +37,8 @@ interface Emits {
   (e: 'add-subtask'): void;
 }
 
-const props = defineProps<Props>();
+withDefaults(defineProps<Props>(), { canAddSubtask: true });
+
 const emit = defineEmits<Emits>();
 
 const handleSubtaskClick = (task: Task) => {
