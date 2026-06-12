@@ -251,12 +251,14 @@ import ProgressBar from '@/components/common/ProgressBar.vue';
 import { useProjectStore } from '@/stores/project';
 import { useTaskStore } from '@/stores/task';
 import { useUserStore } from '@/stores/user';
+import { usePermissionStore } from '@/stores/permission';
 import dayjs from 'dayjs';
 
 const { t } = useI18n();
 const projectStore = useProjectStore();
 const taskStore = useTaskStore();
 const userStore = useUserStore();
+const permissionStore = usePermissionStore();
 
 // 存储图表实例用于 resize
 let taskChart: echarts.ECharts | null = null;
@@ -267,17 +269,26 @@ const projectChartRef = ref<HTMLElement>();
 
 const currentUser = computed(() => userStore.currentUser);
 
-// 根据角色过滤项目：member 只能看自己参加的项目
+// 根据角色过滤项目:dept-pm 看所管部门 + 自己创建 / 参加的项目;member/viewer 看参与项目
+// 2026-06-12:与后端 ProjectService.getAllProjectsForUser 的数据范围对齐——
+// admin 全部;dept-pm 看所管部门;创建者 / owner / member 一律可看
 const userProjects = computed(() => {
   if (!currentUser.value) return [];
   if (currentUser.value.role === 'admin' || currentUser.value.role === 'project-manager') {
     return projectStore.projects;
   }
-  // member / viewer：只看自己参与的项目（成员或负责人）
   const userId = currentUser.value.id;
-  return projectStore.projects.filter(
-    p => p.ownerId === userId || (p.memberIds && p.memberIds.includes(userId))
-  );
+  const role = currentUser.value.role;
+  const managedCodes = permissionStore.managedDeptCodes;
+  return projectStore.projects.filter(p => {
+    if (p.ownerId === userId) return true;
+    if (p.createdBy === userId) return true;
+    if (p.memberIds && p.memberIds.includes(userId)) return true;
+    if (role === 'dept-project-manager' && p.deptCode && managedCodes.includes(p.deptCode)) {
+      return true;
+    }
+    return false;
+  });
 });
 
 // 根据角色过滤任务：只显示用户参与项目的任务

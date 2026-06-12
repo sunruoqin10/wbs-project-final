@@ -148,6 +148,13 @@ class ApiService {
     return request<Task[]>('/tasks');
   }
 
+  /**
+   * 当前登录用户作为负责人的任务(跨项目聚合,2026-06-12 "我的任务" 页用)
+   */
+  async getMyTasks(): Promise<Task[]> {
+    return request<Task[]>('/tasks/mine');
+  }
+
   async getTask(id: string | number): Promise<Task> {
     return request<Task>(`/tasks/${id}`);
   }

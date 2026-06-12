@@ -281,7 +281,21 @@
                 <div class="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
                   <h3 class="text-lg font-semibold text-secondary-900">{{ $t('team.taskAssignment.title') }}</h3>
                   <div class="flex items-center gap-2">
-                    <select 
+                    <button
+                      type="button"
+                      @click="expandAll"
+                      class="rounded-lg border border-secondary-300 px-2.5 py-1 text-xs text-secondary-700 hover:bg-secondary-50"
+                    >
+                      {{ $t('team.taskAssignment.expandAll', '全部展开') }}
+                    </button>
+                    <button
+                      type="button"
+                      @click="collapseAll"
+                      class="rounded-lg border border-secondary-300 px-2.5 py-1 text-xs text-secondary-700 hover:bg-secondary-50"
+                    >
+                      {{ $t('team.taskAssignment.collapseAll', '全部折叠') }}
+                    </button>
+                    <select
                       v-model="sortBy" 
                       @change="handleSortChange"
                       class="rounded-lg border border-secondary-300 px-3 py-1.5 text-sm focus:border-primary-500 focus:outline-none focus:ring-1 focus:ring-primary-500"
@@ -314,6 +328,9 @@
                         {{ $t('team.taskAssignment.userId') }}
                       </th>
                       <th class="px-6 py-3 text-left text-xs font-medium uppercase tracking-wider text-secondary-500">
+                        {{ $t('team.taskAssignment.parentTask') }}
+                      </th>
+                      <th class="px-6 py-3 text-left text-xs font-medium uppercase tracking-wider text-secondary-500">
                         {{ $t('team.taskAssignment.taskName') }}
                       </th>
                       <th class="px-6 py-3 text-left text-xs font-medium uppercase tracking-wider text-secondary-500">
@@ -343,8 +360,45 @@
                       <td class="whitespace-nowrap px-6 py-4 text-sm font-mono text-secondary-900">
                         {{ item.userId }}
                       </td>
+                      <td class="px-6 py-4 text-sm text-secondary-500">
+                        <span v-if="item.parentTaskName">{{ item.parentTaskName }}</span>
+                        <span v-else class="text-secondary-300">—</span>
+                      </td>
                       <td class="px-6 py-4 text-sm text-secondary-900">
-                        {{ item.taskName }}
+                        <div class="flex items-center gap-1" :style="{ paddingLeft: item.taskDepth * 1.25 + 'rem' }">
+                          <!-- 折叠/展开 chevron:有子任务时显示,可点击 -->
+                          <button
+                            v-if="hasChildren(item.taskId)"
+                            type="button"
+                            @click="toggleExpand(item.taskId)"
+                            class="flex h-5 w-5 flex-shrink-0 items-center justify-center rounded text-secondary-500 hover:bg-secondary-100 hover:text-secondary-700"
+                            :title="isExpanded(item.taskId) ? '折叠子任务' : '展开子任务'"
+                          >
+                            <svg
+                              v-if="isExpanded(item.taskId)"
+                              class="h-3.5 w-3.5"
+                              fill="none"
+                              stroke="currentColor"
+                              viewBox="0 0 24 24"
+                            >
+                              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7" />
+                            </svg>
+                            <svg
+                              v-else
+                              class="h-3.5 w-3.5"
+                              fill="none"
+                              stroke="currentColor"
+                              viewBox="0 0 24 24"
+                            >
+                              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7" />
+                            </svg>
+                          </button>
+                          <!-- 占位:无子任务时让对齐一致 -->
+                          <span v-else class="inline-block h-5 w-5 flex-shrink-0"></span>
+                          <span :class="item.taskDepth > 0 ? 'text-secondary-700' : 'font-medium text-secondary-900'">
+                            {{ item.taskName }}
+                          </span>
+                        </div>
                       </td>
                       <td class="px-6 py-4 text-sm text-secondary-900">
                         {{ item.projectName }}
@@ -374,7 +428,7 @@
                       </td>
                     </tr>
                     <tr v-if="sortedTaskAssignments.length === 0">
-                      <td colspan="7" class="px-6 py-12 text-center text-sm text-secondary-500">
+                      <td colspan="8" class="px-6 py-12 text-center text-sm text-secondary-500">
                         {{ $t('team.taskAssignment.noData') }}
                       </td>
                     </tr>
@@ -476,6 +530,9 @@ interface TaskAssignment {
   status: Task['status'];
   priority: Task['priority'];
   progress: number;
+  // 父子关系(2026-06-12)
+  parentTaskName?: string;  // 父任务标题(无则为 undefined / 显示 "—")
+  taskDepth: number;         // 0=顶级,1=子任务,2=孙任务 ...
 }
 
 const { t } = useI18n();
@@ -751,14 +808,25 @@ const currentPage = ref<number>(1);
 const itemsPerPage = ref<number>(10);
 
 // 计算任务分配数据
+// 2026-06-12:简化显示规则——所有有 assignee 的任务都显示(包含子任务、中间任务、根任务),
+// 之前的 shouldShow 把"有父 + 有子"的任务错误地隐藏,导致子任务/中间任务看不到
+// 同时为每行计算父任务名 + 任务深度,用于表格里展示父子关系
 const taskAssignments = computed<TaskAssignment[]>(() => {
-  const allTaskIds = new Set(taskStore.tasks.map(t => t.id));
-  const parentTaskIds = new Set(taskStore.tasks.filter(t => t.parentTaskId).map(t => t.parentTaskId));
-  const leafTaskIds = new Set([...allTaskIds].filter(id => !parentTaskIds.has(id)));
-
   const assignments: TaskAssignment[] = [];
   const userMap = new Map(users.value.map(u => [u.id, u]));
   const projectMap = new Map(projectStore.projects.map(p => [p.id, p]));
+  const taskMap = new Map(taskStore.tasks.map(t => [t.id, t]));
+
+  const getDepth = (taskId: string): number => {
+    let depth = 0;
+    let cur = taskMap.get(taskId);
+    while (cur?.parentTaskId) {
+      depth++;
+      cur = taskMap.get(cur.parentTaskId);
+      if (depth > 32) break; // 防止环
+    }
+    return depth;
+  };
 
   // 处理有负责人的任务
   const assignedTasks = taskStore.tasks.filter(t => t.assigneeId);
@@ -768,103 +836,124 @@ const taskAssignments = computed<TaskAssignment[]>(() => {
     const project = projectMap.get(task.projectId);
     if (!user || !project) return;
 
-    // 判断是否应该显示此任务
-    const shouldShow = () => {
-      // 如果是叶子任务，始终显示
-      if (leafTaskIds.has(task.id)) return true;
+    const parent = task.parentTaskId ? taskMap.get(task.parentTaskId) : null;
+    const depth = getDepth(task.id);
 
-      // 如果是根任务（没有父任务）且没有叶子子任务分配给同一人，则显示
-      if (!task.parentTaskId) {
-        const descendants = getAllDescendantTasks(task.id);
-        const hasLeafAssignedToSameUser = descendants.some(d => 
-          leafTaskIds.has(d.id) && d.assigneeId === user.id
-        );
-        if (!hasLeafAssignedToSameUser) return true;
-      }
-
-      return false;
-    };
-
-    if (shouldShow()) {
-      assignments.push({
-        id: `${user.id}-${task.id}`,
-        userId: user.id,
-        userName: user.name,
-        userAvatar: user.avatar,
-        taskId: task.id,
-        taskName: task.title,
-        projectId: project.id,
-        projectName: project.name,
-        status: task.status,
-        priority: task.priority,
-        progress: task.progress
-      });
-    }
+    assignments.push({
+      id: `${user.id}-${task.id}`,
+      userId: user.id,
+      userName: user.name,
+      userAvatar: user.avatar,
+      taskId: task.id,
+      taskName: task.title,
+      projectId: project.id,
+      projectName: project.name,
+      status: task.status,
+      priority: task.priority,
+      progress: task.progress,
+      parentTaskName: parent?.title,
+      taskDepth: depth
+    });
   });
 
   return assignments;
 });
 
-// 获取所有子孙任务
-const getAllDescendantTasks = (taskId: string): Task[] => {
-  const directSubtasks = taskStore.tasks.filter(t => t.parentTaskId === taskId);
-  let allDescendants = [...directSubtasks];
-  
-  directSubtasks.forEach(subtask => {
-    const subDescendants = getAllDescendantTasks(subtask.id);
-    allDescendants = [...allDescendants, ...subDescendants];
-  });
-  
-  return allDescendants;
+// ========== 2026-06-12:树状展开/折叠 ==========
+// 当前展开的任务 ID 集合(展开后其直接子任务才会出现在可见列表里)
+const expandedTaskIds = ref<Set<string>>(new Set());
+
+// 排序比较函数(用于 sortBy / sortOrder)
+const compareAssignments = (a: TaskAssignment, b: TaskAssignment): number => {
+  let aVal: string | number = '';
+  let bVal: string | number = '';
+  switch (sortBy.value) {
+    case 'memberName': aVal = a.userName; bVal = b.userName; break;
+    case 'taskName': aVal = a.taskName; bVal = b.taskName; break;
+    case 'projectName': aVal = a.projectName; bVal = b.projectName; break;
+    case 'status': aVal = a.status; bVal = b.status; break;
+    case 'priority': {
+      const order = { urgent: 0, high: 1, medium: 2, low: 3 };
+      aVal = order[a.priority]; bVal = order[b.priority];
+      break;
+    }
+    default: aVal = a.userName; bVal = b.userName;
+  }
+  if (typeof aVal === 'string' && typeof bVal === 'string') {
+    return sortOrder.value === 'asc'
+      ? aVal.localeCompare(bVal, 'zh-CN')
+      : bVal.localeCompare(aVal, 'zh-CN');
+  }
+  return sortOrder.value === 'asc'
+    ? (aVal as number) - (bVal as number)
+    : (bVal as number) - (aVal as number);
 };
 
-// 排序后的任务分配数据
-const sortedTaskAssignments = computed<TaskAssignment[]>(() => {
-  const sorted = [...taskAssignments.value];
-  sorted.sort((a, b) => {
-    let aVal: string | number = '';
-    let bVal: string | number = '';
-
-    switch (sortBy.value) {
-      case 'memberName':
-        aVal = a.userName;
-        bVal = b.userName;
-        break;
-      case 'taskName':
-        aVal = a.taskName;
-        bVal = b.taskName;
-        break;
-      case 'projectName':
-        aVal = a.projectName;
-        bVal = b.projectName;
-        break;
-      case 'status':
-        aVal = a.status;
-        bVal = b.status;
-        break;
-      case 'priority':
-        const priorityOrder = { urgent: 0, high: 1, medium: 2, low: 3 };
-        aVal = priorityOrder[a.priority];
-        bVal = priorityOrder[b.priority];
-        break;
-      default:
-        aVal = a.userName;
-        bVal = b.userName;
-    }
-
-    if (typeof aVal === 'string' && typeof bVal === 'string') {
-      return sortOrder.value === 'asc' 
-        ? aVal.localeCompare(bVal, 'zh-CN')
-        : bVal.localeCompare(aVal, 'zh-CN');
-    }
-
-    return sortOrder.value === 'asc' 
-      ? (aVal as number) - (bVal as number)
-      : (bVal as number) - (aVal as number);
-  });
-
-  return sorted;
+// 任务在已分配集合中的查找表
+const assignmentByTaskId = computed(() => {
+  return new Map(taskAssignments.value.map(a => [a.taskId, a]));
 });
+
+// 父任务 -> 子任务列表(仅含在已分配集合中的子任务)
+const childrenByParent = computed(() => {
+  const map = new Map<string, TaskAssignment[]>();
+  for (const a of taskAssignments.value) {
+    const task = taskStore.tasks.find(t => t.id === a.taskId);
+    if (!task || !task.parentTaskId) continue;
+    if (!assignmentByTaskId.value.has(task.parentTaskId)) continue;
+    if (!map.has(task.parentTaskId)) map.set(task.parentTaskId, []);
+    map.get(task.parentTaskId)!.push(a);
+  }
+  return map;
+});
+
+// 根任务:无父任务 或 父任务不在已分配集合中(默认显示为顶级)
+const rootAssignments = computed(() => {
+  return taskAssignments.value.filter(a => {
+    const task = taskStore.tasks.find(t => t.id === a.taskId);
+    if (!task || !task.parentTaskId) return true;
+    return !assignmentByTaskId.value.has(task.parentTaskId);
+  });
+});
+
+// 树状可见列表(尊重展开/折叠,深度按树中位置计算)
+const sortedTaskAssignments = computed<TaskAssignment[]>(() => {
+  const result: TaskAssignment[] = [];
+  const visit = (a: TaskAssignment, depth: number) => {
+    result.push({ ...a, taskDepth: depth });
+    if (expandedTaskIds.value.has(a.taskId)) {
+      const children = [...(childrenByParent.value.get(a.taskId) || [])].sort(compareAssignments);
+      for (const child of children) {
+        visit(child, depth + 1);
+      }
+    }
+  };
+  const sortedRoots = [...rootAssignments.value].sort(compareAssignments);
+  for (const root of sortedRoots) {
+    visit(root, 0);
+  }
+  return result;
+});
+
+// 展开/折叠助手
+const hasChildren = (taskId: string): boolean => {
+  return (childrenByParent.value.get(taskId) || []).length > 0;
+};
+const isExpanded = (taskId: string): boolean => {
+  return expandedTaskIds.value.has(taskId);
+};
+const toggleExpand = (taskId: string) => {
+  const next = new Set(expandedTaskIds.value);
+  if (next.has(taskId)) next.delete(taskId);
+  else next.add(taskId);
+  expandedTaskIds.value = next;
+};
+const expandAll = () => {
+  expandedTaskIds.value = new Set(taskAssignments.value.map(a => a.taskId));
+};
+const collapseAll = () => {
+  expandedTaskIds.value = new Set();
+};
 
 // 分页后的任务分配数据
 const paginatedTaskAssignments = computed<TaskAssignment[]>(() => {

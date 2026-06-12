@@ -28,6 +28,12 @@ const routes: RouteRecordRaw[] = [
     meta: { titleKey: 'routes.dashboard' }
   },
   {
+    path: '/my-tasks',
+    name: 'MyTasks',
+    component: () => import('@/views/MyTasks.vue'),
+    meta: { titleKey: 'routes.myTasks' }
+  },
+  {
     path: '/simple-dashboard',
     name: 'SimpleDashboard',
     component: () => import('@/views/SimpleDashboard.vue'),

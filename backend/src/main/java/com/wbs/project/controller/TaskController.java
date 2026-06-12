@@ -67,6 +67,18 @@ public class TaskController {
         return Result.success(tasks);
     }
 
+    /**
+     * 当前登录用户作为负责人的任务(跨项目聚合,"我的任务"页用)
+     * 2026-06-12 新增
+     */
+    @GetMapping("/mine")
+    public Result<List<Task>> getMyTasks(HttpServletRequest request) {
+        String currentUserId = (String) request.getAttribute("userId");
+        List<Task> tasks = taskService.getTasksByAssigneeId(currentUserId);
+        taskService.updateDelayedStatus(tasks);
+        return Result.success(tasks);
+    }
+
     @PostMapping
     public Result<Task> createTask(
             @RequestBody Task task,
