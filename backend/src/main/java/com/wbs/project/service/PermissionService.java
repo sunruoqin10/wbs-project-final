@@ -2,6 +2,7 @@ package com.wbs.project.service;
 
 import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import com.wbs.project.entity.Document;
 import com.wbs.project.entity.Permission;
 import com.wbs.project.entity.Project;
 import com.wbs.project.entity.Task;
@@ -371,13 +372,6 @@ public class PermissionService {
     }
 
     /**
-     * 是否能编辑文档(上传/删除)
-     */
-    public boolean canEditDocument(String userId, String projectId) {
-        return canEditProject(userId, projectId);
-    }
-
-    /**
      * 是否能创建/修改其他用户角色
      */
     public boolean canManageUserRole(String userId) {
@@ -718,5 +712,97 @@ public class PermissionService {
         Set<String> ids = new HashSet<>(projectMapper.selectIdsByOwner(userId));
         ids.addAll(projectMemberMapper.selectProjectIdsByUserId(userId));
         return ids;
+    }
+
+    // ============ 文档权限单文档判定（2026-06-13） ============
+
+    /**
+     * 是否能查看指定文档（list/detail/download/preview 共用）
+     */
+    public boolean canViewDocument(String userId, Document doc) {
+        if (userId == null || doc == null) {
+            return false;
+        }
+        if (isAdmin(userId)) return true;
+        // 自上传统一早返回（覆盖所有角色）
+        if (userId.equals(doc.getUploadedBy())) return true;
+
+        // 部门 PM:上传者 dept 在 managed_dept_codes 内（含 general）
+        User uploader = userMapper.selectById(doc.getUploadedBy());
+        if (isDeptProjectManager(userId) && uploader != null
+                && isDeptManager(userId, uploader.getDeptCode())) {
+            return true;
+        }
+        // PM:doc.projectId ∈ managedProjectIds 且 uploader 是项目成员
+        if (isProjectManager(userId) && doc.getProjectId() != null
+                && isManagedProject(userId, doc.getProjectId())
+                && isProjectMember(doc.getUploadedBy(), doc.getProjectId())) {
+            return true;
+        }
+        // 项目负责人:project.ownerId == self 且 uploader 是项目成员
+        if (doc.getProjectId() != null) {
+            Project p = projectMapper.selectById(doc.getProjectId());
+            if (p != null && userId.equals(p.getOwnerId())
+                    && isProjectMember(doc.getUploadedBy(), doc.getProjectId())) {
+                return true;
+            }
+            // MEMBER / VIEWER 兜底:参与的项目
+            if (isProjectMember(userId, doc.getProjectId())) {
+                return true;
+            }
+        }
+        return false;
+    }
+
+    /**
+     * 删除权限（本轮规则下同查看权限）
+     */
+    public boolean canDeleteDocument(String userId, Document doc) {
+        return canViewDocument(userId, doc);
+    }
+
+    /**
+     * 上传权限校验
+     */
+    public boolean canUploadDocument(String userId, String projectId) {
+        if (userId == null) return false;
+        if (isAdmin(userId)) return true;
+        if (projectId == null) return true; // general 任何人可上传
+        if (isDeptProjectManager(userId)) {
+            Project p = projectMapper.selectById(projectId);
+            return p != null && p.getDeptCode() != null
+                    && isDeptManager(userId, p.getDeptCode());
+        }
+        if (isProjectManager(userId)) {
+            return isManagedProject(userId, projectId);
+        }
+        // 项目负责人 / MEMBER 兜底
+        if (isProjectMember(userId, projectId)) {
+            // MEMBER 通过此分支放行;VIEWER 由 Controller 角色白名单另外拒
+            Project p = projectMapper.selectById(projectId);
+            if (p != null && userId.equals(p.getOwnerId())) return true;
+            // MEMBER 但非 owner:仅自己参与项目可上传
+            return !isViewer(userId);
+        }
+        return false;
+    }
+
+    /** 抛错版本：用于 upload/delete/update 入口 */
+    public void requireViewDocument(String userId, Document doc) {
+        if (!canViewDocument(userId, doc)) {
+            throw new BusinessException(403, "无文档查看权限");
+        }
+    }
+
+    public void requireDeleteDocument(String userId, Document doc) {
+        if (!canDeleteDocument(userId, doc)) {
+            throw new BusinessException(403, "无文档删除权限");
+        }
+    }
+
+    public void requireUploadDocument(String userId, String projectId) {
+        if (!canUploadDocument(userId, projectId)) {
+            throw new BusinessException(403, "无文档上传权限");
+        }
     }
 }
