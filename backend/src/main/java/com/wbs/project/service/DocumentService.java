@@ -2,8 +2,10 @@ package com.wbs.project.service;
 
 import com.wbs.project.entity.Document;
 import com.wbs.project.entity.DocumentAccessLog;
+import com.wbs.project.exception.BusinessException;
 import com.wbs.project.mapper.DocumentAccessLogMapper;
 import com.wbs.project.mapper.DocumentMapper;
+import com.wbs.project.mapper.ProjectMapper;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Value;
@@ -19,7 +21,9 @@ import java.time.LocalDateTime;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
 import java.util.UUID;
+import java.util.stream.Collectors;
 
 @Slf4j
 @Service
@@ -29,6 +33,8 @@ public class DocumentService {
     private final DocumentMapper documentMapper;
     private final DocumentAccessLogMapper documentAccessLogMapper;
     private final ForeignKeyValidationService foreignKeyValidationService;
+    private final PermissionService permissionService;     // 新增(Task 6)
+    private final ProjectMapper projectMapper;            // 新增(Task 6)
 
     @Value("${document.upload.path:./uploads/documents}")
     private String uploadPath;
@@ -36,40 +42,88 @@ public class DocumentService {
     @Value("${document.upload.max-size:10485760}")
     private long maxFileSize;
 
-    public List<Document> getAllDocuments() {
-        return documentMapper.selectAll();
+    public List<Document> getAllDocuments(String userId) {
+        if (permissionService.isAdmin(userId)) {
+            return documentMapper.selectAll();
+        }
+        Set<String> uploaderIds = permissionService.getAccessibleUploaderIds(userId);
+        Set<String> projectIds  = permissionService.getAccessibleProjectIdsForDoc(userId);
+        return documentMapper.selectByAccessibleScope(uploaderIds, projectIds, null, null, null, null);
     }
 
     public Document getDocumentById(String id) {
         return documentMapper.selectById(id);
     }
 
-    public List<Document> getDocumentsByProjectId(String projectId) {
-        return documentMapper.selectByProjectId(projectId);
+    public List<Document> getDocumentsByProjectId(String userId, String projectId) {
+        if (permissionService.isAdmin(userId)) {
+            return documentMapper.selectByProjectId(projectId);
+        }
+        Set<String> uploaderIds = permissionService.getAccessibleUploaderIds(userId);
+        Set<String> projectIds  = permissionService.getAccessibleProjectIdsForDoc(userId);
+        projectIds.add(projectId); // 显式覆盖查询目标
+        return documentMapper.selectByAccessibleScope(uploaderIds, projectIds, null, null, null, projectId);
     }
 
-    public List<Document> getDocumentsByTaskId(String taskId) {
-        return documentMapper.selectByTaskId(taskId);
+    public List<Document> getDocumentsByTaskId(String userId, String taskId) {
+        if (permissionService.isAdmin(userId)) {
+            return documentMapper.selectByTaskId(taskId);
+        }
+        Set<String> uploaderIds = permissionService.getAccessibleUploaderIds(userId);
+        Set<String> projectIds  = permissionService.getAccessibleProjectIdsForDoc(userId);
+        return documentMapper.selectByAccessibleScope(uploaderIds, projectIds, null, null, taskId, null);
     }
 
-    public List<Document> getDocumentsByCategory(String category) {
-        return documentMapper.selectByCategory(category);
+    public List<Document> getDocumentsByCategory(String userId, String category) {
+        if (permissionService.isAdmin(userId)) {
+            return documentMapper.selectByCategory(category);
+        }
+        Set<String> uploaderIds = permissionService.getAccessibleUploaderIds(userId);
+        Set<String> projectIds  = permissionService.getAccessibleProjectIdsForDoc(userId);
+        return documentMapper.selectByAccessibleScope(uploaderIds, projectIds, category, null, null, null);
     }
 
-    public List<Document> getDocumentsByUserId(String userId) {
-        return documentMapper.selectByUserId(userId);
+    public List<Document> getDocumentsByUserId(String actorId, String targetUserId) {
+        if (!(permissionService.isAdmin(actorId)
+                || permissionService.isDeptProjectManager(actorId)
+                || permissionService.isProjectManager(actorId)
+                || isOwnerOfAnyProject(actorId))) {
+            throw new BusinessException(403, "无该用户文档查看权限");
+        }
+        Set<String> uploaderIds = permissionService.getAccessibleUploaderIds(actorId);
+        Set<String> projectIds  = permissionService.getAccessibleProjectIdsForDoc(actorId);
+        return documentMapper.selectByAccessibleScope(uploaderIds, projectIds, null, null, null, null)
+                .stream()
+                .filter(d -> targetUserId.equals(d.getUploadedBy()))
+                .collect(Collectors.toList());
     }
 
-    public List<Document> getDocumentsByProjectIdAndCategory(String projectId, String category) {
-        return documentMapper.selectByProjectIdAndCategory(projectId, category);
+    public List<Document> getDocumentsByProjectIdAndCategory(String userId, String projectId, String category) {
+        if (permissionService.isAdmin(userId)) {
+            return documentMapper.selectByProjectIdAndCategory(projectId, category);
+        }
+        Set<String> uploaderIds = permissionService.getAccessibleUploaderIds(userId);
+        Set<String> projectIds  = permissionService.getAccessibleProjectIdsForDoc(userId);
+        projectIds.add(projectId); // 显式覆盖查询目标
+        return documentMapper.selectByAccessibleScope(uploaderIds, projectIds, category, null, null, projectId);
     }
 
-    public List<Document> getDocumentsByReportId(String reportId) {
-        return documentMapper.selectByReportId(reportId);
+    public List<Document> getDocumentsByReportId(String userId, String reportId) {
+        if (permissionService.isAdmin(userId)) {
+            return documentMapper.selectByReportId(reportId);
+        }
+        Set<String> uploaderIds = permissionService.getAccessibleUploaderIds(userId);
+        Set<String> projectIds  = permissionService.getAccessibleProjectIdsForDoc(userId);
+        return documentMapper.selectByAccessibleScope(uploaderIds, projectIds, null, reportId, null, null);
     }
 
-    public List<Document> getDocumentsByReportIdAndCategory(String reportId, String category) {
-        return documentMapper.selectByReportIdAndCategory(reportId, category);
+    public List<Document> getDocumentsByReportIdAndCategory(String userId, String reportId, String category) {
+        if (permissionService.isAdmin(userId)) {
+            return documentMapper.selectByReportIdAndCategory(reportId, category);
+        }
+        Set<String> uploaderIds = permissionService.getAccessibleUploaderIds(userId);
+        Set<String> projectIds  = permissionService.getAccessibleProjectIdsForDoc(userId);
+        return documentMapper.selectByAccessibleScope(uploaderIds, projectIds, category, reportId, null, null);
     }
 
     public Map<String, Object> getReportDocumentStats(String reportId) {
@@ -225,6 +279,10 @@ public class DocumentService {
 
     public int getDocumentCountByProjectId(String projectId) {
         return documentMapper.countByProjectId(projectId);
+    }
+
+    private boolean isOwnerOfAnyProject(String userId) {
+        return !projectMapper.selectIdsByOwner(userId).isEmpty();
     }
 
     private void logAccess(String documentId, String userId, String action, String ipAddress) {
