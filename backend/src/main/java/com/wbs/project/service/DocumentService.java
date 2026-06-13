@@ -259,7 +259,7 @@ public class DocumentService {
         document.setDescription(description);
 
         documentMapper.update(document);
-        logAccess(id, document.getUploadedBy(), "update", null);
+        logAccess(id, userId, "update", null);
 
         log.info("文档更新成功: id={}, name={}", id, name);
         return document;
