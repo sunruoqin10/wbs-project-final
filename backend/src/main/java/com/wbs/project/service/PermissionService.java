@@ -647,4 +647,76 @@ public class PermissionService {
         }
         return parseProjectIds(u.getManagedProjectIds());
     }
+
+    // ============ 文档权限数据范围（2026-06-13） ============
+
+    /**
+     * 返回当前用户能看/管的「文档上传者」userId 集合。
+     * admin 返回 null（语义：不限）；MEMBER/VIEWER 兜底含自己 + 参与项目的成员。
+     */
+    public Set<String> getAccessibleUploaderIds(String userId) {
+        if (userId == null) {
+            return Collections.emptySet();
+        }
+        if (isAdmin(userId)) {
+            return null;
+        }
+        Set<String> ids = new HashSet<>();
+        if (isDeptProjectManager(userId)) {
+            User u = userMapper.selectById(userId);
+            if (u != null) {
+                List<String> codes = parseDeptCodes(u.getManagedDeptCodes());
+                if (!codes.isEmpty()) {
+                    ids.addAll(userMapper.selectIdsByDeptCodes(codes));
+                }
+            }
+            return ids;
+        }
+        if (isProjectManager(userId)) {
+            User u = userMapper.selectById(userId);
+            if (u != null) {
+                List<String> managed = parseProjectIds(u.getManagedProjectIds());
+                if (!managed.isEmpty()) {
+                    ids.addAll(projectMemberMapper.selectMemberIdsByProjectIds(managed));
+                }
+            }
+            ids.add(userId); // 自己上传的总能看到
+            return ids;
+        }
+        // 项目负责人 / MEMBER / VIEWER 兜底
+        List<String> ownerProjects = projectMapper.selectIdsByOwner(userId);
+        if (!ownerProjects.isEmpty()) {
+            ids.addAll(projectMemberMapper.selectMemberIdsByProjectIds(ownerProjects));
+        }
+        List<String> participated = projectMemberMapper.selectProjectIdsByUserId(userId);
+        if (!participated.isEmpty()) {
+            ids.addAll(projectMemberMapper.selectMemberIdsByProjectIds(participated));
+        }
+        ids.add(userId);
+        return ids;
+    }
+
+    /**
+     * 返回当前用户能看/管的「文档所属项目」projectId 集合。
+     * admin 返回 null（不限）；DEPT_PM 不按项目维度管辖，返回空集合。
+     */
+    public Set<String> getAccessibleProjectIdsForDoc(String userId) {
+        if (userId == null) {
+            return Collections.emptySet();
+        }
+        if (isAdmin(userId)) {
+            return null;
+        }
+        if (isProjectManager(userId)) {
+            User u = userMapper.selectById(userId);
+            if (u == null) return Collections.emptySet();
+            return new HashSet<>(parseProjectIds(u.getManagedProjectIds()));
+        }
+        if (isDeptProjectManager(userId)) {
+            return Collections.emptySet(); // 部门 PM 走 uploader 维度,projectIds 留空 → SQL 的 <if> 守卫跳过
+        }
+        Set<String> ids = new HashSet<>(projectMapper.selectIdsByOwner(userId));
+        ids.addAll(projectMemberMapper.selectProjectIdsByUserId(userId));
+        return ids;
+    }
 }
