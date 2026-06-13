@@ -58,12 +58,13 @@ public interface OvertimeMapper {
     /**
      * 根据条件查询加班记录（支持多条件组合）
      */
-    List<OvertimeRecord> selectByCondition(@Param("userId") String userId, 
-                                           @Param("projectId") String projectId, 
+    List<OvertimeRecord> selectByCondition(@Param("userId") String userId,
+                                           @Param("projectId") String projectId,
                                            @Param("status") String status,
-                                           @Param("startDate") LocalDate startDate, 
+                                           @Param("startDate") LocalDate startDate,
                                            @Param("endDate") LocalDate endDate,
-                                           @Param("overtimeType") String overtimeType);
+                                           @Param("overtimeType") String overtimeType,
+                                           @Param("userIds") List<String> userIds);
 
     /**
      * 插入加班记录
@@ -113,16 +114,18 @@ public interface OvertimeMapper {
     /**
      * 按用户统计加班时长
      */
-    List<Map<String, Object>> sumHoursGroupByUser(@Param("projectId") String projectId, 
-                                                   @Param("startDate") LocalDate startDate, 
-                                                   @Param("endDate") LocalDate endDate);
+    List<Map<String, Object>> sumHoursGroupByUser(@Param("projectId") String projectId,
+                                                   @Param("startDate") LocalDate startDate,
+                                                   @Param("endDate") LocalDate endDate,
+                                                   @Param("userIds") List<String> userIds);
 
     /**
      * 按项目统计加班时长
      */
-    List<Map<String, Object>> sumHoursGroupByProject(@Param("userId") String userId, 
-                                                      @Param("startDate") LocalDate startDate, 
-                                                      @Param("endDate") LocalDate endDate);
+    List<Map<String, Object>> sumHoursGroupByProject(@Param("userId") String userId,
+                                                      @Param("startDate") LocalDate startDate,
+                                                      @Param("endDate") LocalDate endDate,
+                                                      @Param("userIds") List<String> userIds);
 
     /**
      * 按日期统计加班时长
@@ -130,7 +133,8 @@ public interface OvertimeMapper {
     List<Map<String, Object>> sumHoursGroupByDate(@Param("userId") String userId,
                                                    @Param("projectId") String projectId,
                                                    @Param("startDate") LocalDate startDate,
-                                                   @Param("endDate") LocalDate endDate);
+                                                   @Param("endDate") LocalDate endDate,
+                                                   @Param("userIds") List<String> userIds);
 
     /**
      * 按加班类型统计加班时长
@@ -138,7 +142,8 @@ public interface OvertimeMapper {
     List<Map<String, Object>> sumHoursGroupByType(@Param("userId") String userId,
                                                    @Param("projectId") String projectId,
                                                    @Param("startDate") LocalDate startDate,
-                                                   @Param("endDate") LocalDate endDate);
+                                                   @Param("endDate") LocalDate endDate,
+                                                   @Param("userIds") List<String> userIds);
 
     /**
      * 统计待审批的加班记录数

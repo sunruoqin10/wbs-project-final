@@ -158,6 +158,12 @@
             <if test="overtimeType != null and overtimeType != ''">
                 AND o.overtime_type = #{overtimeType}
             </if>
+            <if test="userIds != null and userIds.size() > 0">
+                AND o.user_id IN
+                <foreach collection="userIds" item="uid" open="(" separator="," close=")">
+                    #{uid}
+                </foreach>
+            </if>
         </where>
         ORDER BY o.overtime_date DESC, o.created_at DESC
     </select>
@@ -237,6 +243,12 @@
         <if test="endDate != null">
             AND o.overtime_date &lt;= #{endDate}
         </if>
+        <if test="userIds != null and userIds.size() > 0">
+            AND o.user_id IN
+            <foreach collection="userIds" item="uid" open="(" separator="," close=")">
+                #{uid}
+            </foreach>
+        </if>
         GROUP BY o.user_id, u.name
         ORDER BY totalHours DESC
     </select>
@@ -254,6 +266,12 @@
         </if>
         <if test="endDate != null">
             AND o.overtime_date &lt;= #{endDate}
+        </if>
+        <if test="userIds != null and userIds.size() > 0">
+            AND o.user_id IN
+            <foreach collection="userIds" item="uid" open="(" separator="," close=")">
+                #{uid}
+            </foreach>
         </if>
         GROUP BY o.project_id, p.name
         ORDER BY totalHours DESC
@@ -275,6 +293,12 @@
         <if test="endDate != null">
             AND o.overtime_date &lt;= #{endDate}
         </if>
+        <if test="userIds != null and userIds.size() > 0">
+            AND o.user_id IN
+            <foreach collection="userIds" item="uid" open="(" separator="," close=")">
+                #{uid}
+            </foreach>
+        </if>
         GROUP BY o.overtime_date
         ORDER BY o.overtime_date ASC
     </select>
@@ -294,6 +318,12 @@
         </if>
         <if test="endDate != null">
             AND o.overtime_date &lt;= #{endDate}
+        </if>
+        <if test="userIds != null and userIds.size() > 0">
+            AND o.user_id IN
+            <foreach collection="userIds" item="uid" open="(" separator="," close=")">
+                #{uid}
+            </foreach>
         </if>
         GROUP BY o.overtime_type
         ORDER BY totalHours DESC
