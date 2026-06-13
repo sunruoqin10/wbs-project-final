@@ -158,14 +158,18 @@ public class DocumentService {
     }
 
     @Transactional
-    public Document uploadDocument(MultipartFile file, String name, String category,
+    public Document uploadDocument(String userId, MultipartFile file, String name, String category,
                                 String projectId, String taskId, String parentId, String reportId,
-                                String description, String uploadedBy) {
+                                String description) {
         log.info("开始上传文档: fileName={}, category='{}', projectId={}, taskId={}, reportId={}, uploadedBy={}",
-                file.getOriginalFilename(), category, projectId, taskId, reportId, uploadedBy);
+                file.getOriginalFilename(), category, projectId, taskId, reportId, userId);
 
         validateFile(file);
-        foreignKeyValidationService.validateDocumentUpload(projectId, taskId, uploadedBy, parentId, reportId);
+
+        // 新增:权限校验
+        permissionService.requireUploadDocument(userId, projectId);
+
+        foreignKeyValidationService.validateDocumentUpload(projectId, taskId, userId, parentId, reportId);
 
         String originalFilename = file.getOriginalFilename();
         String fileExtension = getFileExtension(originalFilename);
@@ -191,16 +195,16 @@ public class DocumentService {
         document.setParentId(parentId);
         document.setReportId(reportId);
         document.setDescription(description);
-        document.setUploadedBy(uploadedBy != null && !uploadedBy.isEmpty() ? uploadedBy : "system-default");
+        document.setUploadedBy(userId != null && !userId.isEmpty() ? userId : "system-default");
         document.setStatus("active");
         document.setDownloadCount(0);
         document.setCreatedAt(LocalDateTime.now());
         document.setUpdatedAt(LocalDateTime.now());
 
         documentMapper.insert(document);
-        logAccess(document.getId(), uploadedBy, "upload", null);
+        logAccess(document.getId(), userId, "upload", null);
 
-        log.info("文档上传成功: id={}, name={}, uploadedBy={}", document.getId(), fileName, uploadedBy);
+        log.info("文档上传成功: id={}, name={}, uploadedBy={}", document.getId(), fileName, userId);
         return document;
     }
 
@@ -228,7 +232,7 @@ public class DocumentService {
     }
 
     @Transactional
-    public Document updateDocument(String id, String name, String category,
+    public Document updateDocument(String userId, String id, String name, String category,
                                String projectId, String taskId, String parentId,
                                String description) {
         Document document = documentMapper.selectById(id);
@@ -238,6 +242,7 @@ public class DocumentService {
         if (!"active".equals(document.getStatus())) {
             throw new IllegalArgumentException("文档已删除");
         }
+        permissionService.requireDeleteDocument(userId, document);  // 更新权 = 删除权
 
         foreignKeyValidationService.validateDocumentUpdate(projectId, taskId, parentId);
 
@@ -260,7 +265,7 @@ public class DocumentService {
     }
 
     @Transactional
-    public void deleteDocument(String id, String userId) {
+    public void deleteDocument(String userId, String id) {
         Document document = documentMapper.selectById(id);
         if (document == null) {
             throw new IllegalArgumentException("文档不存在");
@@ -268,7 +273,7 @@ public class DocumentService {
         if (!"active".equals(document.getStatus())) {
             throw new IllegalArgumentException("文档已删除");
         }
-
+        permissionService.requireDeleteDocument(userId, document);
         documentMapper.deleteById(id);
         documentAccessLogMapper.deleteByDocumentId(id);
 
