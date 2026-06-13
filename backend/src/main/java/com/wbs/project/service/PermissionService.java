@@ -714,6 +714,42 @@ public class PermissionService {
         return ids;
     }
 
+    // ============ 加班权限数据范围（2026-06-13） ============
+
+    /**
+     * 返回当前用户能查看的「加班记录提交者」userId 集合。
+     * 与 getAccessibleUploaderIds 同形（对齐 dept-pm 维度），但语义是"可见的加班来源"。
+     *
+     * 规则（2026-06-13）：
+     *  - admin / project-manager 返回 null（语义：不限）
+     *  - dept-project-manager 返回所辖部门内的在职用户 ID 集合
+     *  - 其他角色（MEMBER / VIEWER）返回仅自己
+     *  - 项目负责人（owner 但非 admin/PM/dept-pm）走兜底返回仅自己
+     *    （owner 看自己 owner 项目的成员加班，目前不在此方法覆盖范围，由 hasPermission 单独处理）
+     *
+     * 业务方应这样用：对 null 跳过 IN 守卫，非空 IN (...) 守卫，空集合 → 直接返回空结果。
+     */
+    public Set<String> getAccessibleOvertimeUserIds(String userId) {
+        if (userId == null) {
+            return Collections.emptySet();
+        }
+        if (isAdmin(userId) || isProjectManager(userId)) {
+            return null; // null = 不限
+        }
+        if (isDeptProjectManager(userId)) {
+            User u = userMapper.selectById(userId);
+            if (u != null) {
+                List<String> codes = parseDeptCodes(u.getManagedDeptCodes());
+                if (!codes.isEmpty()) {
+                    return new HashSet<>(userMapper.selectIdsByDeptCodes(codes));
+                }
+            }
+            return Collections.emptySet();
+        }
+        // MEMBER / VIEWER / owner: 仅自己
+        return Set.of(userId);
+    }
+
     // ============ 文档权限单文档判定（2026-06-13） ============
 
     /**
