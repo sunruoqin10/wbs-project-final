@@ -51,8 +51,12 @@ public class DocumentService {
         return documentMapper.selectByAccessibleScope(uploaderIds, projectIds, null, null, null, null);
     }
 
-    public Document getDocumentById(String id) {
-        return documentMapper.selectById(id);
+    public Document getDocumentById(String userId, String id) {
+        Document doc = documentMapper.selectById(id);
+        if (doc == null) return null;
+        if (!"active".equals(doc.getStatus())) return null;
+        permissionService.requireViewDocument(userId, doc);
+        return doc;
     }
 
     public List<Document> getDocumentsByProjectId(String userId, String projectId) {
@@ -201,7 +205,7 @@ public class DocumentService {
     }
 
     @Transactional
-    public byte[] downloadDocument(String id, String userId) {
+    public byte[] downloadDocument(String userId, String id) {
         Document document = documentMapper.selectById(id);
         if (document == null) {
             throw new IllegalArgumentException("文档不存在");
@@ -209,6 +213,7 @@ public class DocumentService {
         if (!"active".equals(document.getStatus())) {
             throw new IllegalArgumentException("文档已删除");
         }
+        permissionService.requireViewDocument(userId, document);
 
         documentMapper.incrementDownloadCount(id);
         logAccess(id, userId, "download", null);
