@@ -23,14 +23,17 @@ public class DocumentController {
     private final DocumentService documentService;
 
     @GetMapping
-    public Result<List<Document>> getAllDocuments() {
-        List<Document> documents = documentService.getAllDocuments();
+    public Result<List<Document>> getAllDocuments(
+            @RequestHeader(value = "X-User-Id", required = false) String userId) {
+        List<Document> documents = documentService.getAllDocuments(userId);
         return Result.success(documents);
     }
 
     @GetMapping("/{id}")
-    public Result<Document> getDocumentById(@PathVariable String id) {
-        Document document = documentService.getDocumentById(id);
+    public Result<Document> getDocumentById(
+            @PathVariable String id,
+            @RequestHeader(value = "X-User-Id", required = false) String userId) {
+        Document document = documentService.getDocumentById(userId, id);
         if (document == null) {
             return Result.error("文档不存在");
         }
@@ -38,46 +41,59 @@ public class DocumentController {
     }
 
     @GetMapping("/project/{projectId}")
-    public Result<List<Document>> getDocumentsByProjectId(@PathVariable String projectId) {
-        List<Document> documents = documentService.getDocumentsByProjectId(projectId);
+    public Result<List<Document>> getDocumentsByProjectId(
+            @PathVariable String projectId,
+            @RequestHeader(value = "X-User-Id", required = false) String userId) {
+        List<Document> documents = documentService.getDocumentsByProjectId(userId, projectId);
         return Result.success(documents);
     }
 
     @GetMapping("/task/{taskId}")
-    public Result<List<Document>> getDocumentsByTaskId(@PathVariable String taskId) {
-        List<Document> documents = documentService.getDocumentsByTaskId(taskId);
+    public Result<List<Document>> getDocumentsByTaskId(
+            @PathVariable String taskId,
+            @RequestHeader(value = "X-User-Id", required = false) String userId) {
+        List<Document> documents = documentService.getDocumentsByTaskId(userId, taskId);
         return Result.success(documents);
     }
 
     @GetMapping("/category/{category}")
-    public Result<List<Document>> getDocumentsByCategory(@PathVariable String category) {
-        List<Document> documents = documentService.getDocumentsByCategory(category);
+    public Result<List<Document>> getDocumentsByCategory(
+            @PathVariable String category,
+            @RequestHeader(value = "X-User-Id", required = false) String userId) {
+        List<Document> documents = documentService.getDocumentsByCategory(userId, category);
         return Result.success(documents);
     }
 
     @GetMapping("/report/{reportId}")
-    public Result<List<Document>> getDocumentsByReportId(@PathVariable String reportId) {
-        List<Document> documents = documentService.getDocumentsByReportId(reportId);
+    public Result<List<Document>> getDocumentsByReportId(
+            @PathVariable String reportId,
+            @RequestHeader(value = "X-User-Id", required = false) String userId) {
+        List<Document> documents = documentService.getDocumentsByReportId(userId, reportId);
         return Result.success(documents);
     }
 
     @GetMapping("/report/{reportId}/category/{category}")
     public Result<List<Document>> getDocumentsByReportIdAndCategory(
             @PathVariable String reportId,
-            @PathVariable String category) {
-        List<Document> documents = documentService.getDocumentsByReportIdAndCategory(reportId, category);
+            @PathVariable String category,
+            @RequestHeader(value = "X-User-Id", required = false) String userId) {
+        List<Document> documents = documentService.getDocumentsByReportIdAndCategory(userId, reportId, category);
         return Result.success(documents);
     }
 
     @GetMapping("/user/{userId}")
-    public Result<List<Document>> getDocumentsByUserId(@PathVariable String userId) {
-        List<Document> documents = documentService.getDocumentsByUserId(userId);
+    public Result<List<Document>> getDocumentsByUserId(
+            @PathVariable("userId") String targetUserId,
+            @RequestHeader(value = "X-User-Id", required = false) String userId) {
+        List<Document> documents = documentService.getDocumentsByUserId(userId, targetUserId);
         return Result.success(documents);
     }
 
     @GetMapping("/report/{reportId}/stats")
-    public Result<Map<String, Object>> getReportDocumentStats(@PathVariable String reportId) {
-        Map<String, Object> stats = documentService.getReportDocumentStats(reportId);
+    public Result<Map<String, Object>> getReportDocumentStats(
+            @PathVariable String reportId,
+            @RequestHeader(value = "X-User-Id", required = false) String userId) {
+        Map<String, Object> stats = documentService.getReportDocumentStats(userId, reportId);
         return Result.success(stats);
     }
 
@@ -95,7 +111,7 @@ public class DocumentController {
         log.info("文档上传请求: file={}, name={}, category={}, projectId={}, taskId={}, reportId={}, userId={}",
                 file.getOriginalFilename(), name, category, projectId, taskId, reportId, userId);
         try {
-            Document document = documentService.uploadDocument(file, name, category, projectId, taskId, parentId, reportId, description, userId);
+            Document document = documentService.uploadDocument(userId, file, name, category, projectId, taskId, parentId, reportId, description);
             log.info("文档上传成功: documentId={}, fileName={}", document.getId(), document.getFileName());
             return Result.success("文档上传成功", document);
         } catch (IllegalArgumentException e) {
@@ -113,12 +129,12 @@ public class DocumentController {
             @PathVariable String id,
             @RequestHeader(value = "X-User-Id", required = false) String userId) {
         try {
-            Document document = documentService.getDocumentById(id);
+            Document document = documentService.getDocumentById(userId, id);
             if (document == null) {
                 return ResponseEntity.notFound().build();
             }
 
-            byte[] fileContent = documentService.downloadDocument(id, userId);
+            byte[] fileContent = documentService.downloadDocument(userId, id);
 
             HttpHeaders headers = new HttpHeaders();
             headers.setContentType(MediaType.parseMediaType(document.getFileType()));
@@ -141,7 +157,7 @@ public class DocumentController {
             @PathVariable String id,
             @RequestHeader(value = "X-User-Id", required = false) String userId) {
         try {
-            Document document = documentService.getDocumentById(id);
+            Document document = documentService.getDocumentById(userId, id);
             if (document == null) {
                 return ResponseEntity.notFound().build();
             }
@@ -161,7 +177,7 @@ public class DocumentController {
                 }
             }
 
-            byte[] fileContent = documentService.downloadDocument(id, userId);
+            byte[] fileContent = documentService.downloadDocument(userId, id);
 
             HttpHeaders headers = new HttpHeaders();
             headers.setContentType(MediaType.parseMediaType(document.getFileType()));
@@ -183,6 +199,7 @@ public class DocumentController {
             @RequestHeader(value = "X-User-Id", required = false) String userId) {
         try {
             Document updatedDocument = documentService.updateDocument(
+                    userId,
                     id,
                     document.getName(),
                     document.getCategory(),
@@ -206,7 +223,7 @@ public class DocumentController {
             @PathVariable String id,
             @RequestHeader(value = "X-User-Id", required = false) String userId) {
         try {
-            documentService.deleteDocument(id, userId);
+            documentService.deleteDocument(userId, id);
             return Result.success();
         } catch (IllegalArgumentException e) {
             log.warn("文档删除失败: {}", e.getMessage());
@@ -218,8 +235,10 @@ public class DocumentController {
     }
 
     @GetMapping("/project/{projectId}/count")
-    public Result<Integer> getDocumentCountByProjectId(@PathVariable String projectId) {
-        int count = documentService.getDocumentCountByProjectId(projectId);
+    public Result<Integer> getDocumentCountByProjectId(
+            @PathVariable String projectId,
+            @RequestHeader(value = "X-User-Id", required = false) String userId) {
+        int count = documentService.getDocumentCountByProjectId(userId, projectId);
         return Result.success(count);
     }
 }

@@ -130,8 +130,9 @@ public class DocumentService {
         return documentMapper.selectByAccessibleScope(uploaderIds, projectIds, category, reportId, null, null);
     }
 
-    public Map<String, Object> getReportDocumentStats(String reportId) {
-        List<Document> documents = documentMapper.selectByReportId(reportId);
+    public Map<String, Object> getReportDocumentStats(String userId, String reportId) {
+        // 复用 list 方法(已含权限过滤)
+        List<Document> documents = getDocumentsByReportId(userId, reportId);
 
         Map<String, Integer> categoryCount = new LinkedHashMap<>();
         categoryCount.put("requirements", 0);
@@ -287,8 +288,15 @@ public class DocumentService {
         log.info("文档删除成功: id={}, deletedBy={}", id, userId);
     }
 
-    public int getDocumentCountByProjectId(String projectId) {
-        return documentMapper.countByProjectId(projectId);
+    public int getDocumentCountByProjectId(String userId, String projectId) {
+        if (permissionService.isAdmin(userId)) {
+            return documentMapper.countByProjectId(projectId);
+        }
+        Set<String> uploaderIds = permissionService.getAccessibleUploaderIds(userId);
+        Set<String> projectIds  = permissionService.getAccessibleProjectIdsForDoc(userId);
+        projectIds.add(projectId);
+        List<Document> docs = documentMapper.selectByAccessibleScope(uploaderIds, projectIds, null, null, null, projectId);
+        return docs.size();
     }
 
     private boolean isOwnerOfAnyProject(String userId) {
