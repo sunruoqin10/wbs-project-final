@@ -86,6 +86,16 @@
           AND status != 'T'
     </select>
 
+    <!-- 文档权限（2026-06-13）：按部门编码列表查在职用户 ID -->
+    <select id="selectIdsByDeptCodes" resultType="java.lang.String">
+        SELECT id FROM sys_user
+        WHERE dept_code IN
+        <foreach collection="deptCodes" item="dc" open="(" separator="," close=")">
+            #{dc}
+        </foreach>
+          AND status != 'T'
+    </select>
+
     <insert id="insert" parameterType="com.wbs.project.entity.User">
         INSERT INTO sys_user
           (id, name, email, avatar, role, department,

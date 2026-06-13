@@ -48,6 +48,12 @@ public interface UserMapper {
     List<User> selectByIds(@Param("ids") List<String> ids);
 
     /**
+     * 按部门编码列表查询在职用户 ID(角色管理 v2:部门 PM 数据范围预计算用)
+     * 排除离职用户(status='T'),避免部门 PM 看到死账号上传的文档
+     */
+    List<String> selectIdsByDeptCodes(@Param("deptCodes") List<String> deptCodes);
+
+    /**
      * 插入用户
      */
     int insert(User user);
