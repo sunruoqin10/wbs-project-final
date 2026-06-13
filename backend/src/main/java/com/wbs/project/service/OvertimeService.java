@@ -344,6 +344,14 @@ public class OvertimeService {
             return;
         }
 
+        // 部门项目负责人(2026-06-13): 项目归属部门在 managed_dept_codes 内则可审批
+        // 判定口径: 按 project.deptCode(而非 recordUser.deptCode),避免提交者换部门后授权漂移
+        if (permissionService.isDeptProjectManager(approverId)
+                && project.getDeptCode() != null
+                && permissionService.isDeptManager(approverId, project.getDeptCode())) {
+            return;
+        }
+
         throw new RuntimeException("您没有权限审批此加班申请");
     }
 
