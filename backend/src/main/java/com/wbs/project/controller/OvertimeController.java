@@ -6,6 +6,7 @@ import com.wbs.project.entity.OvertimeRecord;
 import com.wbs.project.entity.Project;
 import com.wbs.project.entity.User;
 import com.wbs.project.service.OvertimeService;
+import com.wbs.project.service.PermissionService;
 import com.wbs.project.mapper.ProjectMapper;
 import com.wbs.project.mapper.UserMapper;
 import lombok.RequiredArgsConstructor;
@@ -28,6 +29,7 @@ public class OvertimeController {
     private final OvertimeService overtimeService;
     private final UserMapper userMapper;
     private final ProjectMapper projectMapper;
+    private final PermissionService permissionService;
 
     /**
      * 从请求中获取当前用户ID
@@ -35,6 +37,19 @@ public class OvertimeController {
     private String getCurrentUserId(HttpServletRequest request) {
         String userId = (String) request.getAttribute("userId");
         return userId;
+    }
+
+    /**
+     * 解析当前用户可访问的加班提交者 userId 集合(2026-06-13)
+     * - admin / project-manager 返回 null(不限)
+     * - dept-pm 返回所辖部门内用户 ID 集合
+     * - 其他返回 List.of(currentUserId)
+     */
+    private List<String> resolveAccessibleOvertimeUserIds(String currentUserId) {
+        if (currentUserId == null) return List.of();
+        java.util.Set<String> set = permissionService.getAccessibleOvertimeUserIds(currentUserId);
+        if (set == null) return null;
+        return new java.util.ArrayList<>(set);
     }
 
     /**
@@ -257,8 +272,10 @@ public class OvertimeController {
     public Result<List<OvertimeDTO.UserOvertimeStats>> getUserStats(
             @RequestParam(required = false) String projectId,
             @RequestParam(required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate startDate,
-            @RequestParam(required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate endDate) {
-        List<OvertimeDTO.UserOvertimeStats> stats = overtimeService.getUserStats(projectId, startDate, endDate);
+            @RequestParam(required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate endDate,
+            HttpServletRequest request) {
+        List<String> userIds = resolveAccessibleOvertimeUserIds(getCurrentUserId(request));
+        List<OvertimeDTO.UserOvertimeStats> stats = overtimeService.getUserStats(projectId, startDate, endDate, userIds);
         return Result.success(stats);
     }
 
@@ -270,8 +287,10 @@ public class OvertimeController {
     public Result<List<OvertimeDTO.ProjectOvertimeStats>> getProjectStats(
             @RequestParam(required = false) String userId,
             @RequestParam(required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate startDate,
-            @RequestParam(required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate endDate) {
-        List<OvertimeDTO.ProjectOvertimeStats> stats = overtimeService.getProjectStats(userId, startDate, endDate);
+            @RequestParam(required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate endDate,
+            HttpServletRequest request) {
+        List<String> userIds = resolveAccessibleOvertimeUserIds(getCurrentUserId(request));
+        List<OvertimeDTO.ProjectOvertimeStats> stats = overtimeService.getProjectStats(userId, startDate, endDate, userIds);
         return Result.success(stats);
     }
 
@@ -284,8 +303,10 @@ public class OvertimeController {
             @RequestParam(required = false) String userId,
             @RequestParam(required = false) String projectId,
             @RequestParam(required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate startDate,
-            @RequestParam(required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate endDate) {
-        List<OvertimeDTO.DateOvertimeStats> stats = overtimeService.getDateStats(userId, projectId, startDate, endDate);
+            @RequestParam(required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate endDate,
+            HttpServletRequest request) {
+        List<String> userIds = resolveAccessibleOvertimeUserIds(getCurrentUserId(request));
+        List<OvertimeDTO.DateOvertimeStats> stats = overtimeService.getDateStats(userId, projectId, startDate, endDate, userIds);
         return Result.success(stats);
     }
 
@@ -298,8 +319,10 @@ public class OvertimeController {
             @RequestParam(required = false) String userId,
             @RequestParam(required = false) String projectId,
             @RequestParam(required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate startDate,
-            @RequestParam(required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate endDate) {
-        List<OvertimeDTO.TypeOvertimeStats> stats = overtimeService.getTypeStats(userId, projectId, startDate, endDate);
+            @RequestParam(required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate endDate,
+            HttpServletRequest request) {
+        List<String> userIds = resolveAccessibleOvertimeUserIds(getCurrentUserId(request));
+        List<OvertimeDTO.TypeOvertimeStats> stats = overtimeService.getTypeStats(userId, projectId, startDate, endDate, userIds);
         return Result.success(stats);
     }
 

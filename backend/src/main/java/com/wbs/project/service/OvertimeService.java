@@ -458,9 +458,8 @@ public class OvertimeService {
                 .filter(r -> "holiday".equals(r.getOvertimeType())).count());
         stats.setByType(byType);
 
-        // 获取项目加班统计
-        // TODO(Task 6): getProjectStats 后续会支持 accessibleUserIds 透传,目前保持 3 参签名
-        List<OvertimeDTO.ProjectOvertimeStats> projectStats = getProjectStats(userId, startDate, endDate);
+        // 获取项目加班统计(2026-06-13): 透传 accessibleUserIds,让 dept-pm / member 只能看到自己可访问集合内的项目分布
+        List<OvertimeDTO.ProjectOvertimeStats> projectStats = getProjectStats(userId, startDate, endDate, accessibleUserIds);
         stats.setByProject(projectStats);
 
         return stats;
@@ -484,9 +483,12 @@ public class OvertimeService {
 
     /**
      * 获取用户加班统计
+     *
+     * 2026-06-13: 新增 userIds 透传。null = 不限(给 admin/PM);
+     * 非空 = SQL 层 IN 守卫,只统计这些提交者的加班。
      */
-    public List<OvertimeDTO.UserOvertimeStats> getUserStats(String projectId, LocalDate startDate, LocalDate endDate) {
-        List<Map<String, Object>> results = overtimeMapper.sumHoursGroupByUser(projectId, startDate, endDate, null);
+    public List<OvertimeDTO.UserOvertimeStats> getUserStats(String projectId, LocalDate startDate, LocalDate endDate, List<String> userIds) {
+        List<Map<String, Object>> results = overtimeMapper.sumHoursGroupByUser(projectId, startDate, endDate, userIds);
         return results.stream().map(map -> {
             OvertimeDTO.UserOvertimeStats stats = new OvertimeDTO.UserOvertimeStats();
             stats.setUserId((String) map.get("userId"));
@@ -498,9 +500,11 @@ public class OvertimeService {
 
     /**
      * 获取项目加班统计
+     *
+     * 2026-06-13: 新增 userIds 透传,语义同上。
      */
-    public List<OvertimeDTO.ProjectOvertimeStats> getProjectStats(String userId, LocalDate startDate, LocalDate endDate) {
-        List<Map<String, Object>> results = overtimeMapper.sumHoursGroupByProject(userId, startDate, endDate, null);
+    public List<OvertimeDTO.ProjectOvertimeStats> getProjectStats(String userId, LocalDate startDate, LocalDate endDate, List<String> userIds) {
+        List<Map<String, Object>> results = overtimeMapper.sumHoursGroupByProject(userId, startDate, endDate, userIds);
         return results.stream().map(map -> {
             OvertimeDTO.ProjectOvertimeStats stats = new OvertimeDTO.ProjectOvertimeStats();
             stats.setProjectId((String) map.get("projectId"));
@@ -520,9 +524,11 @@ public class OvertimeService {
 
     /**
      * 获取日期加班统计
+     *
+     * 2026-06-13: 新增 userIds 透传,语义同上。
      */
-    public List<OvertimeDTO.DateOvertimeStats> getDateStats(String userId, String projectId, LocalDate startDate, LocalDate endDate) {
-        List<Map<String, Object>> results = overtimeMapper.sumHoursGroupByDate(userId, projectId, startDate, endDate, null);
+    public List<OvertimeDTO.DateOvertimeStats> getDateStats(String userId, String projectId, LocalDate startDate, LocalDate endDate, List<String> userIds) {
+        List<Map<String, Object>> results = overtimeMapper.sumHoursGroupByDate(userId, projectId, startDate, endDate, userIds);
         return results.stream().map(map -> {
             OvertimeDTO.DateOvertimeStats stats = new OvertimeDTO.DateOvertimeStats();
             stats.setDate((LocalDate) map.get("overtimeDate"));
@@ -533,9 +539,11 @@ public class OvertimeService {
 
     /**
      * 获取类型加班统计
+     *
+     * 2026-06-13: 新增 userIds 透传,语义同上。
      */
-    public List<OvertimeDTO.TypeOvertimeStats> getTypeStats(String userId, String projectId, LocalDate startDate, LocalDate endDate) {
-        List<Map<String, Object>> results = overtimeMapper.sumHoursGroupByType(userId, projectId, startDate, endDate, null);
+    public List<OvertimeDTO.TypeOvertimeStats> getTypeStats(String userId, String projectId, LocalDate startDate, LocalDate endDate, List<String> userIds) {
+        List<Map<String, Object>> results = overtimeMapper.sumHoursGroupByType(userId, projectId, startDate, endDate, userIds);
         return results.stream().map(map -> {
             OvertimeDTO.TypeOvertimeStats stats = new OvertimeDTO.TypeOvertimeStats();
             stats.setOvertimeType((String) map.get("overtimeType"));
