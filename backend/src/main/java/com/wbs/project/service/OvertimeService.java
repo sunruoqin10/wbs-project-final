@@ -76,6 +76,17 @@ public class OvertimeService {
             return true;
         }
 
+        // 部门项目负责人(2026-06-13): 提交者 dept 在 managed_dept_codes 内则放行
+        // 注意: recordUserId 必须非空(避免只看 projectId 误放行),且复用 permissionService.isDeptManager
+        // 性能 trade-off: 列表场景下每次调用会多查一次 user(拿 deptCode); 当前 N+1 接受,见 spec §4.1
+        if (recordUserId != null) {
+            User recordUser = userMapper.selectById(recordUserId);
+            if (recordUser != null && recordUser.getDeptCode() != null
+                    && permissionService.isDeptManager(userId, recordUser.getDeptCode())) {
+                return true;
+            }
+        }
+
         // 检查用户是否是项目的负责人（owner_id）
         Project project = projectMapper.selectById(projectId);
         if (project == null) {
@@ -138,7 +149,7 @@ public class OvertimeService {
      */
     public List<OvertimeRecord> getRecordsByCondition(String userId, String projectId, String status,
                                                        LocalDate startDate, LocalDate endDate, String overtimeType) {
-        return overtimeMapper.selectByCondition(userId, projectId, status, startDate, endDate, overtimeType);
+        return overtimeMapper.selectByCondition(userId, projectId, status, startDate, endDate, overtimeType, null);
     }
 
     /**
@@ -342,7 +353,7 @@ public class OvertimeService {
      * 获取加班统计信息
      */
     public OvertimeDTO.OvertimeStats getStats(String userId, String projectId, LocalDate startDate, LocalDate endDate) {
-        List<OvertimeRecord> records = overtimeMapper.selectByCondition(userId, projectId, null, startDate, endDate, null);
+        List<OvertimeRecord> records = overtimeMapper.selectByCondition(userId, projectId, null, startDate, endDate, null, null);
 
         OvertimeDTO.OvertimeStats stats = new OvertimeDTO.OvertimeStats();
         stats.setTotalRecords(records.size());
@@ -420,7 +431,7 @@ public class OvertimeService {
      * 获取用户加班统计
      */
     public List<OvertimeDTO.UserOvertimeStats> getUserStats(String projectId, LocalDate startDate, LocalDate endDate) {
-        List<Map<String, Object>> results = overtimeMapper.sumHoursGroupByUser(projectId, startDate, endDate);
+        List<Map<String, Object>> results = overtimeMapper.sumHoursGroupByUser(projectId, startDate, endDate, null);
         return results.stream().map(map -> {
             OvertimeDTO.UserOvertimeStats stats = new OvertimeDTO.UserOvertimeStats();
             stats.setUserId((String) map.get("userId"));
@@ -434,7 +445,7 @@ public class OvertimeService {
      * 获取项目加班统计
      */
     public List<OvertimeDTO.ProjectOvertimeStats> getProjectStats(String userId, LocalDate startDate, LocalDate endDate) {
-        List<Map<String, Object>> results = overtimeMapper.sumHoursGroupByProject(userId, startDate, endDate);
+        List<Map<String, Object>> results = overtimeMapper.sumHoursGroupByProject(userId, startDate, endDate, null);
         return results.stream().map(map -> {
             OvertimeDTO.ProjectOvertimeStats stats = new OvertimeDTO.ProjectOvertimeStats();
             stats.setProjectId((String) map.get("projectId"));
@@ -456,7 +467,7 @@ public class OvertimeService {
      * 获取日期加班统计
      */
     public List<OvertimeDTO.DateOvertimeStats> getDateStats(String userId, String projectId, LocalDate startDate, LocalDate endDate) {
-        List<Map<String, Object>> results = overtimeMapper.sumHoursGroupByDate(userId, projectId, startDate, endDate);
+        List<Map<String, Object>> results = overtimeMapper.sumHoursGroupByDate(userId, projectId, startDate, endDate, null);
         return results.stream().map(map -> {
             OvertimeDTO.DateOvertimeStats stats = new OvertimeDTO.DateOvertimeStats();
             stats.setDate((LocalDate) map.get("overtimeDate"));
@@ -469,7 +480,7 @@ public class OvertimeService {
      * 获取类型加班统计
      */
     public List<OvertimeDTO.TypeOvertimeStats> getTypeStats(String userId, String projectId, LocalDate startDate, LocalDate endDate) {
-        List<Map<String, Object>> results = overtimeMapper.sumHoursGroupByType(userId, projectId, startDate, endDate);
+        List<Map<String, Object>> results = overtimeMapper.sumHoursGroupByType(userId, projectId, startDate, endDate, null);
         return results.stream().map(map -> {
             OvertimeDTO.TypeOvertimeStats stats = new OvertimeDTO.TypeOvertimeStats();
             stats.setOvertimeType((String) map.get("overtimeType"));
