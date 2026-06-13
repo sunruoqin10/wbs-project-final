@@ -4,6 +4,7 @@ import com.wbs.project.entity.Document;
 import org.apache.ibatis.annotations.Mapper;
 import org.apache.ibatis.annotations.Param;
 
+import java.util.Collection;
 import java.util.List;
 
 @Mapper
@@ -32,6 +33,18 @@ public interface DocumentMapper {
     int incrementDownloadCount(@Param("id") String id);
 
     int countByProjectId(@Param("projectId") String projectId);
+
+    /**
+     * 按"可见上传者"和"可见项目"两个维度取文档并集。
+     * 任一参数为 null（admin）或空集合（DEPT_PM 的 projectIds）时跳过对应分支。
+     */
+    List<Document> selectByAccessibleScope(
+        @Param("uploaderIds") Collection<String> uploaderIds,
+        @Param("projectIds")  Collection<String> projectIds,
+        @Param("category")    String category,
+        @Param("reportId")    String reportId,
+        @Param("taskId")      String taskId,
+        @Param("projectId")   String projectId);
 
     List<Document> selectByParentId(@Param("parentId") String parentId);
 

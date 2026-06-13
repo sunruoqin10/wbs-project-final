@@ -142,4 +142,43 @@
         WHERE project_id = #{projectId} AND status = 'active'
     </select>
 
+    <!-- 文档权限（2026-06-13）：按可见上传者 ∪ 可见项目过滤 -->
+    <select id="selectByAccessibleScope" resultMap="BaseResultMap">
+        SELECT <include refid="Base_Column_List"/>
+        FROM sys_document
+        <where>
+            status = 'active'
+            <if test="category != null and category != ''">
+                AND category = #{category}
+            </if>
+            <if test="reportId != null and reportId != ''">
+                AND report_id = #{reportId}
+            </if>
+            <if test="taskId != null and taskId != ''">
+                AND task_id = #{taskId}
+            </if>
+            <if test="projectId != null and projectId != ''">
+                AND project_id = #{projectId}
+            </if>
+            <!-- 范围 OR 必须显式分组,否则与上面的 AND 优先级错乱 -->
+            <if test="(uploaderIds != null and uploaderIds.size() > 0) or (projectIds != null and projectIds.size() > 0)">
+                AND (1=0
+                <if test="uploaderIds != null and uploaderIds.size() > 0">
+                    OR uploaded_by IN
+                    <foreach collection="uploaderIds" item="uid" open="(" separator="," close=")">
+                        #{uid}
+                    </foreach>
+                </if>
+                <if test="projectIds != null and projectIds.size() > 0">
+                    OR project_id IN
+                    <foreach collection="projectIds" item="pid" open="(" separator="," close=")">
+                        #{pid}
+                    </foreach>
+                </if>
+                )
+            </if>
+        </where>
+        ORDER BY created_at DESC
+    </select>
+
 </mapper>
