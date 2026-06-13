@@ -22,6 +22,8 @@ public class Task {
     private String assigneeId;
     private LocalDate startDate;
     private LocalDate endDate;
+    private LocalDate actualStartDate;   // 实际开始日期
+    private LocalDate actualEndDate;     // 实际结束日期
     private BigDecimal estimatedHours;
     private BigDecimal actualHours;
     private Integer progress;

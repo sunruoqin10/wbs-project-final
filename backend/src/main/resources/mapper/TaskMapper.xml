@@ -14,6 +14,8 @@
         <result column="assignee_id" property="assigneeId"/>
         <result column="start_date" property="startDate"/>
         <result column="end_date" property="endDate"/>
+        <result column="actual_start_date" property="actualStartDate"/>
+        <result column="actual_end_date" property="actualEndDate"/>
         <result column="estimated_hours" property="estimatedHours"/>
         <result column="actual_hours" property="actualHours"/>
         <result column="progress" property="progress"/>
@@ -29,6 +31,7 @@
 
     <sql id="Base_Column_List">
         id, project_id, parent_task_id, title, description, status, priority, assignee_id, start_date, end_date,
+        actual_start_date, actual_end_date,
         estimated_hours, actual_hours, progress, created_at, updated_at,
         original_end_date, delayed_days, delay_reason, delay_count, last_delay_date, is_delayed
     </sql>
@@ -84,10 +87,12 @@
 
     <insert id="insert" parameterType="com.wbs.project.entity.Task">
         INSERT INTO sys_task (id, project_id, parent_task_id, title, description, status, priority, assignee_id,
-                             start_date, end_date, estimated_hours, actual_hours, progress, created_at, updated_at,
+                             start_date, end_date, actual_start_date, actual_end_date, estimated_hours, actual_hours,
+                             progress, created_at, updated_at,
                              original_end_date, delayed_days, delay_reason, delay_count, last_delay_date, is_delayed)
         VALUES (#{id}, #{projectId}, #{parentTaskId}, #{title}, #{description}, #{status}, #{priority}, #{assigneeId},
-                #{startDate}, #{endDate}, #{estimatedHours}, #{actualHours}, #{progress}, #{createdAt}, #{updatedAt},
+                #{startDate}, #{endDate}, #{actualStartDate}, #{actualEndDate}, #{estimatedHours}, #{actualHours},
+                #{progress}, #{createdAt}, #{updatedAt},
                 #{originalEndDate}, #{delayedDays}, #{delayReason}, #{delayCount}, #{lastDelayDate}, #{isDelayed})
     </insert>
 
@@ -103,6 +108,8 @@
             <if test="assigneeId != null">assignee_id = #{assigneeId},</if>
             <if test="startDate != null">start_date = #{startDate},</if>
             <if test="endDate != null">end_date = #{endDate},</if>
+            <if test="actualStartDate != null">actual_start_date = #{actualStartDate},</if>
+            <if test="actualEndDate != null">actual_end_date = #{actualEndDate},</if>
             <if test="estimatedHours != null">estimated_hours = #{estimatedHours},</if>
             <if test="actualHours != null">actual_hours = #{actualHours},</if>
             <if test="progress != null">progress = #{progress},</if>

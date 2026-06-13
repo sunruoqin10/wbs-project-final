@@ -56,6 +56,25 @@
               <span class="text-sm text-secondary-600">{{ t('gantt.statusDone') }}</span>
             </div>
             <div class="h-4 w-px bg-secondary-300"></div>
+            <!-- 实际日期条 -->
+            <div class="flex items-center gap-2">
+              <div class="h-3 w-3 rounded" style="background-color: #10b981; opacity: 0.6;"></div>
+              <span class="text-sm text-secondary-600">提前完成</span>
+            </div>
+            <div class="flex items-center gap-2">
+              <div class="h-3 w-3 rounded" style="background-color: #ef4444; opacity: 0.6;"></div>
+              <span class="text-sm text-secondary-600">延期完成</span>
+            </div>
+            <div class="h-4 w-px bg-secondary-300"></div>
+            <!-- 预期进度标记 -->
+            <div class="flex items-center gap-2">
+              <svg class="h-3 w-3" viewBox="0 0 8 8"><polygon points="4,0 8,4 4,8 0,4" fill="#22c55e" stroke="white" stroke-width="1"/></svg>
+              <span class="text-sm text-secondary-600">进度超前</span>
+            </div>
+            <div class="flex items-center gap-2">
+              <svg class="h-3 w-3" viewBox="0 0 8 8"><polygon points="4,0 8,4 4,8 0,4" fill="#ef4444" stroke="white" stroke-width="1"/></svg>
+              <span class="text-sm text-secondary-600">进度落后</span>
+            </div>
             <div class="flex items-center gap-2">
               <div class="h-3 w-3 rounded" style="background-color: #3b82f6;"></div>
               <span class="text-sm text-secondary-600">延期 &lt;3天</span>

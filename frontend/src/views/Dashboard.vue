@@ -88,6 +88,35 @@
         </Card>
       </div>
 
+      <!-- 预期 vs 实际进度对比 -->
+      <div class="grid grid-cols-1 gap-6 sm:grid-cols-2 lg:grid-cols-3">
+        <Card>
+          <div class="text-center">
+            <p class="text-sm font-medium text-secondary-600">预期完成率</p>
+            <p class="mt-2 text-3xl font-bold" :class="planVsActualClass">{{ planVsActual.plannedPercent }}%</p>
+            <p class="mt-1 text-xs text-secondary-400">基于计划日期推算</p>
+          </div>
+        </Card>
+        <Card>
+          <div class="text-center">
+            <p class="text-sm font-medium text-secondary-600">实际完成率</p>
+            <p class="mt-2 text-3xl font-bold text-primary-600">{{ planVsActual.actualPercent }}%</p>
+            <p class="mt-1 text-xs text-secondary-400">已完成 / 总任务 · {{ planVsActual.completedTasks }}/{{ planVsActual.totalLeafTasks }}</p>
+          </div>
+        </Card>
+        <Card>
+          <div class="text-center">
+            <p class="text-sm font-medium text-secondary-600">偏差</p>
+            <p class="mt-2 text-3xl font-bold" :class="planVsActualClass">
+              {{ planVsActual.deviation >= 0 ? '+' : '' }}{{ planVsActual.deviation }}%
+            </p>
+            <p class="mt-1 text-xs" :class="planVsActual.deviation >= 0 ? 'text-success-600' : 'text-warning-600'">
+              {{ planVsActual.deviation >= 0 ? '🟢 进度超前' : planVsActual.deviation >= -10 ? '🟡 轻微落后' : '🔴 明显落后' }}
+            </p>
+          </div>
+        </Card>
+      </div>
+
       <!-- Charts and Lists -->
       <div class="grid grid-cols-1 gap-6 lg:grid-cols-2">
         <!-- Task Status Distribution -->
@@ -355,6 +384,48 @@ const statistics = computed(() => {
     todoTasks,
     totalMembers
   };
+});
+
+// 预期进度 vs 实际进度
+const planVsActual = computed(() => {
+  const tasks = userTasks.value;
+  const allTaskIds = new Set(tasks.map(t => t.id));
+  const parentTaskIds = new Set(tasks.filter(t => t.parentTaskId).map(t => t.parentTaskId));
+  const leafTaskIds = new Set([...allTaskIds].filter(id => !parentTaskIds.has(id)));
+  const leafTasks = tasks.filter(t => leafTaskIds.has(t.id) && t.startDate && t.endDate);
+
+  const totalLeafTasks = leafTasks.length;
+  const completedTasks = leafTasks.filter(t => t.status === 'done').length;
+  const actualPercent = totalLeafTasks > 0 ? Math.round((completedTasks / totalLeafTasks) * 100) : 0;
+
+  // 预期完成率：基于计划日期的进度推算
+  const today = dayjs().startOf('day');
+  let totalPlannedProgress = 0;
+  leafTasks.forEach(t => {
+    const start = dayjs(t.startDate).startOf('day');
+    const end = dayjs(t.endDate).startOf('day');
+    const totalDays = end.diff(start, 'day');
+    if (totalDays <= 0) {
+      // 当天任务，如果已完成则100%，否则0%
+      totalPlannedProgress += t.status === 'done' ? 1 : 0;
+    } else {
+      const elapsed = Math.min(today.diff(start, 'day'), totalDays);
+      const plannedPercent = Math.max(0, Math.min(1, elapsed / totalDays));
+      totalPlannedProgress += plannedPercent;
+    }
+  });
+  const plannedPercent = totalLeafTasks > 0 ? Math.round((totalPlannedProgress / totalLeafTasks) * 100) : 0;
+
+  const deviation = actualPercent - plannedPercent;
+
+  return { plannedPercent, actualPercent, deviation, completedTasks, totalLeafTasks };
+});
+
+const planVsActualClass = computed(() => {
+  const d = planVsActual.value.deviation;
+  if (d >= 0) return 'text-success-600';
+  if (d >= -10) return 'text-warning-600';
+  return 'text-danger-600';
 });
 
 const formattedDate = (date: string) => {

@@ -118,6 +118,38 @@
         </div>
       </div>
 
+      <!-- 实际日期（仅编辑时显示） -->
+      <div v-if="isEditing" class="rounded-lg border border-secondary-200 bg-secondary-50 p-4">
+        <p class="mb-3 text-sm font-semibold text-secondary-700">📊 实际执行日期</p>
+        <div class="grid grid-cols-1 lg:grid-cols-2 gap-3">
+          <div>
+            <label class="mb-1 block text-sm font-medium text-secondary-600">
+              实际开始日期
+              <span class="text-xs text-secondary-400 font-normal ml-1">(选填)</span>
+            </label>
+            <input
+              v-model="formData.actualStartDate"
+              type="date"
+              class="w-full rounded-lg border border-secondary-200 px-3 py-2 text-sm focus:border-primary-500 focus:outline-none focus:ring-2 focus:ring-primary-500/20"
+            />
+          </div>
+          <div>
+            <label class="mb-1 block text-sm font-medium text-secondary-600">
+              实际结束日期
+              <span class="text-xs text-secondary-400 font-normal ml-1">(选填)</span>
+            </label>
+            <input
+              v-model="formData.actualEndDate"
+              type="date"
+              class="w-full rounded-lg border border-secondary-200 px-3 py-2 text-sm focus:border-primary-500 focus:outline-none focus:ring-2 focus:ring-primary-500/20"
+            />
+          </div>
+        </div>
+        <p class="mt-2 text-xs text-secondary-400">
+          状态变为"进行中"时自动记录实际开始；变为"已完成"时自动记录实际结束。也可手动修改。
+        </p>
+      </div>
+
       <div v-if="showDelayReasonInput" class="rounded-lg bg-warning-50 border border-warning-200 px-3 py-2">
         <label class="mb-1 block text-sm font-medium text-secondary-700">
           延期原因 *
@@ -366,7 +398,9 @@ const formData = reactive({
   estimatedHours: undefined as number | undefined,
   progress: 0,
   tags: [] as string[],
-  delayReason: ''
+  delayReason: '',
+  actualStartDate: '',
+  actualEndDate: ''
 });
 
 // 延期相关
@@ -411,6 +445,9 @@ const resetForm = () => {
   formData.estimatedHours = 0;
   formData.progress = 0;
   formData.tags = [];
+  formData.delayReason = '';
+  formData.actualStartDate = '';
+  formData.actualEndDate = '';
   // 清除所有错误
   errors.title = '';
   errors.status = '';
@@ -449,6 +486,8 @@ const loadTaskData = () => {
     // 确保 tags 是数组，避免 undefined 错误
     formData.tags = props.task.tags && Array.isArray(props.task.tags) ? [...props.task.tags] : [];
     formData.delayReason = props.task.delayReason || '';
+    formData.actualStartDate = props.task.actualStartDate || '';
+    formData.actualEndDate = props.task.actualEndDate || '';
   } else {
     // 新建任务时，明确设置默认值
     formData.title = '';
@@ -639,7 +678,9 @@ const handleSubmit = async () => {
     endDate: formData.endDate || undefined,
     estimatedHours: formData.estimatedHours,
     progress: formData.progress,
-    delayReason: formData.delayReason || undefined
+    delayReason: formData.delayReason || undefined,
+    actualStartDate: formData.actualStartDate || undefined,
+    actualEndDate: formData.actualEndDate || undefined
   };
 
   console.log('TaskModal submitting data:', taskData);

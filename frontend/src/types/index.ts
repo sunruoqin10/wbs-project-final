@@ -63,6 +63,8 @@ export interface Task {
   assigneeId?: string;
   startDate: string;
   endDate: string;
+  actualStartDate?: string;    // 实际开始日期
+  actualEndDate?: string;      // 实际结束日期
   estimatedHours?: number;
   actualHours?: number;
   progress: number;

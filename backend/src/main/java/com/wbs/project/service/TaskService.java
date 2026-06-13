@@ -243,6 +243,9 @@ public class TaskService {
         task.setId(id);
         task.setUpdatedAt(LocalDateTime.now());
 
+        // 状态流转时自动填充实际日期
+        autoSetActualDates(existingTask, task);
+
         // 验证任务结束时间不能超过项目结束时间
         String taskProjectId = task.getProjectId() != null ? task.getProjectId() : existingTask.getProjectId();
         LocalDate taskEndDate = task.getEndDate() != null ? task.getEndDate() : existingTask.getEndDate();
@@ -291,6 +294,37 @@ public class TaskService {
         }
         
         return updatedTask;
+    }
+
+    /**
+     * 状态流转时自动填充实际开始/结束日期
+     */
+    private void autoSetActualDates(Task existing, Task incoming) {
+        String oldStatus = existing.getStatus();
+        String newStatus = incoming.getStatus();
+        if (newStatus == null || newStatus.equals(oldStatus)) {
+            return;
+        }
+
+        LocalDate today = LocalDate.now();
+
+        // 进入"进行中"时自动记录实际开始日期（仅首次）
+        if ("in-progress".equals(newStatus) && existing.getActualStartDate() == null) {
+            incoming.setActualStartDate(today);
+        }
+
+        // 进入"已完成"时自动记录实际结束日期（仅首次）
+        if ("done".equals(newStatus) && existing.getActualEndDate() == null) {
+            incoming.setActualEndDate(today);
+            // 如果还没有实际开始日期（极端情况：从 todo 直接到 done），也补上
+            if (existing.getActualStartDate() == null && incoming.getActualStartDate() == null) {
+                if (existing.getStartDate() != null) {
+                    incoming.setActualStartDate(existing.getStartDate());
+                } else {
+                    incoming.setActualStartDate(today);
+                }
+            }
+        }
     }
 
     /**
@@ -348,6 +382,22 @@ public class TaskService {
 
         task.setStatus(status);
         task.setUpdatedAt(LocalDateTime.now());
+
+        // 状态流转时自动填充实际日期
+        if (!status.equals(oldStatus)) {
+            LocalDate today = LocalDate.now();
+            if ("in-progress".equals(status) && task.getActualStartDate() == null) {
+                task.setActualStartDate(today);
+            }
+            if ("done".equals(status) && task.getActualEndDate() == null) {
+                task.setActualEndDate(today);
+                // 开始但未结束的任务，完成时如果没记录实际开始日期，也补上
+                if (task.getActualStartDate() == null && task.getStartDate() != null) {
+                    task.setActualStartDate(task.getStartDate());
+                }
+            }
+        }
+
         taskMapper.update(task);
 
         // 如果任务完成，更新进度为100%

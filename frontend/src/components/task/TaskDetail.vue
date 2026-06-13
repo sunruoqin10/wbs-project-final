@@ -107,6 +107,31 @@
       </div>
     </div>
 
+    <!-- 实际执行日期 -->
+    <div v-if="task.actualStartDate || task.actualEndDate" class="rounded-lg border border-secondary-200 bg-secondary-50 p-4">
+      <h4 class="mb-2 text-sm font-semibold text-secondary-700">📊 实际执行日期</h4>
+      <div class="grid grid-cols-2 gap-4">
+        <div v-if="task.actualStartDate">
+          <p class="text-xs text-secondary-500">实际开始</p>
+          <p class="text-sm font-medium" :class="task.actualStartDate > task.startDate ? 'text-warning-600' : 'text-success-600'">
+            {{ formatActualDate(task.actualStartDate) }}
+            <span class="text-xs ml-1">
+              {{ task.actualStartDate > task.startDate ? '🔴 晚于计划' : '🟢 不晚于计划' }}
+            </span>
+          </p>
+        </div>
+        <div v-if="task.actualEndDate">
+          <p class="text-xs text-secondary-500">实际结束</p>
+          <p class="text-sm font-medium" :class="task.actualEndDate > task.endDate ? 'text-danger-600' : 'text-success-600'">
+            {{ formatActualDate(task.actualEndDate) }}
+            <span class="text-xs ml-1">
+              {{ task.actualEndDate > task.endDate ? '🔴 延期完成' : '🟢 提前/按时完成' }}
+            </span>
+          </p>
+        </div>
+      </div>
+    </div>
+
     <!-- Progress -->
     <div>
       <div class="mb-2 flex items-center justify-between">
@@ -468,6 +493,14 @@ const formattedEndDate = computed(() => {
   }
   return dayjs(props.task.endDate).format('YYYY年MM月DD日');
 });
+
+const formatActualDate = (dateStr: string) => {
+  const locale = currentLocale();
+  if (locale === 'ko') {
+    return dayjs(dateStr).format('YYYY년 MM월 DD일');
+  }
+  return dayjs(dateStr).format('YYYY年MM月DD日');
+};
 
 const dueDateClass = computed(() => {
   const now = dayjs();

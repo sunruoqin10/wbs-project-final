@@ -33,6 +33,8 @@ interface GanttTask {
   hasSubtasks?: boolean;
   childrenDelayedCount?: number;
   childrenTotalDelayedDays?: number;
+  actualStartDate?: string;
+  actualEndDate?: string;
 }
 
 interface Props {
@@ -62,18 +64,17 @@ const convertToGanttTasks = (): GanttTask[] => {
       priority: task.priority,
       assigneeId: task.assigneeId,
       color: getTaskColor(task, hasSubtasks),
-      // 新增字段
       description: task.description,
       status: task.status,
       estimatedHours: task.estimatedHours,
       actualHours: task.actualHours,
-      // 延期字段
       delayedDays: task.delayedDays,
       isDelayed: task.isDelayed,
-      // 子任务延期字段
       hasSubtasks,
       childrenDelayedCount: task.childrenDelayedCount,
-      childrenTotalDelayedDays: task.childrenTotalDelayedDays
+      childrenTotalDelayedDays: task.childrenTotalDelayedDays,
+      actualStartDate: task.actualStartDate,
+      actualEndDate: task.actualEndDate
     };
   });
 };
@@ -275,9 +276,32 @@ const initGantt = () => {
 
   // 设置任务条文本颜色为白色并显示进度百分比
   gantt.templates.task_text = (_start: Date, _end: Date, task: any) => {
-    const progress = Math.round(task.progress * 100);
+    const actualPct = Math.round(task.progress * 100);
+    const ganttTask = task as GanttTask;
+    // 计算预期进度（仅进行中/待办任务有意义）
+    let expectedPct = -1;
+    if (ganttTask.start_date && ganttTask.duration && ganttTask.status !== 'done') {
+      const today = new Date();
+      const start = new Date(ganttTask.start_date);
+      const end = gantt.date.add(start, ganttTask.duration - 1, 'day');
+      const total = end.getTime() - start.getTime();
+      if (total > 0) {
+        const elapsed = today.getTime() - start.getTime();
+        expectedPct = Math.max(0, Math.min(100, Math.round((elapsed / total) * 100)));
+      }
+    }
+    if (expectedPct >= 0) {
+      const diff = actualPct - expectedPct;
+      const diffColor = diff >= 0 ? '#4ade80' : '#f87171';
+      const diffSign = diff >= 0 ? '+' : '';
+      return `<div style="color: #ffffff; display: flex; justify-content: center; align-items: center; gap: 8px; width: 100%; padding: 0 8px; font-size: 11px;">
+        <span style="font-weight: bold;">${actualPct}%</span>
+        <span style="color: ${diffColor}; font-size: 10px;">${diffSign}${diff}%</span>
+        <span>${task.text}</span>
+      </div>`;
+    }
     return `<div style="color: #ffffff; display: flex; justify-content: center; align-items: center; gap: 12px; width: 100%; padding: 0 8px;">
-      <span style="font-weight: bold;">${progress}%</span>
+      <span style="font-weight: bold;">${actualPct}%</span>
       <span>${task.text}</span>
     </div>`;
   };
@@ -346,13 +370,32 @@ const initGantt = () => {
     `;
 
     // 时间信息
+    const plannedEndDate = gantt.date.add(start, ganttTask.duration - 1, 'day');
     tooltip += `
       <div style="margin-top: 6px; padding-top: 6px; border-top: 1px dashed #bdc3c7;">
-        <div style="color: #95a5a6;">${t('gantt.tooltip.startTime')}：${formatDate(start)}</div>
-        <div style="color: #95a5a6;">${t('gantt.tooltip.endTime')}：${formatDate(gantt.date.add(start, ganttTask.duration - 1, 'day'))}</div>
+        <div style="color: #95a5a6;">📋 ${t('gantt.tooltip.startTime')}：${formatDate(start)}</div>
+        <div style="color: #95a5a6;">📋 ${t('gantt.tooltip.endTime')}：${formatDate(plannedEndDate)}</div>
         <div style="color: #95a5a6;">${t('gantt.tooltip.duration')}：${ganttTask.workingDays || ganttTask.duration} ${t('gantt.tooltip.days')}</div>
       </div>
     `;
+
+    // 实际日期（如果有且与计划不同）
+    if (ganttTask.actualStartDate || ganttTask.actualEndDate) {
+      const plannedEndStr = formatDate(plannedEndDate);
+      const startDiff = ganttTask.actualStartDate && ganttTask.actualStartDate !== formatDate(start);
+      const endDiff = ganttTask.actualEndDate && ganttTask.actualEndDate !== plannedEndStr;
+      if (startDiff || endDiff) {
+        const actualStartDisplay = ganttTask.actualStartDate || formatDate(start);
+        const actualEndDisplay = ganttTask.actualEndDate || plannedEndStr;
+        const isLate = ganttTask.actualEndDate && ganttTask.actualEndDate > plannedEndStr;
+        tooltip += `
+          <div style="margin-top: 4px; padding-top: 4px; border-top: 1px dashed #bdc3c7;">
+            <div style="color: #10b981;">🟢 实际开始：${actualStartDisplay}</div>
+            <div style="color: ${isLate ? '#ef4444' : '#10b981'};">${isLate ? '🔴' : '🟢'} 实际结束：${actualEndDisplay}</div>
+          </div>
+        `;
+      }
+    }
 
     // 工时信息（如果有）
     if (ganttTask.estimatedHours || ganttTask.actualHours) {
@@ -411,13 +454,44 @@ const initGantt = () => {
       tooltip += `<div style="margin-top: 6px; padding-top: 6px; border-top: 1px dashed #bdc3c7;">${assigneeInfo}</div>`;
     }
 
-    // 进度信息
+    // 进度信息（预期 vs 实际）
+    const actualPct = Math.round(ganttTask.progress * 100);
+    let expectedPctStr = '';
+    if (ganttTask.start_date && ganttTask.duration && ganttTask.status !== 'done') {
+      const s = new Date(ganttTask.start_date);
+      const e = gantt.date.add(s, ganttTask.duration - 1, 'day');
+      const total = e.getTime() - s.getTime();
+      if (total > 0) {
+        const elapsed = new Date().getTime() - s.getTime();
+        const expectedPct = Math.max(0, Math.min(100, Math.round((elapsed / total) * 100)));
+        const diff = actualPct - expectedPct;
+        const diffColor = diff >= 0 ? '#10b981' : '#ef4444';
+        const diffSign = diff >= 0 ? '+' : '';
+        expectedPctStr = `
+          <div style="margin-top: 4px; display: flex; align-items: center; gap: 8px;">
+            <div style="flex: 1; height: 6px; background: #ecf0f1; border-radius: 3px; position: relative;">
+              <div style="width: ${actualPct}%; height: 100%; background: #3498db; border-radius: 3px; position: absolute; left: 0;"></div>
+              <div style="position: absolute; left: ${expectedPct}%; top: -2px; height: 10px; width: 2px; background: ${diffColor}; border-radius: 1px; z-index: 2;"></div>
+            </div>
+          </div>
+          <div style="display: flex; justify-content: space-between; margin-top: 2px; font-size: 11px;">
+            <span>实际 ${actualPct}%</span>
+            <span style="color: ${diffColor};">▼ 预期 ${expectedPct}% &nbsp; ${diffSign}${diff}%</span>
+          </div>
+        `;
+      }
+    }
+    if (!expectedPctStr) {
+      expectedPctStr = `
+        <div style="color: #95a5a6;">${t('gantt.tooltip.progress')}：${actualPct}%</div>
+        <div style="width: 100%; background: #ecf0f1; height: 6px; border-radius: 3px; margin-top: 4px;">
+          <div style="width: ${actualPct}%; background: #3498db; height: 100%; border-radius: 3px;"></div>
+        </div>
+      `;
+    }
     tooltip += `
       <div style="margin-top: 6px; padding-top: 6px; border-top: 1px dashed #bdc3c7;">
-        <div style="color: #95a5a6;">${t('gantt.tooltip.progress')}：${Math.round(ganttTask.progress * 100)}%</div>
-        <div style="width: 100%; background: #ecf0f1; height: 6px; border-radius: 3px; margin-top: 4px;">
-          <div style="width: ${Math.round(ganttTask.progress * 100)}%; background: #3498db; height: 100%; border-radius: 3px;"></div>
-        </div>
+        ${expectedPctStr}
       </div>
     `;
 
@@ -440,6 +514,116 @@ const initGantt = () => {
   const ganttTasks = convertToGanttTasks();
   // 不传入 links，移除任务条之间的连线
   gantt.parse({ data: ganttTasks });
+
+  // 绘制实际日期覆盖层（计划 vs 实际对比）
+  // addTaskLayer 为 Pro 版功能，GPL 版无此 API，通过特性检测避免报错
+  if (typeof gantt.addTaskLayer === 'function') {
+    gantt.addTaskLayer((task: any) => {
+    const ganttTask = task as GanttTask;
+    if (!ganttTask.actualStartDate || !ganttTask.actualEndDate) return false;
+
+    const plannedStart = new Date(ganttTask.start_date);
+    const plannedEnd = gantt.date.add(plannedStart, ganttTask.duration - 1, 'day');
+
+    const actualStart = new Date(ganttTask.actualStartDate);
+    const actualEnd = new Date(ganttTask.actualEndDate);
+
+    // 只有实际日期和计划日期不同时才显示覆盖条
+    const startDiff = Math.abs(actualStart.getTime() - plannedStart.getTime());
+    const endDiff = Math.abs(actualEnd.getTime() - plannedEnd.getTime());
+    if (startDiff < 86400000 && endDiff < 86400000) return false;
+
+    const taskY = task.y + task.height * 0.6;
+    const barH = task.height * 0.35;
+
+    const xStart = gantt.posFromDate(actualStart);
+    const xEnd = gantt.posFromDate(gantt.date.add(actualEnd, 1, 'day'));
+
+    const isEarly = actualEnd < plannedEnd;
+    const fillColor = isEarly ? '#10b981' : '#ef4444';
+
+    const el = document.createElementNS('http://www.w3.org/2000/svg', 'rect');
+    el.setAttribute('x', String(xStart));
+    el.setAttribute('y', String(taskY));
+    el.setAttribute('width', String(Math.max(xEnd - xStart, 2)));
+    el.setAttribute('height', String(barH));
+    el.setAttribute('rx', '3');
+    el.setAttribute('fill', fillColor);
+    el.setAttribute('fill-opacity', '0.5');
+    el.setAttribute('stroke', fillColor);
+    el.setAttribute('stroke-width', '1');
+    el.setAttribute('stroke-opacity', '0.8');
+    el.setAttribute('class', 'gantt-actual-bar');
+    return el;
+  });
+
+    // 绘制预期进度标记（计划位置 vs 实际进度）
+    gantt.addTaskLayer((task: any) => {
+      const ganttTask = task as GanttTask;
+      // 已完成的任务不需要标记
+      if (ganttTask.status === 'done') return false;
+      if (!ganttTask.start_date || !ganttTask.duration) return false;
+
+      const today = new Date();
+      const start = new Date(ganttTask.start_date);
+      const end = gantt.date.add(start, ganttTask.duration - 1, 'day');
+
+      // 今天不在任务区间内，不画标记
+      if (today < start || today > end) return false;
+
+      const total = end.getTime() - start.getTime();
+      if (total <= 0) return false;
+
+      // 预期进度位置（今天在任务时间轴上的百分比位置）
+      const expectedRatio = (today.getTime() - start.getTime()) / total;
+      const barWidth = task.width || gantt.posFromDate(end) - gantt.posFromDate(start);
+      const markerX = gantt.posFromDate(start) + barWidth * expectedRatio;
+
+      // 实际进度 vs 预期进度
+      const actualPct = ganttTask.progress || 0;
+      const expectedPct = Math.round(expectedRatio * 100);
+      const isAhead = actualPct >= expectedPct / 100;
+
+      // 标记位于任务条顶部
+      const markerTop = task.y;
+      const markerHeight = task.height;
+
+      // 绘制垂直标线 + 顶部菱形
+      const group = document.createElementNS('http://www.w3.org/2000/svg', 'g');
+
+      // 细线贯穿任务条
+      const line = document.createElementNS('http://www.w3.org/2000/svg', 'line');
+      line.setAttribute('x1', String(markerX));
+      line.setAttribute('y1', String(markerTop));
+      line.setAttribute('x2', String(markerX));
+      line.setAttribute('y2', String(markerTop + markerHeight));
+      line.setAttribute('stroke', isAhead ? '#22c55e' : '#ef4444');
+      line.setAttribute('stroke-width', '2');
+      line.setAttribute('stroke-dasharray', '3,2');
+      line.setAttribute('opacity', '0.85');
+      group.appendChild(line);
+
+      // 顶部小菱形标记
+      const diamondSize = 4;
+      const diamond = document.createElementNS('http://www.w3.org/2000/svg', 'polygon');
+      const cx = markerX;
+      const cy = markerTop - 1;
+      const points = [
+        `${cx},${cy - diamondSize}`,
+        `${cx + diamondSize},${cy}`,
+        `${cx},${cy + diamondSize}`,
+        `${cx - diamondSize},${cy}`
+      ].join(' ');
+      diamond.setAttribute('points', points);
+      diamond.setAttribute('fill', isAhead ? '#22c55e' : '#ef4444');
+      diamond.setAttribute('stroke', '#ffffff');
+      diamond.setAttribute('stroke-width', '1');
+      group.appendChild(diamond);
+
+      group.setAttribute('class', 'gantt-expected-progress');
+      return group;
+    });
+  }
 
   // 只读模式下不需要这些事件监听器，已注释掉
   // gantt.attachEvent('onAfterTaskUpdate', (id, item) => {
