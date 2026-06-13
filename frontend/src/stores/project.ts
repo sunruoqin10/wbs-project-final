@@ -51,6 +51,16 @@ export const useProjectStore = defineStore('project', () => {
     }
   };
 
+  // 2026-06-13: 切走旧用户前由 user.ts 触发;清空按旧用户范围拉到的所有项目状态,
+  // 以免下一个用户看到上一会话残留的 projects.value(导致 PM 跨用户看到非自己范围内的项目)。
+  const clearProjects = () => {
+    projects.value = [];
+    currentProject.value = null;
+    loaded.value = false;
+    loading.value = false;
+    filters.value = { status: [], search: '' };
+  };
+
   // Getters
   const activeProjects = computed(() => {
     return projects.value.filter(p => p.status === 'active');
@@ -165,6 +175,7 @@ export const useProjectStore = defineStore('project', () => {
     createProject,
     updateProject,
     deleteProject,
-    setFilters
+    setFilters,
+    clearProjects
   };
 });

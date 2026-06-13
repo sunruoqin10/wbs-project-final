@@ -3,6 +3,8 @@ import { ref, computed } from 'vue';
 import type { User } from '@/types';
 import apiService from '@/services/api';
 import { users as mockUsers } from '@/data/users';
+import { useProjectStore } from './project';
+import { useOrgStore } from './org';
 
 export const useUserStore = defineStore('user', () => {
   const users = ref<User[]>([]);
@@ -50,6 +52,13 @@ export const useUserStore = defineStore('user', () => {
     if (currentUserLoaded.value) return;
     await refreshUsers();
     currentUserLoaded.value = true;
+  };
+
+  // 2026-06-13: 切走旧用户前清空 users 列表,避免 mockUsers 回退路径污染
+  // (API 失败时 refreshUsers 会把 mockUsers 写进 users.value,登录态切走不清理会带到下一会话)
+  const clearUsers = () => {
+    users.value = [];
+    currentUserLoaded.value = false;
   };
 
   // 强制刷新用户数据（始终从 API 重新获取）
@@ -123,6 +132,13 @@ export const useUserStore = defineStore('user', () => {
 
   // 设置当前登录用户和Token
   const setCurrentUser = (user: User, userToken?: string) => {
+    // 2026-06-13: 切换用户前清空依赖旧用户范围的 store,
+    // 避免 next 用户短暂命中上次的 projects.value / org.tree / users
+    const projectStore = useProjectStore();
+    const orgStore = useOrgStore();
+    projectStore.clearProjects();
+    orgStore.reset();
+    clearUsers();
     // 解析用户数据（处理 skills 字段）
     const parsedUser = parseUserData(user);
     currentUserId.value = parsedUser.id;
@@ -141,6 +157,12 @@ export const useUserStore = defineStore('user', () => {
 
   // 登出
   const logout = () => {
+    // 2026-06-13: 登出时清空依赖旧用户范围的 store,防止下一用户登录后命中上次的缓存
+    const projectStore = useProjectStore();
+    const orgStore = useOrgStore();
+    projectStore.clearProjects();
+    orgStore.reset();
+    clearUsers();
     currentUserId.value = null;
     token.value = null;
     localStorage.removeItem('auth_token');
@@ -176,6 +198,7 @@ export const useUserStore = defineStore('user', () => {
     deleteUser,
     setCurrentUser,
     logout,
-    restoreAuth
+    restoreAuth,
+    clearUsers
   };
 });
