@@ -1,7 +1,7 @@
 import { defineStore } from 'pinia';
 import { ref, computed } from 'vue';
 import type { Project } from '@/types';
-import apiService from '@/services/api';
+import apiService, { ApiError } from '@/services/api';
 import { projects as mockProjects } from '@/data/projects';
 
 export const useProjectStore = defineStore('project', () => {
@@ -98,9 +98,19 @@ export const useProjectStore = defineStore('project', () => {
     }
   };
 
-  const updateProject = async (id: string, data: Partial<Project>) => {
+  /**
+   * 更新项目
+   * @param silent 传 true 时,即使后端返回"无项目编辑权限"也不打 console.error——
+   * 适用于"已知某些调用方可能没权限"的场景(如自动补工时、批量迁移)
+   * 其它错误照常 console.error。
+   */
+  const updateProject = async (
+    id: string,
+    data: Partial<Project>,
+    options: { silent?: boolean } = {}
+  ) => {
     try {
-      const updatedProject = await apiService.updateProject(id, data);
+      const updatedProject = await apiService.updateProject(id, data, { silent: options.silent });
       const index = projects.value.findIndex(p => p.id === id);
       if (index !== -1) {
         projects.value[index] = updatedProject;
@@ -110,7 +120,11 @@ export const useProjectStore = defineStore('project', () => {
       }
       return updatedProject;
     } catch (error) {
-      console.error('Failed to update project:', error);
+      // 权限不足时若已 silent,这里也跳过;否则打日志
+      const isPermissionError = error instanceof ApiError && error.message === '无项目编辑权限';
+      if (!(options.silent && isPermissionError)) {
+        console.error('Failed to update project:', error);
+      }
       throw error;
     }
   };

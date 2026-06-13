@@ -26,11 +26,18 @@ export class ApiError extends Error {
   }
 }
 
+// request 的扩展选项：silent=true 时不打 console.error，由调用方自己处理
+// (典型场景:已知可能 403 的写操作,在 store 层 catch 后做精细化提示)
+interface RequestOptions extends RequestInit {
+  silent?: boolean;
+}
+
 // Helper function for API calls
 async function request<T>(
   endpoint: string,
-  options: RequestInit = {}
+  options: RequestOptions = {}
 ): Promise<T> {
+  const { silent, ...fetchOptions } = options;
   const url = `${API_BASE_URL}${endpoint}`;
 
   // 获取token和用户信息（排除登录接口）
@@ -39,7 +46,7 @@ async function request<T>(
 
   const headers: Record<string, string> = {
     'Content-Type': 'application/json',
-    ...options.headers as Record<string, string>,
+    ...fetchOptions.headers as Record<string, string>,
   };
 
   // 如果有token且不是登录接口，添加Authorization头
@@ -58,7 +65,7 @@ async function request<T>(
   }
 
   const config: RequestInit = {
-    ...options,
+    ...fetchOptions,
     headers,
   };
 
@@ -89,7 +96,9 @@ async function request<T>(
 
     return result.data;
   } catch (error) {
-    console.error(`API request failed: ${endpoint}`, error);
+    if (!silent) {
+      console.error(`API request failed: ${endpoint}`, error);
+    }
     throw error;
   }
 }
@@ -111,10 +120,15 @@ class ApiService {
     });
   }
 
-  async updateProject(id: string | number, data: Partial<Project>): Promise<Project> {
+  async updateProject(
+    id: string | number,
+    data: Partial<Project>,
+    options: { silent?: boolean } = {}
+  ): Promise<Project> {
     return request<Project>(`/projects/${id}`, {
       method: 'PUT',
       body: JSON.stringify(data),
+      silent: options.silent,
     });
   }
 

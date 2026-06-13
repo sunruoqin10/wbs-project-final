@@ -314,13 +314,22 @@ onMounted(async () => {
   // 确保项目已加载
   await projectStore.loadProjects();
 
-  // 检查所有项目，为缺少预估工时的项目自动计算
-  const projects = projectStore.projects;
+  // 只对当前用户有编辑权的项目做自动补工时——避免 member 角色触发后端 403
+  // permissionStore.canEditProject 与后端 PermissionService.canEditProject 规则一致
+  const projects = projectStore.projects.filter(p => permissionStore.canEditProject(p.id));
   for (const project of projects) {
     if (!project.estimatedHours || project.estimatedHours === 0) {
       const hours = calculateProjectHours(project);
       if (hours > 0) {
-        await projectStore.updateProject(project.id, { estimatedHours: hours });
+        try {
+          // silent: true → 已知这里可能没权限,不让 api.ts 打噪音日志
+          await projectStore.updateProject(project.id, { estimatedHours: hours }, { silent: true });
+        } catch (e: any) {
+          // 保留兜底:除权限错误外,其它失败(网络/500)仍要看一眼
+          if (e?.message !== '无项目编辑权限') {
+            console.error('自动更新预估工时失败:', e);
+          }
+        }
       }
     }
   }
