@@ -50,4 +50,9 @@ public interface ProjectMemberMapper {
      * 判断用户是否是项目成员
      */
     boolean isProjectMember(@Param("projectId") String projectId, @Param("userId") String userId);
+
+    /**
+     * 批量按项目 ID 查成员 user_id(DISTINCT 去重,用于 PM/项目负责人数据范围预计算)
+     */
+    List<String> selectMemberIdsByProjectIds(@Param("projectIds") List<String> projectIds);
 }

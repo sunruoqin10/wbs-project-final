@@ -57,4 +57,14 @@
         WHERE project_id = #{projectId} AND user_id = #{userId}
     </select>
 
+    <!-- 文档权限（2026-06-13）：批量按项目 ID 查成员 user_id -->
+    <select id="selectMemberIdsByProjectIds" resultType="java.lang.String">
+        SELECT DISTINCT user_id
+        FROM sys_project_member
+        WHERE project_id IN
+        <foreach collection="projectIds" item="pid" open="(" separator="," close=")">
+            #{pid}
+        </foreach>
+    </select>
+
 </mapper>
