@@ -2,6 +2,7 @@ package com.wbs.project.controller;
 
 import com.wbs.project.common.Result;
 import com.wbs.project.entity.Document;
+import com.wbs.project.exception.BusinessException;
 import com.wbs.project.service.DocumentService;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -225,6 +226,10 @@ public class DocumentController {
         try {
             documentService.deleteDocument(userId, id);
             return Result.success();
+        } catch (BusinessException e) {
+            // 2026-06-13: 业务异常(403/404 等)透传给 GlobalExceptionHandler,
+            // 避免被 catch (Exception) 吞成 500 "文档删除失败"
+            throw e;
         } catch (IllegalArgumentException e) {
             log.warn("文档删除失败: {}", e.getMessage());
             return Result.error(e.getMessage());

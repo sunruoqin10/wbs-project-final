@@ -755,10 +755,51 @@ public class PermissionService {
     }
 
     /**
-     * 删除权限（本轮规则下同查看权限）
+     * 删除权限(2026-06-13 业务确认)
+     * 规则:删除权严格弱于查看权,按"上传者在我范围内的角色"判定——
+     *  1. admin 全部
+     *  2. 自上传 始终可删
+     *  3. 部门 PM:上传者 dept ∈ managed_dept_codes(含 general)
+     *  4. 项目 PM:doc.projectId ∈ managed_project_ids 且 上传者是该项目成员
+     *  5. 项目 owner:project.ownerId = self 且 上传者是该项目成员
+     *  6. MEMBER:仅自上传(其他成员上传不可删)
+     *  7. VIEWER:无删除权
      */
     public boolean canDeleteDocument(String userId, Document doc) {
-        return canViewDocument(userId, doc);
+        if (userId == null || doc == null) {
+            return false;
+        }
+        if (isAdmin(userId)) return true;
+        // 自上传 可删(覆盖 dept-pm / PM / owner / MEMBER);
+        // VIEWER 无任何删除权(spec 矩阵),连自上传也不行
+        if (userId.equals(doc.getUploadedBy()) && !isViewer(userId)) return true;
+
+        // 部门 PM:上传者所在部门在 managed_dept_codes 内(含 general 上传者按其 dept_code 判)
+        if (isDeptProjectManager(userId)) {
+            User uploader = userMapper.selectById(doc.getUploadedBy());
+            return uploader != null
+                    && uploader.getDeptCode() != null
+                    && isDeptManager(userId, uploader.getDeptCode());
+        }
+
+        // 项目 PM:仅在 doc.projectId 非空 + 项目在 managed_project_ids 内 +
+        //              上传者是该项目成员 时可删
+        if (isProjectManager(userId) && doc.getProjectId() != null) {
+            return isManagedProject(userId, doc.getProjectId())
+                    && isProjectMember(doc.getUploadedBy(), doc.getProjectId());
+        }
+
+        // 项目 owner:仅当上传者是 owner 自己拥有项目的成员时可删
+        if (doc.getProjectId() != null) {
+            Project p = projectMapper.selectById(doc.getProjectId());
+            if (p != null && userId.equals(p.getOwnerId())) {
+                return isProjectMember(doc.getUploadedBy(), doc.getProjectId());
+            }
+        }
+
+        // MEMBER:仅自上传,已在前面 early return;其他情况 false
+        // VIEWER:无删除权
+        return false;
     }
 
     /**

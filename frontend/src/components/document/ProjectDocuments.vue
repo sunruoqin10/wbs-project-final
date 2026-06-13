@@ -76,7 +76,7 @@
             </svg>
           </button>
         </div>
-        <Button v-if="permissionStore.canCreateDocument()" variant="primary" @click="showUploadModal = true">
+        <Button variant="primary" @click="showUploadModal = true">
           <svg class="mr-2 h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4" />
           </svg>
@@ -166,6 +166,7 @@
             <div class="flex-1 min-w-0">
               <p class="text-sm font-medium text-secondary-900 truncate" :title="doc.name">{{ doc.name }}</p>
               <p class="text-xs text-secondary-500">{{ getProjectName(doc.projectId) || '-' }}</p>
+              <p class="text-xs text-secondary-500">{{ $t('documents.uploader') }}: {{ getUploaderName(doc.uploadedBy) }}</p>
               <p class="text-xs text-secondary-500">{{ formatFileSize(doc.fileSize) }}</p>
             </div>
           </div>
@@ -193,7 +194,6 @@
                 </svg>
               </button>
               <button
-                v-if="permissionStore.canEditDocument(doc.uploadedBy)"
                 @click="deleteDocument(doc)"
                 class="p-1.5 rounded hover:bg-secondary-100 text-danger-500"
                 :title="$t('documents.delete')"
@@ -214,6 +214,7 @@
               <th class="px-4 py-3 text-left text-xs font-semibold uppercase text-secondary-500">{{ $t('documents.name') }}</th>
               <th class="px-4 py-3 text-left text-xs font-semibold uppercase text-secondary-500">{{ $t('documents.category') }}</th>
               <th class="px-4 py-3 text-left text-xs font-semibold uppercase text-secondary-500">{{ $t('documents.project') }}</th>
+              <th class="px-4 py-3 text-left text-xs font-semibold uppercase text-secondary-500">{{ $t('documents.uploader') }}</th>
               <th class="px-4 py-3 text-left text-xs font-semibold uppercase text-secondary-500">{{ $t('documents.fileSize') }}</th>
               <th class="px-4 py-3 text-left text-xs font-semibold uppercase text-secondary-500">{{ $t('documents.createdAt') }}</th>
               <th class="px-4 py-3 text-right text-xs font-semibold uppercase text-secondary-500">{{ $t('documents.actions') }}</th>
@@ -238,6 +239,7 @@
                 <Badge :variant="getCategoryVariant(doc.category)">{{ getCategoryLabel(doc.category) }}</Badge>
               </td>
               <td class="px-4 py-3 text-sm text-secondary-600">{{ getProjectName(doc.projectId) || '-' }}</td>
+              <td class="px-4 py-3 text-sm text-secondary-600">{{ getUploaderName(doc.uploadedBy) }}</td>
               <td class="px-4 py-3 text-sm text-secondary-600">{{ formatFileSize(doc.fileSize) }}</td>
               <td class="px-4 py-3 text-sm text-secondary-600">{{ formatDate(doc.createdAt) }}</td>
               <td class="px-4 py-3">
@@ -253,7 +255,7 @@
                       <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 10v6m0 0l-3-3m3 3l3-3m2 8H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
                     </svg>
                   </button>
-                  <button v-if="permissionStore.canEditDocument(doc.uploadedBy)" @click="deleteDocument(doc)" class="p-1.5 rounded hover:bg-secondary-100 text-danger-500" :title="$t('documents.delete')">
+                  <button @click="deleteDocument(doc)" class="p-1.5 rounded hover:bg-secondary-100 text-danger-500" :title="$t('documents.delete')">
                     <svg class="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                       <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
                     </svg>
@@ -282,6 +284,7 @@ import Button from '@/components/common/Button.vue';
 import Badge from '@/components/common/Badge.vue';
 import DocumentUploadModal from '@/components/DocumentUploadModal.vue';
 import { useProjectStore } from '@/stores/project';
+import { useUserStore } from '@/stores/user';
 import { usePermissionStore } from '@/stores/permission';
 import apiService from '@/services/api';
 import type { Document } from '@/types';
@@ -289,6 +292,7 @@ import dayjs from 'dayjs';
 
 const { t } = useI18n();
 const projectStore = useProjectStore();
+const userStore = useUserStore();
 const permissionStore = usePermissionStore();
 
 const loading = ref(true);
@@ -380,6 +384,10 @@ async function loadData() {
     projects.value = projectStore.projects;
     console.log('[ProjectDocuments] 项目列表加载完成:', projects.value.length, '个项目');
 
+    console.log('[ProjectDocuments] 加载用户列表(用于显示上传者)...');
+    await userStore.loadUsers();
+    console.log('[ProjectDocuments] 用户列表加载完成:', userStore.users.length, '个用户');
+
     console.log('[ProjectDocuments] 加载文档列表...');
     documents.value = await apiService.getAllDocuments();
     console.log('[ProjectDocuments] 文档列表加载完成:', documents.value.length, '个文档');
@@ -397,6 +405,14 @@ function getProjectName(projectId: string | undefined): string {
   if (!projects.value || !projectId) return '';
   const project = projects.value.find(p => p.id === projectId);
   return project?.name || '';
+}
+
+// 2026-06-13: 根据 uploadedBy 查找用户名(优先中文名,fallback 英文名,再 fallback ID)
+function getUploaderName(userId: string | undefined): string {
+  if (!userId) return '-';
+  const user = userStore.userById(userId);
+  if (!user) return userId;
+  return user.chineseNam || user.name || userId;
 }
 
 function getCategoryLabel(category: string): string {
@@ -467,9 +483,14 @@ async function deleteDocument(doc: Document) {
   try {
     await apiService.deleteDocument(doc.id);
     documents.value = documents.value.filter(d => d.id !== doc.id);
-  } catch (error) {
+  } catch (error: any) {
     console.error('删除文档失败:', error);
-    alert(t('documents.deleteError'));
+    // 2026-06-13: 403(无权限)显示专用文案,其他错误显示后端真实 message
+    // (ApiError.message 来自后端 Result.message,如"文档不存在"/"文档已删除"/"文档删除失败")
+    const isForbidden = error?.status === 403;
+    alert(isForbidden
+      ? t('documents.noDeletePermission')
+      : (error?.message || t('documents.deleteError')));
   }
 }
 
