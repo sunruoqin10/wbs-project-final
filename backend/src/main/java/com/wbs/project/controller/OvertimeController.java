@@ -3,11 +3,9 @@ package com.wbs.project.controller;
 import com.wbs.project.common.Result;
 import com.wbs.project.dto.OvertimeDTO;
 import com.wbs.project.entity.OvertimeRecord;
-import com.wbs.project.entity.Project;
 import com.wbs.project.entity.User;
 import com.wbs.project.service.OvertimeService;
 import com.wbs.project.service.PermissionService;
-import com.wbs.project.mapper.ProjectMapper;
 import com.wbs.project.mapper.UserMapper;
 import lombok.RequiredArgsConstructor;
 import org.springframework.format.annotation.DateTimeFormat;
@@ -28,7 +26,6 @@ public class OvertimeController {
 
     private final OvertimeService overtimeService;
     private final UserMapper userMapper;
-    private final ProjectMapper projectMapper;
     private final PermissionService permissionService;
 
     /**
@@ -50,41 +47,6 @@ public class OvertimeController {
         java.util.Set<String> set = permissionService.getAccessibleOvertimeUserIds(currentUserId);
         if (set == null) return null;
         return new java.util.ArrayList<>(set);
-    }
-
-    /**
-     * 根据权限过滤统计数据
-     */
-    private OvertimeDTO.OvertimeStats filterStatsByPermission(OvertimeDTO.OvertimeStats stats, String userId) {
-        // 获取用户负责的项目ID列表
-        List<Project> ownedProjects = projectMapper.selectByOwnerId(userId);
-        List<String> ownedProjectIds = ownedProjects.stream()
-                .map(Project::getId)
-                .toList();
-
-        // 如果没有负责的项目，返回空统计
-        if (ownedProjectIds.isEmpty()) {
-            OvertimeDTO.OvertimeStats emptyStats = new OvertimeDTO.OvertimeStats();
-            emptyStats.setTotalRecords(0);
-            emptyStats.setTotalHours(BigDecimal.ZERO);
-            emptyStats.setTotalPeople(0);
-            emptyStats.setPendingApprovals(0);
-            emptyStats.setThisMonthHours(BigDecimal.ZERO);
-            emptyStats.setThisMonthPeople(0);
-            OvertimeDTO.ByTypeStats emptyByType = new OvertimeDTO.ByTypeStats();
-            emptyStats.setByType(emptyByType);
-            emptyStats.setByProject(List.of());
-            return emptyStats;
-        }
-
-        // 过滤项目统计，只保留用户负责的项目
-        List<OvertimeDTO.ProjectOvertimeStats> filteredByProject = stats.getByProject().stream()
-                .filter(projectStat -> ownedProjectIds.contains(projectStat.getProjectId()))
-                .toList();
-
-        stats.setByProject(filteredByProject);
-
-        return stats;
     }
 
     // ==================== CRUD API ====================
@@ -241,26 +203,20 @@ public class OvertimeController {
             @RequestParam(required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate endDate,
             HttpServletRequest request) {
         String currentUserId = getCurrentUserId(request);
-        
-        // 如果指定了userId，验证是否有权限查看该用户的统计
+
+        // 部门项目负责人 / 项目经理 / 管理员 以外的用户,不能查别人统计
         if (userId != null && !userId.equals(currentUserId)) {
-            // 检查是否有管理权限
             User currentUser = userMapper.selectById(currentUserId);
-            if (currentUser == null || (!"admin".equals(currentUser.getRole()) && !"project-manager".equals(currentUser.getRole()))) {
+            if (currentUser == null
+                    || (!"admin".equals(currentUser.getRole())
+                        && !"project-manager".equals(currentUser.getRole())
+                        && !"dept-project-manager".equals(currentUser.getRole()))) {
                 return Result.error("您没有权限查看该用户的统计");
             }
         }
-        
-        OvertimeDTO.OvertimeStats stats = overtimeService.getStats(userId, projectId, startDate, endDate);
-        
-        // 如果不是管理员和项目经理，过滤统计结果只显示用户有权限的项目
-        if (currentUserId != null) {
-            User currentUser = userMapper.selectById(currentUserId);
-            if (currentUser != null && !"admin".equals(currentUser.getRole()) && !"project-manager".equals(currentUser.getRole())) {
-                stats = filterStatsByPermission(stats, currentUserId);
-            }
-        }
-        
+
+        OvertimeDTO.OvertimeStats stats = overtimeService.getStats(
+                userId, projectId, startDate, endDate, currentUserId);
         return Result.success(stats);
     }
 
