@@ -359,9 +359,39 @@ public class OvertimeService {
 
     /**
      * 获取加班统计信息
+     *
+     * 2026-06-13: 新签名 + 入口下沉 SQL userIds 过滤。
+     * admin / project-manager: accessibleUserIds = null(不限)
+     * dept-pm / member / viewer: accessibleUserIds = 可访问子集,SQL 层 IN 守卫
+     * 当前 currentUserId 对应的可访问集为空,或限定 userId 不在可访问集内 → 直接返回空 stats
+     *
+     * ⚠️ 计划性 BREAKING: 本方法新增第 5 参 currentUserId,OvertimeController 调用方
+     * 仍是 4 参旧签名,TODO(Task 7)统一改造 controller 透传 currentUserId。
      */
-    public OvertimeDTO.OvertimeStats getStats(String userId, String projectId, LocalDate startDate, LocalDate endDate) {
-        List<OvertimeRecord> records = overtimeMapper.selectByCondition(userId, projectId, null, startDate, endDate, null, null);
+    public OvertimeDTO.OvertimeStats getStats(String userId, String projectId,
+                                              LocalDate startDate, LocalDate endDate,
+                                              String currentUserId) {
+        // 解析当前用户的可访问 userId 集合
+        List<String> accessibleUserIds = null; // null = 不限
+        if (currentUserId != null) {
+            java.util.Set<String> set = permissionService.getAccessibleOvertimeUserIds(currentUserId);
+            if (set == null) {
+                accessibleUserIds = null; // admin/PM: 不限
+            } else if (set.isEmpty()) {
+                // 当前用户无任何可访问加班源,直接返回空 stats
+                return buildEmptyStats();
+            } else {
+                accessibleUserIds = new java.util.ArrayList<>(set);
+                // 调用方 userId 与 accessibleUserIds 做 AND 关系
+                if (userId != null && !accessibleUserIds.contains(userId)) {
+                    // 调用方限定到具体人,但该人不属于当前用户可访问范围 → 空 stats
+                    return buildEmptyStats();
+                }
+            }
+        }
+
+        List<OvertimeRecord> records = overtimeMapper.selectByCondition(
+                userId, projectId, null, startDate, endDate, null, accessibleUserIds);
 
         OvertimeDTO.OvertimeStats stats = new OvertimeDTO.OvertimeStats();
         stats.setTotalRecords(records.size());
@@ -429,10 +459,27 @@ public class OvertimeService {
         stats.setByType(byType);
 
         // 获取项目加班统计
+        // TODO(Task 6): getProjectStats 后续会支持 accessibleUserIds 透传,目前保持 3 参签名
         List<OvertimeDTO.ProjectOvertimeStats> projectStats = getProjectStats(userId, startDate, endDate);
         stats.setByProject(projectStats);
 
         return stats;
+    }
+
+    /**
+     * 构造全零空 stats(2026-06-13): 用于可访问集为空/限定 userId 不在范围内时的快速返回
+     */
+    private OvertimeDTO.OvertimeStats buildEmptyStats() {
+        OvertimeDTO.OvertimeStats empty = new OvertimeDTO.OvertimeStats();
+        empty.setTotalRecords(0);
+        empty.setTotalHours(BigDecimal.ZERO);
+        empty.setTotalPeople(0);
+        empty.setPendingApprovals(0);
+        empty.setThisMonthHours(BigDecimal.ZERO);
+        empty.setThisMonthPeople(0);
+        empty.setByType(new OvertimeDTO.ByTypeStats());
+        empty.setByProject(List.of());
+        return empty;
     }
 
     /**
