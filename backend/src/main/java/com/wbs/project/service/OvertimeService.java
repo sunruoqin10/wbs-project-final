@@ -39,6 +39,7 @@ public class OvertimeService {
     private final TaskMapper taskMapper;
     private final EmailNotificationService emailNotificationService;
     private final UserService userService;
+    private final PermissionService permissionService;
 
     // ==================== 权限验证 ====================
 
@@ -148,6 +149,11 @@ public class OvertimeService {
         // 验证外键
         validateForeignKeys(request.getUserId(), request.getProjectId(), request.getTaskId());
 
+        // 2026-06-13: 关联任务必须由当前用户负责(所有角色统一)
+        if (!permissionService.canCreateOvertimeOnTask(request.getUserId(), request.getTaskId())) {
+            throw new RuntimeException("只能为自己负责的任务记加班");
+        }
+
         // 计算加班时长
         BigDecimal hours = calculateHours(request.getStartTime(), request.getEndTime());
 
@@ -200,6 +206,11 @@ public class OvertimeService {
 
         // 验证外键
         validateForeignKeys(existing.getUserId(), request.getProjectId(), request.getTaskId());
+
+        // 2026-06-13: 关联任务必须由当前用户负责(所有角色统一)
+        if (!permissionService.canCreateOvertimeOnTask(existing.getUserId(), request.getTaskId())) {
+            throw new RuntimeException("只能为自己负责的任务记加班");
+        }
 
         // 计算加班时长
         BigDecimal hours = calculateHours(request.getStartTime(), request.getEndTime());

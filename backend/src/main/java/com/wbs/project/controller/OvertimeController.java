@@ -136,7 +136,13 @@ public class OvertimeController {
      * POST /api/overtime
      */
     @PostMapping
-    public Result<OvertimeRecord> createRecord(@RequestBody OvertimeDTO.CreateRequest request) {
+    public Result<OvertimeRecord> createRecord(@RequestBody OvertimeDTO.CreateRequest request, HttpServletRequest httpRequest) {
+        // 2026-06-13: 以 token 中解析的 currentUserId 为准,防止 body.userId 被伪造;
+        // 前端 OvertimeModal.vue 始终写当前用户,这里再兜底一次。
+        String currentUserId = getCurrentUserId(httpRequest);
+        if (currentUserId != null) {
+            request.setUserId(currentUserId);
+        }
         OvertimeRecord record = overtimeService.createRecord(request);
         return Result.success("加班记录创建成功", record);
     }

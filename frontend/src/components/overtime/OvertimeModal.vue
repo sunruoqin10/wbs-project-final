@@ -33,10 +33,10 @@
           </option>
         </Select>
         <p v-if="formData.projectId && projectTasks.length === 0" class="mt-1 text-xs text-secondary-500">
-          该项目暂无可关联的叶子任务（已完成或无子任务的任务）
+          该项目中您暂无负责的未完成叶子任务
         </p>
         <p v-else-if="formData.projectId" class="mt-1 text-xs text-secondary-500">
-          仅显示未完成的叶子任务（无子任务的任务）
+          仅显示您作为负责人的未完成叶子任务
         </p>
       </div>
 
@@ -309,7 +309,7 @@ const errors = reactive({
   reason: ''
 });
 
-// 获取选中项目的叶子任务列表（没有子任务的任务，且未完成）
+// 获取选中项目的叶子任务列表（没有子任务的任务，且未完成，2026-06-13: 进一步限定为自己负责的）
 const projectTasks = computed(() => {
   if (!formData.projectId) return [];
 
@@ -322,9 +322,15 @@ const projectTasks = computed(() => {
       .map(task => task.parentTaskId)
   );
 
-  // 返回没有子任务的任务（叶子任务）且状态不是"已完成"的任务
+  const currentUserId = userStore.currentUserId;
+
+  // 返回: 叶子任务 + 未完成 + 负责人 === 当前用户
+  // (所有角色统一只看自己负责的任务,后端 PermissionService.canCreateOvertimeOnTask 兜底)
   return allProjectTasks.filter(task =>
-    !parentTaskIds.has(task.id) && task.status !== 'done'
+    !parentTaskIds.has(task.id)
+      && task.status !== 'done'
+      && currentUserId != null
+      && task.assigneeId === currentUserId
   );
 });
 

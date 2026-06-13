@@ -828,6 +828,21 @@ public class PermissionService {
         return false;
     }
 
+    /**
+     * 加班记录关联任务权限校验 (2026-06-13)
+     * 规则:所有角色统一,只能为自己负责的任务(task.assigneeId === userId)记加班;
+     *       taskId 为空时(无关联任务)放行。
+     * 与前端 OvertimeModal.projectTasks 过滤逻辑保持一致,
+     * 避免 API 直调绕过。
+     */
+    public boolean canCreateOvertimeOnTask(String userId, String taskId) {
+        if (userId == null) return false;
+        if (taskId == null || taskId.isEmpty()) return true; // 无关联任务放行
+        Task task = taskMapper.selectById(taskId);
+        if (task == null) return false; // 任务不存在
+        return userId.equals(task.getAssigneeId());
+    }
+
     /** 抛错版本：用于 upload/delete/update 入口 */
     public void requireViewDocument(String userId, Document doc) {
         if (!canViewDocument(userId, doc)) {
