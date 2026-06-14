@@ -1,0 +1,33 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+        "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.wbs.project.mapper.WeeklyReportApprovalLogMapper">
+
+    <insert id="insert"
+            parameterType="com.wbs.project.entity.WeeklyReportApprovalLog"
+            useGeneratedKeys="true" keyProperty="id">
+        INSERT INTO sys_weekly_report_approval_log
+            (report_id, approver_id, approver_role, action, comment, created_at)
+        VALUES
+            (#{reportId}, #{approverId}, #{approverRole}, #{action}, #{comment}, #{createdAt})
+    </insert>
+
+    <select id="selectByReportId"
+            resultType="com.wbs.project.dto.WeeklyReportApprovalLogDTO">
+        SELECT
+            l.id,
+            l.report_id     AS reportId,
+            l.approver_id   AS approverId,
+            u.name          AS approverName,
+            u.avatar_url    AS approverAvatar,
+            l.approver_role AS approverRole,
+            l.action,
+            l.comment,
+            l.created_at    AS createdAt
+        FROM sys_weekly_report_approval_log l
+        LEFT JOIN sys_user u ON u.id = l.approver_id
+        WHERE l.report_id = #{reportId}
+        ORDER BY l.created_at ASC
+    </select>
+
+</mapper>

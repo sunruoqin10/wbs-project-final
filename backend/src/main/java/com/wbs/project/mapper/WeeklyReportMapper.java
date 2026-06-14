@@ -18,6 +18,8 @@ public interface WeeklyReportMapper {
 
     List<WeeklyReport> selectByProjectId(@Param("projectId") String projectId);
 
+    List<WeeklyReport> selectByUserIds(@Param("userIds") List<String> userIds);
+
     List<WeeklyReport> selectByWeekRange(@Param("weekStart") LocalDate weekStart, @Param("weekEnd") LocalDate weekEnd);
 
     WeeklyReport selectByUserAndWeek(@Param("userId") String userId, @Param("weekStart") LocalDate weekStart);

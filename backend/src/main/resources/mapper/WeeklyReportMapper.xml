@@ -51,6 +51,16 @@
         ORDER BY created_at DESC
     </select>
 
+    <select id="selectByUserIds" resultMap="BaseResultMap">
+        SELECT <include refid="Base_Column_List"/>
+        FROM sys_weekly_report
+        WHERE user_id IN
+        <foreach collection="userIds" item="uid" open="(" separator="," close=")">
+            #{uid}
+        </foreach>
+        ORDER BY week_start DESC, created_at DESC
+    </select>
+
     <select id="selectByWeekRange" resultMap="BaseResultMap">
         SELECT <include refid="Base_Column_List"/>
         FROM sys_weekly_report

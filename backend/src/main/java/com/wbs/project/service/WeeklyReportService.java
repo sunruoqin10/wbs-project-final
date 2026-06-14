@@ -20,6 +20,7 @@ public class WeeklyReportService {
 
     private final WeeklyReportMapper weeklyReportMapper;
     private final WeeklyReportCommentMapper commentMapper;
+    private final WeeklyReportApprovalLogService approvalLogService;
 
     public List<WeeklyReport> getAllReports() {
         return weeklyReportMapper.selectAll();
@@ -35,6 +36,13 @@ public class WeeklyReportService {
 
     public List<WeeklyReport> getReportsByProjectId(String projectId) {
         return weeklyReportMapper.selectByProjectId(projectId);
+    }
+
+    public List<WeeklyReport> getReportsByUserIds(List<String> userIds) {
+        if (userIds == null || userIds.isEmpty()) {
+            return List.of();
+        }
+        return weeklyReportMapper.selectByUserIds(userIds);
     }
 
     public WeeklyReport getReportByUserAndWeek(String userId, LocalDate weekStart) {
@@ -120,12 +128,19 @@ public class WeeklyReportService {
         if (!ReportStatus.SUBMITTED.getCode().equals(report.getStatus())) {
             throw new RuntimeException("只能审批已提交状态的周报");
         }
+        if (!approved && (approveComment == null || approveComment.trim().isEmpty())) {
+            throw new RuntimeException("驳回意见为必填项");
+        }
         report.setStatus(approved ? ReportStatus.APPROVED.getCode() : ReportStatus.REJECTED.getCode());
         report.setApproverId(approverId);
         report.setApproveComment(approveComment);
         report.setApproveTime(LocalDateTime.now());
         report.setUpdatedAt(LocalDateTime.now());
         weeklyReportMapper.update(report);
+
+        // 审计日志:try/catch 已在 ApprovalLogService 内部,失败不回滚主流程
+        approvalLogService.log(id, approverId, approved ? "approve" : "reject", approveComment);
+
         return report;
     }
 

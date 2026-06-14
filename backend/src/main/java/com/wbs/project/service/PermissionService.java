@@ -7,6 +7,7 @@ import com.wbs.project.entity.Permission;
 import com.wbs.project.entity.Project;
 import com.wbs.project.entity.Task;
 import com.wbs.project.entity.User;
+import com.wbs.project.entity.WeeklyReport;
 import com.wbs.project.enums.UserRole;
 import com.wbs.project.exception.BusinessException;
 import com.wbs.project.mapper.PermissionMapper;
@@ -14,6 +15,7 @@ import com.wbs.project.mapper.ProjectMapper;
 import com.wbs.project.mapper.ProjectMemberMapper;
 import com.wbs.project.mapper.TaskMapper;
 import com.wbs.project.mapper.UserMapper;
+import com.wbs.project.mapper.WeeklyReportMapper;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
@@ -41,6 +43,7 @@ public class PermissionService {
     private final ProjectMapper projectMapper;
     private final UserMapper userMapper;
     private final TaskMapper taskMapper;
+    private final WeeklyReportMapper weeklyReportMapper;
     private final ObjectMapper objectMapper = new ObjectMapper();
 
     private final ConcurrentHashMap<String, Set<String>> rolePermissionCache = new ConcurrentHashMap<>();
@@ -341,22 +344,118 @@ public class PermissionService {
      * 是否能查看周报
      */
     public boolean canViewWeeklyReport(String userId, String reportId) {
-        return canViewProject(userId, resolveProjectIdFromReport(reportId))
-                || isReportSubmitter(userId, reportId);
+        if (isAdmin(userId)) return true;
+        WeeklyReport report = weeklyReportMapper.selectById(reportId);
+        if (report == null) return false;
+        if (userId != null && userId.equals(report.getUserId())) return true;     // 自己始终能看
+
+        // submitter 不在可见范围内 → 拒绝
+        User submitter = userMapper.selectById(report.getUserId());
+        if (submitter == null) return false;
+        String submitterDept = submitter.getDeptCode();
+        String projectId = report.getProjectId();
+
+        if (isProjectOwner(userId, projectId)) return true;
+        if (isManagedProject(userId, projectId)) return true;
+        if (isDeptManager(userId, submitterDept)) return true;
+        return false;
     }
 
     /**
      * 是否能审批周报
      */
-    public boolean canApproveWeeklyReport(String userId, String reportId) {
-        if (isAdmin(userId)) {
-            return true;
+    public boolean canApproveWeeklyReport(String approverId, String reportId) {
+        User approver = userMapper.selectById(approverId);
+        if (approver == null) return false;
+        if ("admin".equals(approver.getRole())) return true;
+
+        WeeklyReport report = weeklyReportMapper.selectById(reportId);
+        if (report == null) return false;
+        User submitter = userMapper.selectById(report.getUserId());
+        if (submitter == null) return false;
+
+        String submitterRole = submitter.getRole();
+        String submitterDept = submitter.getDeptCode();
+        String projectId = report.getProjectId();
+
+        if ("project-manager".equals(submitterRole)
+                || "dept-project-manager".equals(submitterRole)
+                || isProjectOwner(submitter.getId(), projectId)) {
+            return isDeptManager(approverId, submitterDept);
         }
-        String projectId = resolveProjectIdFromReport(reportId);
-        if (projectId == null) {
-            return false;
+
+        if (isProjectOwner(approverId, projectId)) return true;
+        if (isManagedProject(approverId, projectId)) return true;
+        if (isDeptManager(approverId, submitterDept)) return true;
+        return false;
+    }
+
+    /**
+     * 是否能编辑周报（仅本人 + draft/rejected）
+     */
+    public boolean canEditWeeklyReport(String userId, String reportId) {
+        if (isAdmin(userId)) return true;
+        WeeklyReport report = weeklyReportMapper.selectById(reportId);
+        if (report == null) return false;
+        if (!userId.equals(report.getUserId())) return false;       // 仅本人
+        String s = report.getStatus();
+        return "draft".equals(s) || "rejected".equals(s);
+    }
+
+    /**
+     * 是否能删除周报（仅本人 + draft）
+     */
+    public boolean canDeleteWeeklyReport(String userId, String reportId) {
+        if (isAdmin(userId)) return true;
+        WeeklyReport report = weeklyReportMapper.selectById(reportId);
+        if (report == null) return false;
+        if (!userId.equals(report.getUserId())) return false;
+        return "draft".equals(report.getStatus());
+    }
+
+    /**
+     * 当前用户能查看的「周报提交者」userId 集合。
+     * - admin 返回 null（不限）
+     * - 自己始终能看
+     * - dept-project-manager → 所辖部门的所有在职用户
+     * - project-manager → managed + owner 项目的所有成员
+     * - 普通项目 owner（member 角色但拥有项目）→ 其 owner 项目的成员
+     * - 其他（member/viewer）→ 仅自己
+     */
+    public List<String> getAccessibleWeeklyReportUserIds(String userId) {
+        User u = userMapper.selectById(userId);
+        if (u == null) return Collections.emptyList();
+        if ("admin".equals(u.getRole())) return null;        // 不限
+
+        Set<String> ids = new HashSet<>();
+        ids.add(userId);                                      // 自己始终能看
+
+        if ("dept-project-manager".equals(u.getRole())) {
+            List<String> depts = parseManagedDeptCodes(u);    // 已存在的 helper
+            if (!depts.isEmpty()) {
+                ids.addAll(userMapper.selectIdsByDeptCodes(depts));
+            }
         }
-        return canEditProject(userId, projectId);
+        if ("project-manager".equals(u.getRole())) {
+            List<String> pids = parseManagedProjectIds(u);    // 已存在的 helper
+            List<String> ownerPids = projectMapper.selectIdsByOwner(userId);
+            Set<String> projectIds = new HashSet<>();
+            projectIds.addAll(pids);
+            projectIds.addAll(ownerPids);
+            if (!projectIds.isEmpty()) {
+                ids.addAll(projectMemberMapper.selectMemberIdsByProjectIds(
+                        new ArrayList<>(projectIds)));
+            }
+        } else {
+            // 非 PM 的普通 owner:role 不是 PM 但有 owner 关系
+            // (上面 PM 分支已合并 owner 项目,这里不重复调用 selectIdsByOwner)
+            List<String> ownedProjects = projectMapper.selectIdsByOwner(userId);
+            if (!ownedProjects.isEmpty()) {
+                ids.addAll(projectMemberMapper.selectMemberIdsByProjectIds(ownedProjects));
+            }
+        }
+
+        return new ArrayList<>(ids);
     }
 
     /**

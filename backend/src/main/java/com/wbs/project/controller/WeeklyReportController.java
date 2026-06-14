@@ -1,12 +1,15 @@
 package com.wbs.project.controller;
 
 import com.wbs.project.common.Result;
+import com.wbs.project.dto.WeeklyReportApprovalLogDTO;
 import com.wbs.project.entity.Project;
 import com.wbs.project.entity.User;
 import com.wbs.project.entity.WeeklyReport;
 import com.wbs.project.entity.WeeklyReportComment;
 import com.wbs.project.mapper.ProjectMapper;
 import com.wbs.project.mapper.UserMapper;
+import com.wbs.project.service.PermissionService;
+import com.wbs.project.service.WeeklyReportApprovalLogService;
 import com.wbs.project.service.WeeklyReportCommentService;
 import com.wbs.project.service.WeeklyReportService;
 import lombok.RequiredArgsConstructor;
@@ -15,6 +18,7 @@ import org.springframework.web.bind.annotation.*;
 
 import jakarta.servlet.http.HttpServletRequest;
 import java.time.LocalDate;
+import java.util.Collections;
 import java.util.List;
 import java.util.UUID;
 
@@ -27,24 +31,11 @@ public class WeeklyReportController {
     private final WeeklyReportCommentService commentService;
     private final UserMapper userMapper;
     private final ProjectMapper projectMapper;
+    private final PermissionService permissionService;
+    private final WeeklyReportApprovalLogService approvalLogService;
 
     private String getCurrentUserId(HttpServletRequest request) {
         return (String) request.getAttribute("userId");
-    }
-
-    private boolean hasPermission(String currentUserId, WeeklyReport report) {
-        if (currentUserId == null) return true;
-        User currentUser = userMapper.selectById(currentUserId);
-        if (currentUser == null) return false;
-        if ("admin".equals(currentUser.getRole())) return true;
-        if ("project-manager".equals(currentUser.getRole())) {
-            if (report.getProjectId() != null) {
-                Project project = projectMapper.selectById(report.getProjectId());
-                return project != null && project.getOwnerId().equals(currentUserId);
-            }
-            return false;
-        }
-        return currentUserId.equals(report.getUserId());
     }
 
     @GetMapping
@@ -56,12 +47,18 @@ public class WeeklyReportController {
             @RequestParam(required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate endDate,
             HttpServletRequest request) {
         String currentUserId = getCurrentUserId(request);
-        List<WeeklyReport> reports = weeklyReportService.getAllReports();
 
-        if (currentUserId != null) {
-            reports = reports.stream()
-                    .filter(report -> hasPermission(currentUserId, report))
-                    .toList();
+        List<String> visibleUserIds = currentUserId == null
+                ? null
+                : permissionService.getAccessibleWeeklyReportUserIds(currentUserId);
+
+        List<WeeklyReport> reports;
+        if (visibleUserIds == null) {
+            reports = weeklyReportService.getAllReports();              // admin / 兜底
+        } else if (visibleUserIds.isEmpty()) {
+            reports = Collections.emptyList();
+        } else {
+            reports = weeklyReportService.getReportsByUserIds(visibleUserIds);
         }
 
         if (userId != null) {
@@ -106,7 +103,7 @@ public class WeeklyReportController {
             return Result.error("周报不存在");
         }
 
-        if (currentUserId != null && !hasPermission(currentUserId, report)) {
+        if (currentUserId != null && !permissionService.canViewWeeklyReport(currentUserId, id)) {
             return Result.error("您没有权限查看此周报");
         }
 
@@ -138,7 +135,7 @@ public class WeeklyReportController {
             return Result.error("周报不存在");
         }
 
-        if (currentUserId != null && !hasPermission(currentUserId, existing)) {
+        if (currentUserId != null && !permissionService.canEditWeeklyReport(currentUserId, id)) {
             return Result.error("您没有权限编辑此周报");
         }
 
@@ -156,7 +153,7 @@ public class WeeklyReportController {
             return Result.error("周报不存在");
         }
 
-        if (currentUserId != null && !hasPermission(currentUserId, existing)) {
+        if (currentUserId != null && !permissionService.canDeleteWeeklyReport(currentUserId, id)) {
             return Result.error("您没有权限删除此周报");
         }
 
@@ -187,37 +184,38 @@ public class WeeklyReportController {
             @RequestBody ApproveRequest approveRequest,
             HttpServletRequest request) {
         String currentUserId = getCurrentUserId(request);
-        WeeklyReport existing = weeklyReportService.getReportById(id);
-
-        if (existing == null) {
-            return Result.error("周报不存在");
-        }
-
         if (currentUserId == null) {
             return Result.error("请先登录");
         }
-
-        User currentUser = userMapper.selectById(currentUserId);
-        if (currentUser == null || (!"admin".equals(currentUser.getRole()) && !"project-manager".equals(currentUser.getRole()))) {
-            return Result.error("您没有权限审批周报");
+        WeeklyReport existing = weeklyReportService.getReportById(id);
+        if (existing == null) {
+            return Result.error("周报不存在");
         }
-
-        if (existing.getProjectId() != null) {
-            Project project = projectMapper.selectById(existing.getProjectId());
-            if (project == null || !project.getOwnerId().equals(currentUserId)) {
-                return Result.error("您只能审批您负责项目的周报");
-            }
+        if (!permissionService.canApproveWeeklyReport(currentUserId, id)) {
+            return Result.error("无权审批此周报");
         }
-
         WeeklyReport approved = weeklyReportService.approveReport(
-                id,
-                currentUserId,
+                id, currentUserId,
                 approveRequest.getApproveComment(),
                 approveRequest.getApproved()
         );
-
         String message = approveRequest.getApproved() ? "周报已审批通过" : "周报已拒绝";
         return Result.success(message, approved);
+    }
+
+    @GetMapping("/{id}/approval-logs")
+    public Result<List<WeeklyReportApprovalLogDTO>> getApprovalLogs(
+            @PathVariable String id,
+            HttpServletRequest request) {
+        String currentUserId = getCurrentUserId(request);
+        WeeklyReport existing = weeklyReportService.getReportById(id);
+        if (existing == null) {
+            return Result.error("周报不存在");
+        }
+        if (currentUserId != null && !permissionService.canViewWeeklyReport(currentUserId, id)) {
+            return Result.error("无权查看此周报的审批记录");
+        }
+        return Result.success(approvalLogService.listByReport(id));
     }
 
     @GetMapping("/my")
@@ -234,21 +232,12 @@ public class WeeklyReportController {
     public Result<List<WeeklyReport>> getProjectReports(@PathVariable String projectId, HttpServletRequest request) {
         String currentUserId = getCurrentUserId(request);
         List<WeeklyReport> reports = weeklyReportService.getReportsByProjectId(projectId);
-
         if (currentUserId != null) {
-            User currentUser = userMapper.selectById(currentUserId);
-            if (currentUser != null && !"admin".equals(currentUser.getRole())) {
-                Project project = projectMapper.selectById(projectId);
-                if (project == null || (!project.getOwnerId().equals(currentUserId) &&
-                        !project.getMemberIds().contains(currentUserId))) {
-                    return Result.error("您没有权限查看该项目的周报");
-                }
-                reports = reports.stream()
-                        .filter(report -> currentUserId.equals(report.getUserId()))
-                        .toList();
-            }
+            final String uid = currentUserId;
+            reports = reports.stream()
+                    .filter(r -> permissionService.canViewWeeklyReport(uid, r.getId()))
+                    .toList();
         }
-
         return Result.success(reports);
     }
 
@@ -271,7 +260,7 @@ public class WeeklyReportController {
             return Result.error("周报不存在");
         }
 
-        if (currentUserId != null && !hasPermission(currentUserId, report)) {
+        if (currentUserId != null && !permissionService.canViewWeeklyReport(currentUserId, reportId)) {
             return Result.error("您没有权限查看此周报的评论");
         }
 
@@ -292,7 +281,7 @@ public class WeeklyReportController {
             return Result.error("请先登录");
         }
 
-        if (currentUserId != null && !hasPermission(currentUserId, report)) {
+        if (currentUserId != null && !permissionService.canViewWeeklyReport(currentUserId, reportId)) {
             return Result.error("您没有权限对此周报添加评论");
         }
 
