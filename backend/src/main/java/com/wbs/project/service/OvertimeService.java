@@ -1,10 +1,12 @@
 package com.wbs.project.service;
 
 import com.wbs.project.dto.OvertimeDTO;
+import com.wbs.project.entity.OvertimeApprovalLog;
 import com.wbs.project.entity.OvertimeRecord;
 import com.wbs.project.entity.Project;
 import com.wbs.project.entity.Task;
 import com.wbs.project.entity.User;
+import com.wbs.project.mapper.OvertimeApprovalLogMapper;
 import com.wbs.project.mapper.OvertimeMapper;
 import com.wbs.project.mapper.ProjectMapper;
 import com.wbs.project.mapper.ProjectMemberMapper;
@@ -40,6 +42,8 @@ public class OvertimeService {
     private final EmailNotificationService emailNotificationService;
     private final UserService userService;
     private final PermissionService permissionService;
+    // 2026-06-14: 加班审批日志 mapper(多角色都可审批,审计追溯)
+    private final OvertimeApprovalLogMapper approvalLogMapper;
 
     // ==================== 权限验证 ====================
 
@@ -287,11 +291,13 @@ public class OvertimeService {
         // 验证审批人是否有权限（项目负责人可以审批）
         validateApprover(request.getApproverId(), record.getProjectId());
 
+        LocalDateTime now = LocalDateTime.now();
+
         if (request.getApproved()) {
             // 批准
             record.setStatus("approved");
             record.setApproverId(request.getApproverId());
-            record.setApprovedAt(LocalDateTime.now());
+            record.setApprovedAt(now);
         } else {
             // 拒绝
             if (request.getRejectReason() == null || request.getRejectReason().trim().isEmpty()) {
@@ -299,15 +305,36 @@ public class OvertimeService {
             }
             record.setStatus("rejected");
             record.setApproverId(request.getApproverId());
-            record.setApprovedAt(LocalDateTime.now());
+            record.setApprovedAt(now);
             record.setRejectReason(request.getRejectReason());
         }
 
-        record.setUpdatedAt(LocalDateTime.now());
+        record.setUpdatedAt(now);
         overtimeMapper.update(record);
-        
+
+        // 2026-06-14: 写入审批日志(多角色都可审批,审计追溯)
+        // try/catch 兜底:日志写失败不应阻断审批主流程(审批已落库 + 邮件通知)
+        try {
+            OvertimeApprovalLog log = new OvertimeApprovalLog();
+            log.setId("oal" + UUID.randomUUID().toString().substring(0, 8));
+            log.setOvertimeId(id);
+            log.setApproverId(request.getApproverId());
+            log.setApproverRole(resolveApproverRole(request.getApproverId(), record.getProjectId()));
+            log.setAction(Boolean.TRUE.equals(request.getApproved()) ? "approve" : "reject");
+            if (!Boolean.TRUE.equals(request.getApproved())) {
+                log.setRejectReason(request.getRejectReason());
+            }
+            log.setApprovedAt(now);
+            approvalLogMapper.insert(log);
+        } catch (Exception e) {
+            // 仅记录,不抛(审批主结果已落库)
+            org.slf4j.LoggerFactory.getLogger(OvertimeService.class)
+                    .error("写入加班审批日志失败 overtimeId={} approverId={}",
+                            id, request.getApproverId(), e);
+        }
+
         OvertimeRecord updatedRecord = overtimeMapper.selectById(id);
-        
+
         // 发送审批结果通知
         User applicant = userService.getUserById(record.getUserId());
         if (request.getApproved()) {
@@ -315,8 +342,53 @@ public class OvertimeService {
         } else {
             emailNotificationService.notifyOvertimeRejected(updatedRecord, applicant, request.getRejectReason());
         }
-        
+
         return updatedRecord;
+    }
+
+    /**
+     * 2026-06-14: 计算审批人当时的角色(快照)
+     * - admin / project-manager: 直接返回 user.role
+     * - 否则查 project.ownerId: 匹配 → 'project-owner'
+     * - 兜底 'dept-project-manager'(validateApprover 已经放行)
+     */
+    private String resolveApproverRole(String approverId, String projectId) {
+        User approver = userMapper.selectById(approverId);
+        if (approver == null) return "unknown";
+        String role = approver.getRole();
+        if ("admin".equals(role) || "project-manager".equals(role)) {
+            return role;
+        }
+        Project project = projectMapper.selectById(projectId);
+        if (project != null && approverId.equals(project.getOwnerId())) {
+            return "project-owner";
+        }
+        return "dept-project-manager";
+    }
+
+    /**
+     * 2026-06-14: 查询某条加班记录的所有审批日志
+     * 老记录兜底:日志表为空且主表有 approver_id 时,合成一条虚拟日志条目
+     */
+    public List<OvertimeApprovalLog> getApprovalLogs(String overtimeId) {
+        List<OvertimeApprovalLog> logs = approvalLogMapper.selectByOvertimeId(overtimeId);
+        if (logs != null && !logs.isEmpty()) {
+            return logs;
+        }
+        // 老记录兜底:从主表合成虚拟日志条目
+        OvertimeRecord record = overtimeMapper.selectById(overtimeId);
+        if (record == null || record.getApproverId() == null) {
+            return java.util.Collections.emptyList();
+        }
+        OvertimeApprovalLog fallback = new OvertimeApprovalLog();
+        fallback.setId("legacy-" + overtimeId);
+        fallback.setOvertimeId(overtimeId);
+        fallback.setApproverId(record.getApproverId());
+        fallback.setApproverRole(resolveApproverRole(record.getApproverId(), record.getProjectId()));
+        fallback.setAction("approved".equals(record.getStatus()) ? "approve" : "reject");
+        fallback.setRejectReason(record.getRejectReason());
+        fallback.setApprovedAt(record.getApprovedAt());
+        return java.util.Collections.singletonList(fallback);
     }
 
     /**

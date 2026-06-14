@@ -2,6 +2,7 @@ package com.wbs.project.controller;
 
 import com.wbs.project.common.Result;
 import com.wbs.project.dto.OvertimeDTO;
+import com.wbs.project.entity.OvertimeApprovalLog;
 import com.wbs.project.entity.OvertimeRecord;
 import com.wbs.project.entity.User;
 import com.wbs.project.service.OvertimeService;
@@ -15,6 +16,7 @@ import jakarta.servlet.http.HttpServletRequest;
 import java.math.BigDecimal;
 import java.time.LocalDate;
 import java.util.List;
+import java.util.stream.Collectors;
 
 /**
  * 加班管理Controller
@@ -187,6 +189,41 @@ public class OvertimeController {
         OvertimeRecord record = overtimeService.approveRecord(id, request);
         String message = request.getApproved() ? "加班申请已批准" : "加班申请已拒绝";
         return Result.success(message, record);
+    }
+
+    /**
+     * 获取加班审批历史日志
+     * GET /api/overtime/{id}/approval-logs
+     *
+     * 2026-06-14: 新增 — 多角色都可审批(dept-pm / pm / owner / admin),
+     * 记录每次审批/拒批动作以便审计追溯。
+     * 权限: 复用 OvertimeService.hasPermission(同 GET /{id})
+     */
+    @GetMapping("/{id}/approval-logs")
+    public Result<List<OvertimeDTO.ApprovalLogResponse>> getApprovalLogs(
+            @PathVariable String id, HttpServletRequest request) {
+        String currentUserId = getCurrentUserId(request);
+
+        // 权限校验:同 getRecordById
+        OvertimeRecord record = overtimeService.getRecordById(id);
+        if (record == null) {
+            return Result.error("加班记录不存在");
+        }
+        if (currentUserId != null && !overtimeService.hasPermission(
+                currentUserId, record.getProjectId(), record.getUserId())) {
+            return Result.error("您没有权限查看此加班记录");
+        }
+
+        List<OvertimeApprovalLog> logs = overtimeService.getApprovalLogs(id);
+        List<OvertimeDTO.ApprovalLogResponse> response = logs.stream().map(log -> {
+            OvertimeDTO.ApprovalLogResponse r = new OvertimeDTO.ApprovalLogResponse();
+            org.springframework.beans.BeanUtils.copyProperties(log, r);
+            // 装配审批人姓名(单次查询,数量少可接受)
+            User approver = userMapper.selectById(log.getApproverId());
+            r.setApproverName(approver != null ? approver.getName() : "未知");
+            return r;
+        }).collect(Collectors.toList());
+        return Result.success(response);
     }
 
     // ==================== 统计 API ====================

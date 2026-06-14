@@ -1,6 +1,6 @@
 // API Service Layer - Connects to Spring Boot backend
 
-import type { Project, Task, User, DelayStats, OvertimeRecord, OvertimeStats, Permission, TaskOvertimeStats, WeeklyReport, WeeklyReportComment, Document, OrgNode, RoleChangeLog, RoleChangeRequest } from '@/types';
+import type { Project, Task, User, DelayStats, OvertimeRecord, OvertimeStats, OvertimeApprovalLog, Permission, TaskOvertimeStats, WeeklyReport, WeeklyReportComment, Document, OrgNode, RoleChangeLog, RoleChangeRequest } from '@/types';
 import type { SchedulerConfig } from '@/types/scheduler';
 import { useUserStore } from '@/stores/user';
 
@@ -539,6 +539,11 @@ class ApiService {
       method: 'PUT',
       body: JSON.stringify({ approverId, approved: false, rejectReason }),
     });
+  }
+
+  // 2026-06-14: 获取加班审批历史日志(多角色都可审批,审计追溯)
+  async getOvertimeApprovalLogs(id: string | number): Promise<OvertimeApprovalLog[]> {
+    return request<OvertimeApprovalLog[]>(`/overtime/${id}/approval-logs`);
   }
 
   async getOvertimeStats(projectId?: string): Promise<OvertimeStats> {

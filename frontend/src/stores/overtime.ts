@@ -1,6 +1,6 @@
 import { defineStore } from 'pinia';
 import { ref, computed } from 'vue';
-import type { OvertimeRecord, OvertimeStats } from '@/types';
+import type { OvertimeRecord, OvertimeStats, OvertimeApprovalLog } from '@/types';
 import apiService from '@/services/api';
 
 export const useOvertimeStore = defineStore('overtime', () => {
@@ -212,6 +212,16 @@ export const useOvertimeStore = defineStore('overtime', () => {
     }
   };
 
+  // 2026-06-14: 加载加班审批历史日志(多角色都可审批,审计追溯)
+  const loadApprovalLogs = async (overtimeId: string): Promise<OvertimeApprovalLog[]> => {
+    try {
+      return await apiService.getOvertimeApprovalLogs(overtimeId);
+    } catch (error) {
+      console.error('Failed to load approval logs:', overtimeId, error);
+      return [];
+    }
+  };
+
   return {
     overtimeRecords,
     currentRecord,
@@ -234,6 +244,7 @@ export const useOvertimeStore = defineStore('overtime', () => {
     updateOvertimeRecord,
     deleteOvertimeRecord,
     approveOvertimeRecord,
-    rejectOvertimeRecord
+    rejectOvertimeRecord,
+    loadApprovalLogs
   };
 });

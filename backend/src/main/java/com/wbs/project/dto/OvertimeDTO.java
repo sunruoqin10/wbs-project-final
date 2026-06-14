@@ -3,6 +3,7 @@ package com.wbs.project.dto;
 import lombok.Data;
 import java.math.BigDecimal;
 import java.time.LocalDate;
+import java.time.LocalDateTime;
 import java.time.LocalTime;
 import java.util.List;
 
@@ -123,6 +124,26 @@ public class OvertimeDTO {
         private String approverId;
         private Boolean approved;
         private String rejectReason;
+    }
+
+    // ==================== 审批日志 ====================
+
+    /**
+     * 审批日志响应(2026-06-14 新建 — 多角色都可审批,需要追溯具体审批人)
+     */
+    @Data
+    public static class ApprovalLogResponse {
+        private String id;
+        private String overtimeId;
+        private String approverId;
+        /** 后端 join sys_user.name 返回 */
+        private String approverName;
+        /** admin / project-manager / dept-project-manager / project-owner */
+        private String approverRole;
+        /** approve / reject */
+        private String action;
+        private String rejectReason;
+        private LocalDateTime approvedAt;
     }
 
     // ==================== 统计相关 ====================

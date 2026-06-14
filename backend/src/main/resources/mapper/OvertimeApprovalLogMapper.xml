@@ -1,0 +1,34 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+        "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.wbs.project.mapper.OvertimeApprovalLogMapper">
+
+    <resultMap id="BaseResultMap" type="com.wbs.project.entity.OvertimeApprovalLog">
+        <id     column="id"             property="id"/>
+        <result column="overtime_id"    property="overtimeId"/>
+        <result column="approver_id"    property="approverId"/>
+        <result column="approver_role"  property="approverRole"/>
+        <result column="action"         property="action"/>
+        <result column="reject_reason"  property="rejectReason"/>
+        <result column="approved_at"    property="approvedAt"/>
+    </resultMap>
+
+    <sql id="Base_Column_List">
+        id, overtime_id, approver_id, approver_role, action, reject_reason, approved_at
+    </sql>
+
+    <insert id="insert" parameterType="com.wbs.project.entity.OvertimeApprovalLog">
+        INSERT INTO t_overtime_approval_log
+            (id, overtime_id, approver_id, approver_role, action, reject_reason, approved_at)
+        VALUES
+            (#{id}, #{overtimeId}, #{approverId}, #{approverRole}, #{action}, #{rejectReason}, #{approvedAt})
+    </insert>
+
+    <select id="selectByOvertimeId" resultMap="BaseResultMap">
+        SELECT
+            <include refid="Base_Column_List"/>
+        FROM t_overtime_approval_log
+        WHERE overtime_id = #{overtimeId}
+        ORDER BY approved_at DESC, id DESC
+    </select>
+</mapper>

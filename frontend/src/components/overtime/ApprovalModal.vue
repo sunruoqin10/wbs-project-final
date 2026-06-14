@@ -53,6 +53,33 @@
         <p class="rounded-lg bg-secondary-50 p-3 text-sm text-secondary-700">{{ record.reason }}</p>
       </div>
 
+      <!-- 2026-06-14: 审批历史(多角色都可审批,审计追溯) -->
+      <div>
+        <h4 class="mb-2 text-sm font-semibold text-secondary-900">审批历史</h4>
+        <div v-if="loadingLogs" class="text-sm text-secondary-500">加载中...</div>
+        <div v-else-if="approvalLogs.length === 0" class="text-sm text-secondary-500">暂无审批记录</div>
+        <ul v-else class="space-y-2">
+          <li v-for="log in approvalLogs" :key="log.id" class="rounded-lg bg-secondary-50 p-3 text-sm">
+            <div class="flex items-center justify-between">
+              <span class="font-medium text-secondary-900">{{ log.approverName || '未知' }}</span>
+              <span class="text-xs text-secondary-500">{{ formatDateTime(log.approvedAt) }}</span>
+            </div>
+            <div class="mt-1 flex items-center gap-2 text-xs">
+              <span
+                class="inline-flex rounded-full px-2 py-0.5"
+                :class="log.action === 'approve' ? 'bg-green-100 text-green-700' : 'bg-red-100 text-red-700'"
+              >
+                {{ log.action === 'approve' ? '通过' : '拒绝' }}
+              </span>
+              <span class="text-secondary-500">{{ getRoleLabel(log.approverRole) }}</span>
+            </div>
+            <div v-if="log.rejectReason" class="mt-1 text-xs text-secondary-600">
+              原因: {{ log.rejectReason }}
+            </div>
+          </li>
+        </ul>
+      </div>
+
       <!-- 审批操作 -->
       <div>
         <h4 class="mb-2 text-sm font-semibold text-secondary-900">审批操作</h4>
@@ -130,7 +157,8 @@ import Button from '@/components/common/Button.vue';
 import { useProjectStore } from '@/stores/project';
 import { useUserStore } from '@/stores/user';
 import { useTaskStore } from '@/stores/task';
-import type { OvertimeRecord } from '@/types';
+import { useOvertimeStore } from '@/stores/overtime';
+import type { OvertimeRecord, OvertimeApprovalLog } from '@/types';
 import dayjs from 'dayjs';
 
 interface Props {
@@ -151,11 +179,16 @@ const emit = defineEmits<{
 const projectStore = useProjectStore();
 const userStore = useUserStore();
 const taskStore = useTaskStore();
+const overtimeStore = useOvertimeStore();
 
 const approvalDecision = ref<'approve' | 'reject' | ''>('');
 const rejectReason = ref('');
 const rejectError = ref('');
 const saving = ref(false);
+
+// 2026-06-14: 审批历史日志(多角色都可审批,审计追溯)
+const approvalLogs = ref<OvertimeApprovalLog[]>([]);
+const loadingLogs = ref(false);
 
 // Helper functions
 const getUserName = (userId: string) => {
@@ -204,6 +237,18 @@ const getCompensationLabel = (type?: string) => {
   return labels[type] || type;
 };
 
+// 2026-06-14: 审批历史辅助函数
+const formatDateTime = (s?: string) => s ? dayjs(s).format('YYYY-MM-DD HH:mm') : '-';
+const getRoleLabel = (role?: string) => {
+  const map: Record<string, string> = {
+    'admin': '管理员',
+    'project-manager': '项目经理',
+    'project-owner': '项目负责人',
+    'dept-project-manager': '部门项目负责人'
+  };
+  return map[role || ''] || role || '-';
+};
+
 // 通过审批
 const handleApprove = async () => {
   if (!props.record) return;
@@ -248,13 +293,24 @@ watch(() => props.open, async (isOpen) => {
     approvalDecision.value = '';
     rejectReason.value = '';
     rejectError.value = '';
-    
+
     // 加载数据
     await Promise.all([
       projectStore.loadProjects(),
       userStore.loadUsers(),
       taskStore.loadTasks()
     ]);
+
+    // 2026-06-14: 加载审批历史(多角色都可审批,审计追溯)
+    if (props.record?.id) {
+      loadingLogs.value = true;
+      approvalLogs.value = [];
+      try {
+        approvalLogs.value = await overtimeStore.loadApprovalLogs(props.record.id);
+      } finally {
+        loadingLogs.value = false;
+      }
+    }
   }
 });
 </script>

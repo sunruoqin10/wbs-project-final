@@ -493,12 +493,15 @@
                       {{ teamSort.order === 'asc' ? '↑' : '↓' }}
                     </span>
                   </th>
+                  <!-- 2026-06-14: 审批人 / 审批时间(多角色都可审批,审计追溯) -->
+                  <th class="px-4 py-3 text-left text-xs font-medium uppercase text-secondary-500">{{ $t('overtime.filters.approver') }}</th>
+                  <th class="px-4 py-3 text-left text-xs font-medium uppercase text-secondary-500">{{ $t('overtime.filters.approvalTime') }}</th>
                   <th class="px-4 py-3 text-left text-xs font-medium uppercase text-secondary-500">{{ $t('overtime.columns.actions') }}</th>
                 </tr>
               </thead>
               <tbody class="divide-y divide-secondary-200 bg-white">
                 <tr v-if="filteredTeamRecords.length === 0">
-                  <td colspan="11" class="px-4 py-8 text-center text-sm text-secondary-500">
+                  <td colspan="13" class="px-4 py-8 text-center text-sm text-secondary-500">
                     {{ $t('overtime.empty.noRecords') }}
                   </td>
                 </tr>
@@ -530,6 +533,13 @@
                     <span :class="getStatusBadgeClass(record.status)" class="inline-flex rounded-full px-2 py-1 text-xs font-medium">
                       {{ getStatusLabel(record.status) }}
                     </span>
+                  </td>
+                  <!-- 2026-06-14: 审批人 / 审批时间(多角色都可审批,审计追溯) -->
+                  <td class="whitespace-nowrap px-4 py-3 text-sm text-secondary-600">
+                    {{ getApproverName(record.approverId) }}
+                  </td>
+                  <td class="whitespace-nowrap px-4 py-3 text-sm text-secondary-600">
+                    {{ record.approvedAt ? formatDateTime(record.approvedAt) : '-' }}
                   </td>
                   <td class="whitespace-nowrap px-4 py-3 text-sm">
                     <div class="flex items-center gap-2">
@@ -678,7 +688,13 @@ const isProjectOwner = computed(() => {
   if (!currentUserId) return false;
   return projectStore.projects.some(p => p.ownerId === currentUserId);
 });
-const isManagerOrAdmin = computed(() => isAdmin.value || isProjectManager.value || isProjectOwner.value);
+// 2026-06-14: 加入 dept-project-manager — 对齐
+// docs/superpowers/specs/2026-06-13-dept-pm-overtime-view-design.md §3
+// 权限矩阵(dept-pm 查看 + 审批),让团队 tab 对 dept-pm 也可见。
+const isManagerOrAdmin = computed(() =>
+  isAdmin.value || isProjectManager.value || isProjectOwner.value
+  || permissionStore.isDeptProjectManager()
+);
 
 const personalFilters = ref({
   projectId: '',
@@ -728,18 +744,31 @@ const personalRecords = computed(() => {
 const managedRecords = computed(() => {
   const currentUserId = userStore.currentUserId;
   if (!currentUserId) return [];
-  
+
   if (isAdmin.value || isProjectManager.value) {
     return overtimeStore.overtimeRecords.filter(r => r.userId !== currentUserId);
   }
-  
+
   if (isProjectOwner.value) {
     const managedProjectIds = getManagedProjectIds();
-    return overtimeStore.overtimeRecords.filter(r => 
+    return overtimeStore.overtimeRecords.filter(r =>
       managedProjectIds.includes(r.projectId) && r.userId !== currentUserId
     );
   }
-  
+
+  // 2026-06-14: 部门项目负责人 — 所辖部门成员的加班记录(不含自己)。
+  // 后端 OvertimeService.hasPermission L82-88 已按 dept-pm 范围预过滤,
+  // 这里二次过滤为防御(应对 dept-pm 自己的或 owner 路径混入的记录)。
+  if (permissionStore.isDeptProjectManager()) {
+    const codes = permissionStore.managedDeptCodes;
+    if (codes.length === 0) return [];
+    return overtimeStore.overtimeRecords.filter(r => {
+      if (r.userId === currentUserId) return false;
+      const u = userStore.userById(r.userId);
+      return !!u?.deptCode && codes.includes(u.deptCode);
+    });
+  }
+
   return [];
 });
 
@@ -959,11 +988,19 @@ const filteredTeamRecords = computed(() => {
 const getManagedProjectIds = (): string[] => {
   const currentUserId = userStore.currentUserId;
   if (!currentUserId) return [];
-  
+
   if (isAdmin.value || isProjectManager.value) {
     return projectStore.projects.map(p => p.id);
   }
-  
+
+  // 2026-06-14: 部门项目负责人 — 所辖部门的项目
+  if (permissionStore.isDeptProjectManager()) {
+    const codes = permissionStore.managedDeptCodes;
+    return projectStore.projects
+      .filter(p => !!p.deptCode && codes.includes(p.deptCode))
+      .map(p => p.id);
+  }
+
   return projectStore.projects
     .filter(project => project.ownerId === currentUserId)
     .map(p => p.id);
@@ -972,11 +1009,19 @@ const getManagedProjectIds = (): string[] => {
 const getAccessibleProjectIds = (): string[] => {
   const currentUserId = userStore.currentUserId;
   if (!currentUserId) return [];
-  
+
   if (isAdmin.value) {
     return projectStore.projects.map(p => p.id);
   }
-  
+
+  // 2026-06-14: 部门项目负责人 — 所辖部门的项目
+  if (permissionStore.isDeptProjectManager()) {
+    const codes = permissionStore.managedDeptCodes;
+    return projectStore.projects
+      .filter(p => !!p.deptCode && codes.includes(p.deptCode))
+      .map(p => p.id);
+  }
+
   return projectStore.projects.filter(project => {
     const isOwner = project.ownerId === currentUserId;
     const isMember = project.memberIds?.includes(currentUserId) || false;
@@ -1028,6 +1073,12 @@ const getTaskName = (taskId?: string) => {
 };
 
 const formatDate = (dateStr: string) => dayjs(dateStr).format('YYYY-MM-DD');
+// 2026-06-14: 审批人姓名(表格列)
+const getApproverName = (id?: string) => {
+  if (!id) return '-';
+  return userStore.userById(id)?.name || '未知';
+};
+const formatDateTime = (s: string) => dayjs(s).format('YYYY-MM-DD HH:mm');
 
 const getTypeLabel = (type: string) => {
   const labels: Record<string, string> = {
@@ -1074,17 +1125,12 @@ const getStatusBadgeClass = (status: string) => {
   return classes[status] || 'bg-secondary-100 text-secondary-800';
 };
 
-const canApprove = (projectId: string) => {
-  const project = projectStore.projectById(projectId);
-  if (!project) return false;
-  
-  const currentUserId = userStore.currentUserId;
-  if (!currentUserId) return false;
-  
-  if (isAdmin.value || isProjectManager.value) return true;
-  
-  return project.ownerId === currentUserId;
-};
+// 2026-06-14: 复用 permissionStore.canApproveOvertime,该 helper 已正确处理
+// admin / owner / dept-pm(project.deptCode ∈ managed_dept_codes)三种情况。
+// 原本地实现无 dept-pm 分支,dept-pm 看不到审批按钮。
+// (frontend/src/stores/permission.ts:310-316)
+const canApprove = (projectId: string) =>
+  permissionStore.canApproveOvertime(projectId);
 
 const canEdit = (record: OvertimeRecord) => {
   if (record.status === 'approved') return false;

@@ -153,6 +153,22 @@ export interface OvertimeRecord {
   updatedAt: string;
 }
 
+/**
+ * 加班审批历史日志(2026-06-14 新建)
+ * 后端 GET /api/overtime/{id}/approval-logs 返回
+ */
+export interface OvertimeApprovalLog {
+  id: string;
+  overtimeId: string;
+  approverId: string;
+  /** 后端 join sys_user.name 返回 */
+  approverName?: string;
+  approverRole?: 'admin' | 'project-manager' | 'dept-project-manager' | 'project-owner';
+  action: 'approve' | 'reject';
+  rejectReason?: string;
+  approvedAt: string;
+}
+
 export interface OvertimeStats {
   totalRecords: number;
   totalHours: number;
