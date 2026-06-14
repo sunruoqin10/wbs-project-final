@@ -322,7 +322,8 @@ export const usePermissionStore = defineStore('permission', () => {
    *
    * 2026-06-14:周报 4 角色权限对齐,改用 5 档判定(对齐后端 PermissionService.canApproveWeeklyReport):
    *   ① admin
-   *   ② 提交者是 PM / dept-pm / project-owner → 仅同部门 dept-pm 可批(防自审 / 互批)
+   *   ② 提交者是 PM / dept-pm → 仅同部门 dept-pm 可批(防 PM 互批)
+   *   ②-bis 提交者是项目 owner(非 PM/dept-pm)→ 同部门 dept-pm 或 项目内 PM 可批
    *   ③ 项目 owner
    *   ④ PM via managed_project_ids
    *   ⑤ submitter.dept_code 兜底(dept-pm)
@@ -331,7 +332,7 @@ export const usePermissionStore = defineStore('permission', () => {
   const canApproveWeeklyReport = (report: WeeklyReportPermissionInput): boolean => {
     if (!userStore.currentUser) return false;
     if (report.status !== 'submitted') return false;
-    if (report.userId === userStore.currentUserId) return false;
+    if (report.userId === userStore.currentUserId) return false;  // 防自审
     if (isAdmin()) return true;
 
     const submitter = userStore.userById(report.userId);
@@ -342,13 +343,19 @@ export const usePermissionStore = defineStore('permission', () => {
     const project = report.projectId ? projectStore.projectById(report.projectId) : null;
     const submitterIsProjectOwner = !!project && report.userId === project.ownerId;
 
-    if (
-      submitterRole === 'project-manager' ||
-      submitterRole === 'dept-project-manager' ||
-      submitterIsProjectOwner
-    ) {
+    // ② 提交者是 PM / dept-pm → 仅同部门 dept-pm 可批
+    if (submitterRole === 'project-manager' || submitterRole === 'dept-project-manager') {
       return isDeptManager(submitterDeptCode);
     }
+
+    // ②-bis 提交者是项目 owner(非 PM/dept-pm 身份)→ 同部门 dept-pm 或 项目内 PM 可批
+    if (submitterIsProjectOwner) {
+      if (isDeptManager(submitterDeptCode)) return true;
+      if (report.projectId && isManagedProject(report.projectId)) return true;
+      return false;
+    }
+
+    // ③-⑤ 普通成员提交
     if (report.projectId && isProjectOwner(report.projectId)) return true;
     if (report.projectId && isManagedProject(report.projectId)) return true;
     if (isDeptManager(submitterDeptCode)) return true;
@@ -361,6 +368,10 @@ export const usePermissionStore = defineStore('permission', () => {
    */
   const canViewWeeklyReport = (report: WeeklyReportPermissionInput): boolean => {
     if (!userStore.currentUser) return false;
+    // 2026-06-14 规则:草稿状态对 creator 之外的人不可见(admin 也受此约束)
+    if (report.status === 'draft') {
+      return report.userId === userStore.currentUserId;
+    }
     if (isAdmin()) return true;
     if (report.userId === userStore.currentUserId) return true;
     if (report.projectId && isProjectOwner(report.projectId)) return true;

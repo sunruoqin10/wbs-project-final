@@ -61,6 +61,13 @@ public class WeeklyReportController {
             reports = weeklyReportService.getReportsByUserIds(visibleUserIds);
         }
 
+        // 2026-06-14 规则:草稿状态只对 creator 自己可见;creator 之外的其他人(含 admin)看不到
+        if (currentUserId != null) {
+            reports = reports.stream()
+                    .filter(r -> !"draft".equals(r.getStatus()) || currentUserId.equals(r.getUserId()))
+                    .toList();
+        }
+
         if (userId != null) {
             reports = reports.stream()
                     .filter(report -> userId.equals(report.getUserId()))

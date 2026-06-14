@@ -344,10 +344,17 @@ public class PermissionService {
      * 是否能查看周报
      */
     public boolean canViewWeeklyReport(String userId, String reportId) {
-        if (isAdmin(userId)) return true;
         WeeklyReport report = weeklyReportMapper.selectById(reportId);
         if (report == null) return false;
-        if (userId != null && userId.equals(report.getUserId())) return true;     // 自己始终能看
+
+        // 2026-06-14 规则:草稿状态对 creator 之外的人不可见(严格解读,admin 也受此约束)
+        if ("draft".equals(report.getStatus())) {
+            return userId != null && userId.equals(report.getUserId());
+        }
+
+        // 非草稿:admin 放行 + creator 放行 + 数据范围
+        if (isAdmin(userId)) return true;
+        if (userId != null && userId.equals(report.getUserId())) return true;
 
         // submitter 不在可见范围内 → 拒绝
         User submitter = userMapper.selectById(report.getUserId());
@@ -371,6 +378,10 @@ public class PermissionService {
 
         WeeklyReport report = weeklyReportMapper.selectById(reportId);
         if (report == null) return false;
+
+        // 防自审:任何身份都不能审批自己提交的周报
+        if (approverId.equals(report.getUserId())) return false;
+
         User submitter = userMapper.selectById(report.getUserId());
         if (submitter == null) return false;
 
@@ -378,12 +389,21 @@ public class PermissionService {
         String submitterDept = submitter.getDeptCode();
         String projectId = report.getProjectId();
 
+        // 档 ②:提交者是 PM / dept-pm → 仅同部门 dept-pm 可批(防 PM 互批)
         if ("project-manager".equals(submitterRole)
-                || "dept-project-manager".equals(submitterRole)
-                || isProjectOwner(submitter.getId(), projectId)) {
+                || "dept-project-manager".equals(submitterRole)) {
             return isDeptManager(approverId, submitterDept);
         }
 
+        // 档 ②-bis(2026-06-14 调整):提交者是项目 owner(非 PM/dept-pm 身份)
+        // → 同部门 dept-pm 或 项目内 PM(via managed_project_ids)可批
+        if (isProjectOwner(submitter.getId(), projectId)) {
+            if (isDeptManager(approverId, submitterDept)) return true;
+            if (isManagedProject(approverId, projectId)) return true;
+            return false;
+        }
+
+        // 档 ③-⑤:普通成员提交
         if (isProjectOwner(approverId, projectId)) return true;
         if (isManagedProject(approverId, projectId)) return true;
         if (isDeptManager(approverId, submitterDept)) return true;

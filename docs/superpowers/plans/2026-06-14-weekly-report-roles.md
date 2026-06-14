@@ -449,6 +449,10 @@ public boolean canApproveWeeklyReport(String approverId, String reportId) {
 
     WeeklyReport report = weeklyReportMapper.selectById(reportId);
     if (report == null) return false;
+
+    // 防自审:任何身份都不能审批自己提交的周报
+    if (approverId.equals(report.getUserId())) return false;
+
     User submitter = userMapper.selectById(report.getUserId());
     if (submitter == null) return false;
 
@@ -456,15 +460,24 @@ public boolean canApproveWeeklyReport(String approverId, String reportId) {
     String submitterDept = submitter.getDeptCode();
     String projectId = report.getProjectId();
 
+    // ② 提交者是 PM / dept-pm → 仅同部门 dept-pm 可批(防 PM 互批)
     if ("project-manager".equals(submitterRole)
-            || "dept-project-manager".equals(submitterRole)
-            || isProjectOwner(submitter.getId(), projectId)) {
-        return isDeptManagerOf(approverId, submitterDept);
+            || "dept-project-manager".equals(submitterRole)) {
+        return isDeptManager(approverId, submitterDept);
     }
 
+    // ②-bis(2026-06-14 调整):提交者是项目 owner(非 PM/dept-pm)
+    //   → 同部门 dept-pm 或 项目内 PM(via managed_project_ids)可批
+    if (isProjectOwner(submitter.getId(), projectId)) {
+        if (isDeptManager(approverId, submitterDept)) return true;
+        if (isManagedProject(approverId, projectId)) return true;
+        return false;
+    }
+
+    // ③-⑤ 普通成员提交
     if (isProjectOwner(approverId, projectId)) return true;
     if (isManagedProject(approverId, projectId)) return true;
-    if (isDeptManagerOf(approverId, submitterDept)) return true;
+    if (isDeptManager(approverId, submitterDept)) return true;
     return false;
 }
 ```
@@ -950,6 +963,10 @@ interface WeeklyReportPermissionInput {
 ```ts
 function canViewWeeklyReport(report: WeeklyReportPermissionInput): boolean {
   if (!userStore.user) return false
+  // 2026-06-14 规则:草稿状态对 creator 之外的人不可见(admin 也受此约束)
+  if (report.status === 'draft') {
+    return report.userId === userStore.user.id
+  }
   if (currentRole.value === 'admin') return true
   if (report.userId === userStore.user.id) return true
 
@@ -963,19 +980,33 @@ function canViewWeeklyReport(report: WeeklyReportPermissionInput): boolean {
 function canApproveWeeklyReport(report: WeeklyReportPermissionInput): boolean {
   if (!userStore.user) return false
   if (report.status !== 'submitted') return false
-  if (report.userId === userStore.user.id) return false
+  if (report.userId === userStore.user.id) return false       // 防自审
   if (currentRole.value === 'admin') return true
 
   const submitter = userStore.userById(report.userId)
   const submitterRole = submitter?.role
-  if (submitterRole === 'project-manager'
-      || submitterRole === 'dept-project-manager'
-      || isProjectOwner(report.userId, report.projectId)) {
-    return isDeptManagerOf(userStore.user.id, submitter?.deptCode)
+  const submitterDeptCode = submitter?.deptCode
+
+  // 判断 submitter 是否为该项目 owner
+  const project = report.projectId ? projectStore.projectById(report.projectId) : null
+  const submitterIsProjectOwner = !!project && report.userId === project.ownerId
+
+  // ② 提交者是 PM / dept-pm → 仅同部门 dept-pm 可批
+  if (submitterRole === 'project-manager' || submitterRole === 'dept-project-manager') {
+    return isDeptManagerOf(userStore.user.id, submitterDeptCode)
   }
+
+  // ②-bis(2026-06-14 调整):提交者是项目 owner(非 PM/dept-pm 身份)→ 同部门 dept-pm 或 项目内 PM 可批
+  if (submitterIsProjectOwner) {
+    if (isDeptManagerOf(userStore.user.id, submitterDeptCode)) return true
+    if (isManagedProject(userStore.user.id, report.projectId)) return true
+    return false
+  }
+
+  // ③-⑤ 普通成员提交
   if (isProjectOwner(userStore.user.id, report.projectId)) return true
   if (isManagedProject(userStore.user.id, report.projectId)) return true
-  if (isDeptManagerOf(userStore.user.id, submitter?.deptCode)) return true
+  if (isDeptManagerOf(userStore.user.id, submitterDeptCode)) return true
   return false
 }
 

@@ -62,8 +62,9 @@
 
 | 操作 \\ 身份 | admin | 部门项目负责人(dept-pm) | 项目经理(PM) | 项目负责人(owner) | 项目成员(member/viewer) |
 |---|---|---|---|---|---|
-| **查看列表** | 全部 | `submitter.dept_code ∈ managed_dept_codes` | `report.project_id ∈ managed_project_ids` ∪ `project.owner_id == self` 项目下所有周报 | owner 自己项目下所有周报 | 仅自己 |
-| **查看详情** | ✅ | ✅(同范围) | ✅(同范围) | ✅(同范围) | 仅自己 |
+| **查看列表** | 全部(草稿除外,见下) | `submitter.dept_code ∈ managed_dept_codes`(草稿除外) | `report.project_id ∈ managed_project_ids` ∪ `project.owner_id == self` 项目下所有周报(草稿除外) | owner 自己项目下所有周报(草稿除外) | 仅自己(含自己所有草稿) |
+| **查看详情** | ✅(草稿除外) | ✅(同范围,草稿除外) | ✅(同范围,草稿除外) | ✅(同范围,草稿除外) | 仅自己(含自己所有草稿) |
+| **草稿状态补充规则(2026-06-14)** | ❌ 看不到别人草稿 | ❌ 看不到别人草稿 | ❌ 看不到别人草稿 | ❌ 看不到别人草稿 | 仅自己 |
 | **审批 / 驳回** | ✅ | ✅(同范围) | ✅(同范围) | ✅(同范围) | ❌ |
 | **编辑** | ✅ | ❌ | ❌ | ❌ | 仅自己 + `status ∈ {draft, rejected}` |
 | **删除** | ✅ | ❌ | ❌ | ❌ | 仅自己 + `status == draft` |
@@ -78,8 +79,9 @@
 |---|---|
 | 普通成员(`role ∈ {member, viewer}` 且非 owner) | admin / 同部门 dept-pm / 项目 owner / 项目内 PM |
 | 项目经理(`role == 'project-manager'`) | admin / **仅** 同部门 dept-pm |
-| 项目负责人(`isProjectOwner == true`) | admin / **仅** 同部门 dept-pm |
+| 项目负责人(`isProjectOwner == true`,非 PM/dept-pm 身份) | admin / 同部门 dept-pm / **项目内 PM**(via `managed_project_ids`) |
 | 部门项目负责人(`role == 'dept-project-manager'`) | admin / 其他同部门 dept-pm(若部门只有一个 dept-pm → 仅 admin) |
+| **任何身份提交者(包括 admin)** | **任何人都不能审批自己提交的周报**(防自审) |
 
 ### 3.3 不变项(scope freeze)
 
@@ -108,6 +110,43 @@ public List<String> getAccessibleWeeklyReportUserIds(String userId);   // 新增
 
 > **关于 `getAccessibleWeeklyReportUserIds` 与现有 `getAccessibleOvertimeUserIds`(L732-780)的关系**:本期采用 **clone-then-customize** —— 复制一份独立方法,不抽公共基座;后期周报/加班/请假的第三个审批场景出现时,再统一抽 `AccessibleSubmitterResolver` 公共基座。理由:① 两者业务边界目前还允许微调(例如未来可能给周报增加"创建者也可见"分支),提前抽象会过早绑死;② 抽象层不在本期 scope。两个方法相似度高的代价由【Section 7 不做清单】中"公共基座"条目兜住。
 
+### 4.1.a `canViewWeeklyReport` 草稿私密性(2026-06-14 增补)
+
+```java
+public boolean canViewWeeklyReport(String userId, String reportId) {
+    WeeklyReport report = weeklyReportMapper.selectById(reportId);
+    if (report == null) return false;
+
+    // 2026-06-14 规则:草稿状态对 creator 之外的人不可见(严格解读,admin 也受此约束)
+    if ("draft".equals(report.getStatus())) {
+        return userId != null && userId.equals(report.getUserId());
+    }
+
+    // 非草稿:admin 放行 + creator 放行 + 数据范围
+    if (isAdmin(userId)) return true;
+    if (userId != null && userId.equals(report.getUserId())) return true;
+
+    User submitter = userMapper.selectById(report.getUserId());
+    if (submitter == null) return false;
+    String submitterDept = submitter.getDeptCode();
+    String projectId = report.getProjectId();
+
+    if (isProjectOwner(userId, projectId)) return true;
+    if (isManagedProject(userId, projectId)) return true;
+    if (isDeptManager(userId, submitterDept)) return true;
+    return false;
+}
+```
+
+> 列表端在 `WeeklyReportController.getReports` 还需**加一道 post-filter**(因为 `getAccessibleWeeklyReportUserIds` 返回的是 user 集合,无法在 SQL 层做状态过滤):
+> ```java
+> if (currentUserId != null) {
+>     reports = reports.stream()
+>         .filter(r -> !"draft".equals(r.getStatus()) || currentUserId.equals(r.getUserId()))
+>         .toList();
+> }
+> ```
+
 ### 4.2 `canApproveWeeklyReport` 5 档判定骨架
 
 ```java
@@ -118,6 +157,10 @@ public boolean canApproveWeeklyReport(String approverId, String reportId) {
 
     WeeklyReport report = weeklyReportMapper.selectById(reportId);
     if (report == null) return false;
+
+    // 防自审:任何身份都不能审批自己提交的周报
+    if (approverId.equals(report.getUserId())) return false;
+
     User submitter = userMapper.selectById(report.getUserId());
     if (submitter == null) return false;
 
@@ -125,13 +168,20 @@ public boolean canApproveWeeklyReport(String approverId, String reportId) {
     String submitterDept = submitter.getDeptCode();
     String projectId = report.getProjectId();
 
-    // ② PM / owner / dept-pm 提交者 → 仅同部门 dept-pm 可批(防自审、防 PM 互批)
+    // ② 提交者是 PM / dept-pm → 仅同部门 dept-pm 可批(防 PM 互批)
     //   注意:这是相对今天 canEditProject 派生口径的「收紧」 ——
-    //   今天 PM 互批 / owner 自审 实际上可能被 canEditProject 放过,新规则一刀切。
+    //   今天 PM 互批 实际上可能被 canEditProject 放过,新规则一刀切。
     if ("project-manager".equals(submitterRole)
-            || "dept-project-manager".equals(submitterRole)
-            || isProjectOwner(submitter.getId(), projectId)) {
+            || "dept-project-manager".equals(submitterRole)) {
         return isDeptManagerOf(approverId, submitterDept);
+    }
+
+    // ②-bis(2026-06-14 调整):提交者是项目 owner(非 PM/dept-pm 身份)
+    //   → 同部门 dept-pm 或 项目内 PM(via managed_project_ids)可批
+    if (isProjectOwner(submitter.getId(), projectId)) {
+        if (isDeptManagerOf(approverId, submitterDept)) return true;
+        if (isManagedProject(approverId, projectId)) return true;
+        return false;
     }
 
     // ③ 项目 owner
@@ -147,11 +197,11 @@ public boolean canApproveWeeklyReport(String approverId, String reportId) {
 }
 ```
 
-> 与 `OvertimeService.validateApprover:431-477` 同形;`isProjectOwner` / `isManagedProject` / `isDeptManagerOf` 已是 `PermissionService` 现成方法,无需重造。
+> 与 `OvertimeService.validateApprover:431-477` 接近,但在 owner 提交场景上**周报放宽于加班**:周报允许项目内 PM 批 owner 的周报,加班仍是仅 dept-pm。这是 2026-06-14 在实际跑通后由业务方提出的差异化要求。
 >
 > **相对现状的行为差**:
 > - 现状(`canEditProject` 派生):dept-pm / 项目 owner / PM(via `isManagedProject`)/ 项目创建者 都能审;且 **可能允许 PM 互批 / owner 自审**(因 `canEditProject` 不区分提交者身份)。
-> - 新规则:**收紧** PM/owner 互批/自审场景,**放宽** dept-pm 由"被 Controller 层拒"变为"明确放行"。两者净效应是规则更清晰,而非单纯"放宽"或"收紧"。
+> - 新规则:**收紧** PM 互批 + admin/PM/owner 自审场景,**放宽** dept-pm 由"被 Controller 层拒"变为"明确放行";**owner 提交的周报项目内 PM 也可批**(2026-06-14 调整)。
 
 ### 4.3 `getAccessibleWeeklyReportUserIds` 实现骨架
 
@@ -783,8 +833,9 @@ export const USER_ROLE_OPTIONS = [
 | 2026-06-14 | 项目成员仅看自己 | 同项目互见只读 / 项目级开关 | 隐私优先;协作需求走 owner/PM 视角汇总 |
 | 2026-06-14 | 可见 + 审批一套放开 | 仅改可见 / 双限定 / 二级审批 | 当前 4 处口径不一致已是 bug,顺手收敛 |
 | 2026-06-14 | 方案 B(对齐 + 审计) | A(口径对齐)/ C(冗余字段) | 审计是企业刚需;C 超 scope |
-| 2026-06-14 | 不回填存量审批日志 | 回填(role=unknown) | 回填会污染角色快照精度 |
 | 2026-06-14 | reject comment 强制必填 | 可选 | 与加班 OvertimeService L196 一致 |
+| 2026-06-14 | owner 提交者项目内 PM 也可审批 | 仅 dept-pm | 业务方运营诉求;周报与加班对齐承诺被打破 |
+| 2026-06-14 | 草稿状态对 creator 之外的人不可见(含 admin) | 草稿对 admin 可见 | 业务方运营诉求:草稿是个人工作区,严格私密 |
 
 ---
 
