@@ -164,6 +164,10 @@ public class OvertimeService {
         // 验证外键
         validateForeignKeys(request.getUserId(), request.getProjectId(), request.getTaskId());
 
+        // 2026-06-14: 申请人必须是该项目的 owner / member / 创建者,
+        // 否则不能为该项目记加班(防止借 "PM 管辖" 身份选不参与的项目)
+        validateProjectMembership(request.getUserId(), request.getProjectId());
+
         // 2026-06-13: 关联任务必须由当前用户负责(所有角色统一)
         if (!permissionService.canCreateOvertimeOnTask(request.getUserId(), request.getTaskId())) {
             throw new RuntimeException("只能为自己负责的任务记加班");
@@ -221,6 +225,9 @@ public class OvertimeService {
 
         // 验证外键
         validateForeignKeys(existing.getUserId(), request.getProjectId(), request.getTaskId());
+
+        // 2026-06-14: 同 createRecord — 申请人必须与该项目有 owner / member / 创建者关系
+        validateProjectMembership(existing.getUserId(), request.getProjectId());
 
         // 2026-06-13: 关联任务必须由当前用户负责(所有角色统一)
         if (!permissionService.canCreateOvertimeOnTask(existing.getUserId(), request.getTaskId())) {
@@ -716,6 +723,48 @@ public class OvertimeService {
                 throw new RuntimeException("任务不存在: " + taskId);
             }
         }
+    }
+
+    /**
+     * 2026-06-14: 申请人必须与该项目有 owner / member / 创建者 关系,
+     * 否则不能为该项目记加班。
+     *
+     * 避免借 PM "管辖"身份(managed_project_ids)给不参与的项目记加班。
+     * 校验口径:
+     * - admin / project-manager 角色: 全放行(管理类角色不卡成员关系,
+     *   部门 / 项目级权限已有 hasPermission 兜底)
+     * - 其他角色: 必须是 project.owner_id / created_by / project_member 任一
+     */
+    private void validateProjectMembership(String userId, String projectId) {
+        User user = userMapper.selectById(userId);
+        if (user == null) {
+            throw new RuntimeException("用户不存在: " + userId);
+        }
+        String role = user.getRole();
+        if ("admin".equals(role) || "project-manager".equals(role)) {
+            return;
+        }
+
+        Project project = projectMapper.selectById(projectId);
+        if (project == null) {
+            throw new RuntimeException("项目不存在: " + projectId);
+        }
+
+        // 创建者始终可访问
+        if (userId.equals(project.getCreatedBy())) {
+            return;
+        }
+        // 项目负责人
+        if (userId.equals(project.getOwnerId())) {
+            return;
+        }
+        // 项目成员
+        java.util.List<String> memberIds = projectMemberMapper.selectMemberIdsByProjectId(projectId);
+        if (memberIds != null && memberIds.contains(userId)) {
+            return;
+        }
+
+        throw new RuntimeException("您未参与该项目,不能为其记加班");
     }
 
     /**

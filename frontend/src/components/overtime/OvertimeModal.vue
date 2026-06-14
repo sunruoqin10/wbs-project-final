@@ -33,10 +33,14 @@
           </option>
         </Select>
         <p v-if="formData.projectId && projectTasks.length === 0" class="mt-1 text-xs text-secondary-500">
-          该项目中您暂无负责的未完成叶子任务
+          {{ permissionStore.currentRole === 'project-manager'
+            ? '该项目暂无未完成叶子任务'
+            : '该项目中您暂无负责的未完成叶子任务' }}
         </p>
         <p v-else-if="formData.projectId" class="mt-1 text-xs text-secondary-500">
-          仅显示您作为负责人的未完成叶子任务
+          {{ permissionStore.currentRole === 'project-manager'
+            ? '项目经理可选该项目任意未完成叶子任务,也可不关联任务'
+            : '仅显示您作为负责人的未完成叶子任务' }}
         </p>
       </div>
 
@@ -266,9 +270,13 @@ const accessibleProjects = computed(() => {
       result = [];
     } else {
       result = projectStore.projects.filter(project => {
+        // 2026-06-14: 创建者(createdBy)也算"可参与",否则 PM 创建了项目
+        // 却无法为自己创建的项目记加班(后端 OvertimeService.validateProjectMembership
+        // 已同步加入 createdBy 校验,前端要一致)
         const isOwner = project.ownerId === currentUserId;
         const isMember = project.memberIds?.includes(currentUserId) || false;
-        return isOwner || isMember;
+        const isCreator = project.createdBy === currentUserId;
+        return isOwner || isMember || isCreator;
       });
     }
   }
@@ -316,6 +324,8 @@ const errors = reactive({
 // 获取选中项目的叶子任务列表（没有子任务的任务，且未完成，2026-06-13: 进一步限定为自己负责的）
 // 2026-06-14: 编辑模式下"负责人"指 record.userId(待显示的加班人员)而非 currentUser,
 // 避免 admin 代填等场景下列出错误的可选任务。
+// 2026-06-14: 项目经理角色可选任意未完成叶子任务(为整体项目加班统计负责),
+// 不再限定 assigneeId === targetUserId。
 const projectTasks = computed(() => {
   if (!formData.projectId) return [];
 
@@ -330,7 +340,14 @@ const projectTasks = computed(() => {
 
   const targetUserId = props.record?.userId || userStore.currentUserId;
 
-  // 返回: 叶子任务 + 未完成 + 负责人 === 加班人员
+  // 项目经理 (2026-06-14): 不限定 assigneeId,看到项目下所有未完成叶子任务
+  if (permissionStore.currentRole === 'project-manager') {
+    return allProjectTasks.filter(task =>
+      !parentTaskIds.has(task.id) && task.status !== 'done'
+    );
+  }
+
+  // 其他角色: 叶子任务 + 未完成 + 负责人 === 加班人员
   // (后端 PermissionService.canCreateOvertimeOnTask 用 existing.getUserId() 兜底,
   //  与此处 targetUserId 一致)
   return allProjectTasks.filter(task =>
