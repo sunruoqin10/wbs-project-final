@@ -99,6 +99,7 @@ All REST responses are `Result<T>`: `{ code: number, message: string, data: T }`
 
 ## Git Workflow
 
+- **任何场合都不要自动提交代码。** 在用户**明确**说出"提交" / "commit" / "commit 吧" / "确认提交" / "push 上去" 等指令之前,**绝不**执行 `git add`、`git commit`、`git push`、PR 创建 / merge、tag 等任何会写入版本历史的命令。本规则对所有场景一视同仁——任务收尾、smoke test 通过、"顺手提一下"、批量收尾、用户用英文说 "commit it"、用户之前说过类似的话但当前对话未再次确认等,**全部不算提交许可**。展示 commit message + 文件列表 + 用户在 checklist 上勾选 "approved" **不等于** 提交许可。
 - **Never `git commit` or `git push` without explicit user confirmation.** Show the proposed message and file list first, then wait for approval.
 - **Even after the user reviews the proposed message and file list, do NOT run `git commit` proactively.** Only commit when the user explicitly says "提交" / "commit" / "commit 吧" / "确认提交" etc. Showing the message + getting an "approved" answer on a checklist is NOT the same as an explicit "commit now" instruction.
 - Same rule for destructive operations: `git commit --amend`, `git push --force`, `git reset --hard`, `git rebase`.

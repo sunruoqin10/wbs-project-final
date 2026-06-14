@@ -542,6 +542,7 @@
                         审批
                       </button>
                       <button
+                        v-if="canEdit(record)"
                         @click="handleEdit(record)"
                         class="text-secondary-600 hover:text-secondary-800"
                         title="编辑"
@@ -549,6 +550,7 @@
                         编辑
                       </button>
                       <button
+                        v-if="canDelete(record)"
                         @click="handleDelete(record)"
                         class="text-danger-600 hover:text-danger-800"
                         title="删除"
@@ -1086,11 +1088,17 @@ const canApprove = (projectId: string) => {
 
 const canEdit = (record: OvertimeRecord) => {
   if (record.status === 'approved') return false;
+  // 2026-06-14: 对齐 docs/superpowers/specs/2026-06-13-dept-pm-overtime-view-design.md §3
+  // 权限矩阵 — 只有 ADMIN 可跨用户改/删;其他角色(PROJECT_MANAGER / 项目 owner /
+  // dept-pm / MEMBER)只能改/删自己的记录。VIEWER 完全无写权。
+  if (isAdmin.value) return true;
   return record.userId === userStore.currentUserId;
 };
 
 const canDelete = (record: OvertimeRecord) => {
   if (record.status === 'approved') return false;
+  // 同 canEdit: 仅 ADMIN 可跨用户删
+  if (isAdmin.value) return true;
   return record.userId === userStore.currentUserId;
 };
 

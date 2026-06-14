@@ -46,7 +46,7 @@
           加班人员
         </label>
         <div class="w-full rounded-lg border border-secondary-200 bg-secondary-50 px-4 py-2 text-sm text-secondary-900">
-          {{ currentUser?.name || '' }}
+          {{ displayUser?.name || '' }}
         </div>
       </div>
 
@@ -240,9 +240,13 @@ const permissionStore = usePermissionStore();
 const isEditing = computed(() => !!props.record);
 const saving = ref(false);
 
-const currentUser = computed(() => {
-  if (!userStore.currentUserId) return null;
-  return userStore.users.find(u => u.id === userStore.currentUserId) || null;
+// 2026-06-14: 编辑模式下展示"加班人员"应为 record.userId 对应用户,
+// 而非当前登录用户(防止 admin 代填等场景下显示错乱)。
+// 新建时无 record,回退到 userStore.currentUserId。
+const displayUser = computed(() => {
+  const targetUserId = props.record?.userId || userStore.currentUserId;
+  if (!targetUserId) return null;
+  return userStore.users.find(u => u.id === targetUserId) || null;
 });
 
 // 时间选择器的时分
@@ -310,6 +314,8 @@ const errors = reactive({
 });
 
 // 获取选中项目的叶子任务列表（没有子任务的任务，且未完成，2026-06-13: 进一步限定为自己负责的）
+// 2026-06-14: 编辑模式下"负责人"指 record.userId(待显示的加班人员)而非 currentUser,
+// 避免 admin 代填等场景下列出错误的可选任务。
 const projectTasks = computed(() => {
   if (!formData.projectId) return [];
 
@@ -322,15 +328,16 @@ const projectTasks = computed(() => {
       .map(task => task.parentTaskId)
   );
 
-  const currentUserId = userStore.currentUserId;
+  const targetUserId = props.record?.userId || userStore.currentUserId;
 
-  // 返回: 叶子任务 + 未完成 + 负责人 === 当前用户
-  // (所有角色统一只看自己负责的任务,后端 PermissionService.canCreateOvertimeOnTask 兜底)
+  // 返回: 叶子任务 + 未完成 + 负责人 === 加班人员
+  // (后端 PermissionService.canCreateOvertimeOnTask 用 existing.getUserId() 兜底,
+  //  与此处 targetUserId 一致)
   return allProjectTasks.filter(task =>
     !parentTaskIds.has(task.id)
       && task.status !== 'done'
-      && currentUserId != null
-      && task.assigneeId === currentUserId
+      && targetUserId != null
+      && task.assigneeId === targetUserId
   );
 });
 
