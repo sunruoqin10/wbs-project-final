@@ -48,15 +48,16 @@ public class OvertimeService {
     // ==================== 权限验证 ====================
 
     /**
-     * 验证用户是否有权限访问指定项目的加班记录
-     * 用户有权限的情况：
+     * 验证用户是否有权限访问指定项目的加班记录(view / edit / delete 共用)
+     * 用户有权限的情况(2026-06-14):
      * 1. 管理员可以访问所有项目的加班记录
-     * 2. 项目经理可以访问所有项目的加班记录
-     * 3. 项目负责人（owner_id）可以访问其负责项目的加班记录
-     * 4. 用户可以访问自己提交的加班记录
+     * 2. 用户可以访问自己提交的加班记录
+     * 3. 部门项目负责人(dept-project-manager)可访问所辖部门内成员的加班记录
+     * 4. 项目负责人(owner_id,含角色为 project-manager 的 owner)可访问其负责项目的加班记录
+     * 5. 申请/审批权限不由本方法控制,审批由 validateApprover 单独把关
      * @param userId 当前用户ID
      * @param projectId 项目ID
-     * @param recordUserId 加班记录的提交者ID（可选）
+     * @param recordUserId 加班记录的提交者ID（可选,用于 dept-pm 按提交者部门判定）
      * @return 是否有权限
      */
     public boolean hasPermission(String userId, String projectId, String recordUserId) {
@@ -81,20 +82,10 @@ public class OvertimeService {
             return true;
         }
 
-        // 2026-06-14: 项目经理的加班申请 — 只有同部门 dept-project-manager 能看到/审批,
-        // project-owner 也无法看到其他 project-manager 的加班申请
+        // 2026-06-14: 移除"提交者是 project-manager"的早返回分支 —
+        // project-manager 应当能查看 / 管理自己 owner 项目下所有成员(含其他 project-manager)的加班
+        // 审批权限仍由 validateApprover 单独控制(只有同部门 dept-pm 能批 project-manager 提交者)
         User recordUser = recordUserId != null ? userMapper.selectById(recordUserId) : null;
-        boolean recordUserIsProjectManager = recordUser != null
-                && "project-manager".equals(recordUser.getRole());
-
-        if (recordUserIsProjectManager) {
-            // 只有同部门 dept-project-manager 或 admin(已在上方返回) 能访问
-            return permissionService.isDeptProjectManager(userId)
-                    && recordUser.getDeptCode() != null
-                    && permissionService.isDeptManager(userId, recordUser.getDeptCode());
-        }
-
-        // —— 以下是"非项目经理提交者"的正常逻辑 ——
 
         // 部门项目负责人(2026-06-13): 提交者 dept 在 managed_dept_codes 内则放行
         // 注意: recordUserId 必须非空(避免只看 projectId 误放行),且复用 permissionService.isDeptManager

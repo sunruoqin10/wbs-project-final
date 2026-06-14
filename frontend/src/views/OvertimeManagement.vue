@@ -750,16 +750,15 @@ const managedRecords = computed(() => {
     return overtimeStore.overtimeRecords.filter(r => r.userId !== currentUserId);
   }
 
-  // 2026-06-14: project-manager / project-owner: 仅看自己负责项目的记录,
-  // 但需排除"提交者是 project-manager"的记录(这类记录只能由 dept-project-manager 审批)。
+  // 2026-06-14: project-manager / project-owner: 仅看自己负责项目的记录。
+  // view 不再按"提交者角色"二次过滤 — project-manager owner 应能看见自己项目下所有成员的加班
+  // (含其他 project-manager 成员),审批权仍由 canApproveOvertime / 后端 validateApprover 单独控制:
+  // "提交者是 project-manager" 时,approve 按钮不显示,审批只能由 dept-pm 处理。
   if (isProjectManager.value || isProjectOwner.value) {
     const managedProjectIds = getManagedProjectIds();
     return overtimeStore.overtimeRecords.filter(r => {
       if (r.userId === currentUserId) return false;
       if (!managedProjectIds.includes(r.projectId)) return false;
-      // 提交者是 project-manager → 无权查看(应交由 dept-project-manager 处理)
-      const submitter = userStore.userById(r.userId);
-      if (submitter?.role === 'project-manager') return false;
       return true;
     });
   }
