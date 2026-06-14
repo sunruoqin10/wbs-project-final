@@ -78,18 +78,8 @@ const emit = defineEmits<{
   delete: [report: WeeklyReport];
 }>();
 
-const canEdit = computed(() => {
-  if (permissionStore.currentRole === 'admin') return true;
-  if (permissionStore.currentRole === 'project-manager') {
-    return false;
-  }
-  return permissionStore.currentUserId === props.report.userId;
-});
-
-const canDelete = computed(() => {
-  if (permissionStore.currentRole === 'admin') return true;
-  return permissionStore.currentUserId === props.report.userId;
-});
+const canEdit = computed(() => permissionStore.canEditWeeklyReport(props.report));
+const canDelete = computed(() => permissionStore.canDeleteWeeklyReport(props.report));
 
 const getStatusColor = (status: string) => {
   const colors: Record<string, string> = {

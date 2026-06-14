@@ -1,6 +1,6 @@
 import { defineStore } from 'pinia';
 import { ref, computed } from 'vue';
-import type { Permission, UserRole } from '@/types';
+import type { Permission, UserRole, ReportStatus } from '@/types';
 import apiService from '@/services/api';
 import { useUserStore } from './user';
 import { useProjectStore } from './project';
@@ -15,6 +15,19 @@ import { useProjectStore } from './project';
  * - member              : 我参与的项目（可改自己任务进度）
  * - viewer              : 我参与的项目（只读）
  */
+
+/**
+ * 周报权限判定输入参数(2026-06-14 周报 4 角色对齐)
+ * 仅取判定必需字段,避免 store 对完整 WeeklyReport 类型耦合。
+ * `projectId` 允许为空 — 后端 WeeklyReport.projectId 是 optional,前端不强约束。
+ */
+export interface WeeklyReportPermissionInput {
+  id: string;
+  userId: string;
+  projectId?: string;
+  status: ReportStatus;
+}
+
 export const usePermissionStore = defineStore('permission', () => {
   const permissions = ref<Permission[]>([]);
   const loading = ref(false);
@@ -306,9 +319,75 @@ export const usePermissionStore = defineStore('permission', () => {
 
   /**
    * 是否能审批周报
+   *
+   * 2026-06-14:周报 4 角色权限对齐,改用 5 档判定(对齐后端 PermissionService.canApproveWeeklyReport):
+   *   ① admin
+   *   ② 提交者是 PM / dept-pm / project-owner → 仅同部门 dept-pm 可批(防自审 / 互批)
+   *   ③ 项目 owner
+   *   ④ PM via managed_project_ids
+   *   ⑤ submitter.dept_code 兜底(dept-pm)
+   * 仅决定按钮显隐;后端 PermissionService 是真正闸门。
    */
-  const canApproveWeeklyReport = (projectId: string): boolean => {
-    return canEditProject(projectId);
+  const canApproveWeeklyReport = (report: WeeklyReportPermissionInput): boolean => {
+    if (!userStore.currentUser) return false;
+    if (report.status !== 'submitted') return false;
+    if (report.userId === userStore.currentUserId) return false;
+    if (isAdmin()) return true;
+
+    const submitter = userStore.userById(report.userId);
+    const submitterRole = submitter?.role;
+    const submitterDeptCode = submitter?.deptCode;
+
+    // 判断 submitter 是否为该项目的 owner
+    const project = report.projectId ? projectStore.projectById(report.projectId) : null;
+    const submitterIsProjectOwner = !!project && report.userId === project.ownerId;
+
+    if (
+      submitterRole === 'project-manager' ||
+      submitterRole === 'dept-project-manager' ||
+      submitterIsProjectOwner
+    ) {
+      return isDeptManager(submitterDeptCode);
+    }
+    if (report.projectId && isProjectOwner(report.projectId)) return true;
+    if (report.projectId && isManagedProject(report.projectId)) return true;
+    if (isDeptManager(submitterDeptCode)) return true;
+    return false;
+  };
+
+  /**
+   * 是否能查看周报
+   * 2026-06-14:5 档判定 — admin / 自己 / 项目 owner / managed_project / dept-pm
+   */
+  const canViewWeeklyReport = (report: WeeklyReportPermissionInput): boolean => {
+    if (!userStore.currentUser) return false;
+    if (isAdmin()) return true;
+    if (report.userId === userStore.currentUserId) return true;
+    if (report.projectId && isProjectOwner(report.projectId)) return true;
+    if (report.projectId && isManagedProject(report.projectId)) return true;
+    const submitter = userStore.userById(report.userId);
+    if (isDeptManager(submitter?.deptCode)) return true;
+    return false;
+  };
+
+  /**
+   * 是否能编辑周报(仅本人 + draft/rejected 状态;admin 例外)
+   */
+  const canEditWeeklyReport = (report: WeeklyReportPermissionInput): boolean => {
+    if (!userStore.currentUser) return false;
+    if (isAdmin()) return true;
+    if (report.userId !== userStore.currentUserId) return false;
+    return report.status === 'draft' || report.status === 'rejected';
+  };
+
+  /**
+   * 是否能删除周报(仅本人 + draft 状态;admin 例外)
+   */
+  const canDeleteWeeklyReport = (report: WeeklyReportPermissionInput): boolean => {
+    if (!userStore.currentUser) return false;
+    if (isAdmin()) return true;
+    if (report.userId !== userStore.currentUserId) return false;
+    return report.status === 'draft';
   };
 
   /**
@@ -434,7 +513,10 @@ export const usePermissionStore = defineStore('permission', () => {
     canEditTask,
     canEditTaskProgress,
     canDeleteTask,
+    canViewWeeklyReport,
     canApproveWeeklyReport,
+    canEditWeeklyReport,
+    canDeleteWeeklyReport,
     canApproveOvertime,
     canEditUser,
     canDeleteUser,

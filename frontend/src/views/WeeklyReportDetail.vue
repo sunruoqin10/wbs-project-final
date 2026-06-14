@@ -98,6 +98,13 @@
           </div>
         </Card>
 
+        <!-- 2026-06-14:周报审批历史日志面板,挂在审批意见与评论之间 -->
+        <WeeklyReportApprovalLog
+          v-if="report.id"
+          class="mt-6"
+          :reportId="report.id"
+        />
+
         <Card class="mt-6 p-6">
           <div class="flex items-center justify-between mb-4">
             <h3 class="text-lg font-semibold text-secondary-900">{{ $t('weeklyReports.documents.title') }}</h3>
@@ -251,6 +258,7 @@ import { useRouter, useRoute } from 'vue-router';
 import { useI18n } from 'vue-i18n';
 import MainLayout from '@/components/layout/MainLayout.vue';
 import WeeklyReportComment from '@/components/weeklyReport/WeeklyReportComment.vue';
+import WeeklyReportApprovalLog from '@/components/weeklyReport/WeeklyReportApprovalLog.vue';
 import ApprovalModal from '@/components/weeklyReport/ApprovalModal.vue';
 import Card from '@/components/common/Card.vue';
 import Button from '@/components/common/Button.vue';
@@ -296,9 +304,8 @@ const canEdit = computed(() => {
 });
 
 const canApprove = computed(() => {
-  if (permissionStore.currentRole === 'admin') return true;
-  if (permissionStore.currentRole === 'project-manager') return true;
-  return false;
+  if (!report.value) return false;
+  return permissionStore.canApproveWeeklyReport(report.value);
 });
 
 onMounted(async () => {

@@ -27,6 +27,7 @@ export const PROJECT_PRIORITY_OPTIONS = [
 
 export const USER_ROLE_OPTIONS = [
   { label: '管理员', value: 'admin' },
+  { label: '部门项目负责人', value: 'dept-project-manager' },
   { label: '项目经理', value: 'project-manager' },
   { label: '成员', value: 'member' },
   { label: '观察者', value: 'viewer' }

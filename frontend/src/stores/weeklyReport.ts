@@ -1,7 +1,9 @@
 import { defineStore } from 'pinia';
-import { ref, computed } from 'vue';
+import { ref, computed, watch } from 'vue';
 import type { WeeklyReport, WeeklyReportComment, ReportStatus } from '@/types';
 import apiService from '@/services/api';
+import { useUserStore } from './user';
+import { usePermissionStore } from './permission';
 
 export const useWeeklyReportStore = defineStore('weeklyReport', () => {
   const reports = ref<WeeklyReport[]>([]);
@@ -42,6 +44,18 @@ export const useWeeklyReportStore = defineStore('weeklyReport', () => {
       loading.value = false;
     }
   };
+
+  // 2026-06-14:周报 4 角色对齐 — 用户 / 角色切换时,后端可见范围会变,
+  // 这里重拉一遍以刷新列表(后端按 getAccessibleWeeklyReportUserIds 过滤)。
+  const userStore = useUserStore();
+  const permissionStore = usePermissionStore();
+  watch(
+    () => `${userStore.currentUserId ?? ''}|${permissionStore.currentRole ?? ''}`,
+    () => {
+      loadReports();
+    },
+    { immediate: false }
+  );
 
   const loadReportById = async (id: string) => {
     try {

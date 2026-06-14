@@ -742,9 +742,12 @@ export default {
   roles: {
     admin: '管理员',
     deptProjectManager: '部门项目负责人',
+    dept_project_manager: '部门项目负责人',
     projectManager: '项目经理',
+    project_manager: '项目经理',
     member: '项目人员',
-    viewer: '观察者'
+    viewer: '观察者',
+    project_owner: '项目负责人'
   },
 
   // 优先级
@@ -1166,6 +1169,12 @@ export default {
     messages: {
       deleteSuccess: '周报已删除',
       deleteFailed: '删除失败，请稍后重试'
+    },
+    // 2026-06-14:周报审批日志面板
+    approvalHistory: '审批记录',
+    action: {
+      approve: '通过',
+      reject: '驳回'
     }
   },
 

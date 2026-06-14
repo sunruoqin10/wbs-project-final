@@ -1,6 +1,6 @@
 // API Service Layer - Connects to Spring Boot backend
 
-import type { Project, Task, User, DelayStats, OvertimeRecord, OvertimeStats, OvertimeApprovalLog, Permission, TaskOvertimeStats, WeeklyReport, WeeklyReportComment, Document, OrgNode, RoleChangeLog, RoleChangeRequest } from '@/types';
+import type { Project, Task, User, DelayStats, OvertimeRecord, OvertimeStats, OvertimeApprovalLog, Permission, TaskOvertimeStats, WeeklyReport, WeeklyReportComment, WeeklyReportApprovalLog, Document, OrgNode, RoleChangeLog, RoleChangeRequest } from '@/types';
 import type { SchedulerConfig } from '@/types/scheduler';
 import { useUserStore } from '@/stores/user';
 
@@ -716,6 +716,11 @@ class ApiService {
     return request<void>(`/weekly-reports/comments/${commentId}`, {
       method: 'DELETE',
     });
+  }
+
+  // 2026-06-14: 获取周报审批历史日志(GET /weekly-reports/{id}/approval-logs)
+  async getWeeklyReportApprovalLogs(reportId: string | number): Promise<WeeklyReportApprovalLog[]> {
+    return request<WeeklyReportApprovalLog[]>(`/weekly-reports/${reportId}/approval-logs`);
   }
 
   // Documents API

@@ -39,6 +39,7 @@ import { computed } from 'vue';
 import { useI18n } from 'vue-i18n';
 import type { WeeklyReportComment } from '@/types';
 import { useUserStore } from '@/stores/user';
+import { usePermissionStore } from '@/stores/permission';
 import dayjs from 'dayjs';
 import 'dayjs/locale/zh-cn';
 
@@ -46,6 +47,7 @@ dayjs.locale('zh-cn');
 
 const { t } = useI18n();
 const userStore = useUserStore();
+const permissionStore = usePermissionStore();
 
 const props = defineProps<{
   comments: WeeklyReportComment[];
@@ -56,7 +58,7 @@ const emit = defineEmits<{
 }>();
 
 const canDelete = (comment: WeeklyReportComment) => {
-  return userStore.currentUserId === comment.userId || userStore.currentRole === 'admin';
+  return userStore.currentUserId === comment.userId || permissionStore.currentRole === 'admin';
 };
 
 const getUserName = (userId: string) => {

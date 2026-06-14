@@ -284,6 +284,22 @@ export interface WeeklyReportComment {
   createdAt: string;
 }
 
+/**
+ * 周报审批历史日志(2026-06-14 新建)
+ * 后端 GET /api/weekly-reports/{id}/approval-logs 返回
+ */
+export interface WeeklyReportApprovalLog {
+  id: number;                    // 日志表自增 PK
+  reportId: string;              // 对齐 WeeklyReport.id (String)
+  approverId: string;
+  approverName: string;
+  approverAvatar?: string;
+  approverRole: 'admin' | 'dept-project-manager' | 'project-manager' | 'project-owner';
+  action: 'approve' | 'reject';
+  comment?: string;
+  createdAt: string;
+}
+
 export interface Document {
   id: string;
   projectId?: string;

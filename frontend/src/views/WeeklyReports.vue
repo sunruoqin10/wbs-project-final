@@ -259,40 +259,12 @@ const statusOptions = computed(() => [
 ]);
 
 const filteredReports = computed(() => {
+  // 2026-06-14 周报 4 角色对齐:后端已按 getAccessibleWeeklyReportUserIds 过滤,
+  // 前端不再做二次角色 filter,只保留 UI 层的 status / keyword 筛选。
   let result = weeklyReportStore.reports;
 
-  console.log('周报列表调试信息:');
-  console.log('- 所有周报数量:', weeklyReportStore.reports.length);
-  console.log('- 所有周报数据:', weeklyReportStore.reports);
-  console.log('- 当前用户ID:', userStore.currentUser?.id || userStore.currentUserId);
-  console.log('- 当前用户角色:', permissionStore.currentRole);
-  console.log('- 选中的状态:', selectedStatuses.value);
-
-  // 权限过滤：只对已登录的非管理员用户进行过滤
-  if (permissionStore.currentRole !== 'admin' && permissionStore.currentRole !== 'project-manager') {
-    const currentUserId = userStore.currentUser?.id || userStore.currentUserId;
-    console.log('- 权限过滤: 当前用户不是管理员，需要过滤周报');
-    console.log('- currentUserId:', currentUserId);
-
-    if (currentUserId) {
-      const beforeFilter = result.length;
-      result = result.filter(report => {
-        const match = report.userId === currentUserId;
-        console.log(`- 周报 ${report.id}: userId=${report.userId}, 匹配=${match}`);
-        return match;
-      });
-      console.log('- 权限过滤前:', beforeFilter, '过滤后:', result.length);
-    } else {
-      console.log('- 警告: currentUserId 为空，无法进行权限过滤，显示所有数据');
-    }
-  } else {
-    console.log('- 权限过滤: 当前用户是管理员或项目经理，显示所有周报');
-  }
-
   if (selectedStatuses.value.length > 0) {
-    const beforeFilter = result.length;
     result = result.filter(r => selectedStatuses.value.includes(r.status));
-    console.log('- 状态过滤前:', beforeFilter, '过滤后:', result.length);
   }
 
   if (searchQuery.value) {
@@ -304,8 +276,6 @@ const filteredReports = computed(() => {
       return projectName.includes(search) || userName.includes(search) || weekRange.includes(search);
     });
   }
-
-  console.log('- 最终结果数量:', result.length);
 
   return result.sort((a, b) => {
     return dayjs(b.createdAt).valueOf() - dayjs(a.createdAt).valueOf();
@@ -396,17 +366,11 @@ const getStatusVariant = (status: string): string => {
 };
 
 const canEditReport = (report: WeeklyReport): boolean => {
-  const currentUserId = userStore.currentUserId;
-  if (permissionStore.currentRole === 'admin') return true;
-  if (report.userId === currentUserId && report.status === 'draft') return true;
-  return false;
+  return permissionStore.canEditWeeklyReport(report);
 };
 
 const canDeleteReport = (report: WeeklyReport): boolean => {
-  const currentUserId = userStore.currentUserId;
-  if (permissionStore.currentRole === 'admin') return true;
-  if (report.userId === currentUserId && report.status === 'draft') return true;
-  return false;
+  return permissionStore.canDeleteWeeklyReport(report);
 };
 </script>
 
