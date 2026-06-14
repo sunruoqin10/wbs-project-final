@@ -1000,8 +1000,7 @@ const getManagedProjectIds = (): string[] => {
     return projectStore.projects.map(p => p.id);
   }
 
-  // 2026-06-14: project-manager 不再全量 — 与 project-owner 一致,仅自己负责的项目
-  // 部门项目负责人 — 所辖部门的项目
+  // 2026-06-14: 部门项目负责人 — 所辖部门的项目
   if (permissionStore.isDeptProjectManager()) {
     const codes = permissionStore.managedDeptCodes;
     return projectStore.projects
@@ -1009,9 +1008,19 @@ const getManagedProjectIds = (): string[] => {
       .map(p => p.id);
   }
 
-  return projectStore.projects
+  // 2026-06-14: 项目经理(project-manager) — owner 项目 + managedProjectIds 项目
+  // 确保项目经理能看到由他管理/创建的项目中所有成员的加班信息
+  const ownerIds = projectStore.projects
     .filter(project => project.ownerId === currentUserId)
     .map(p => p.id);
+
+  if (permissionStore.isProjectManager()) {
+    const managedIds = permissionStore.managedProjectIds || [];
+    const combined = new Set<string>([...ownerIds, ...managedIds]);
+    return Array.from(combined);
+  }
+
+  return ownerIds;
 };
 
 const getAccessibleProjectIds = (): string[] => {
@@ -1030,6 +1039,17 @@ const getAccessibleProjectIds = (): string[] => {
       .map(p => p.id);
   }
 
+  // 2026-06-14: 项目经理(project-manager) — owner 项目 + managedProjectIds 项目 + 参与项目
+  if (permissionStore.isProjectManager()) {
+    const managedIds = permissionStore.managedProjectIds || [];
+    return projectStore.projects.filter(project => {
+      const isOwner = project.ownerId === currentUserId;
+      const isManaged = managedIds.includes(project.id);
+      const isMember = project.memberIds?.includes(currentUserId) || false;
+      return isOwner || isManaged || isMember;
+    }).map(p => p.id);
+  }
+
   return projectStore.projects.filter(project => {
     const isOwner = project.ownerId === currentUserId;
     const isMember = project.memberIds?.includes(currentUserId) || false;
@@ -1040,11 +1060,29 @@ const getAccessibleProjectIds = (): string[] => {
 const accessibleProjects = computed(() => {
   const currentUserId = userStore.currentUserId;
   if (!currentUserId) return [];
-  
+
   if (isAdmin.value) {
     return projectStore.projects;
   }
-  
+
+  // 2026-06-14: 部门项目负责人 — 所辖部门的项目
+  if (permissionStore.isDeptProjectManager()) {
+    const codes = permissionStore.managedDeptCodes;
+    return projectStore.projects.filter(p => !!p.deptCode && codes.includes(p.deptCode));
+  }
+
+  // 2026-06-14: 项目经理(project-manager) — owner 项目 + managedProjectIds 项目 + 参与项目
+  // 确保项目经理能看到由他管理/创建的项目中所有成员的加班信息
+  if (permissionStore.isProjectManager()) {
+    const managedIds = permissionStore.managedProjectIds || [];
+    return projectStore.projects.filter(project => {
+      const isOwner = project.ownerId === currentUserId;
+      const isManaged = managedIds.includes(project.id);
+      const isMember = project.memberIds?.includes(currentUserId) || false;
+      return isOwner || isManaged || isMember;
+    });
+  }
+
   return projectStore.projects.filter(project => {
     const isOwner = project.ownerId === currentUserId;
     const isMember = project.memberIds?.includes(currentUserId) || false;

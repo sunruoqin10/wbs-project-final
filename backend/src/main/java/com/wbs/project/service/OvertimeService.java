@@ -102,7 +102,17 @@ public class OvertimeService {
         }
 
         // 项目负责人可以访问其负责项目的加班记录
-        return userId.equals(project.getOwnerId());
+        if (userId.equals(project.getOwnerId())) {
+            return true;
+        }
+
+        // 2026-06-14: 项目经理(project-manager): 可访问其管辖项目(managed_project_ids)的加班记录
+        // 确保项目经理能看到由他管理/创建的项目中所有成员的加班信息
+        if (permissionService.isManagedProject(userId, projectId)) {
+            return true;
+        }
+
+        return false;
     }
 
     /**
@@ -447,6 +457,12 @@ public class OvertimeService {
 
         // 项目负责人可以审批其负责项目的加班申请
         if (approverId.equals(project.getOwnerId())) {
+            return;
+        }
+
+        // 2026-06-14: 项目经理(project-manager): 可审批其管辖项目(managed_project_ids)的加班申请
+        // 使项目经理能审批由他管理/创建的项目中成员的加班申请(提交者非项目经理)
+        if (permissionService.isManagedProject(approverId, projectId)) {
             return;
         }
 

@@ -93,6 +93,13 @@ export const usePermissionStore = defineStore('permission', () => {
     return userStore.currentUser?.managedDeptCodes || [];
   });
 
+  /**
+   * 用户的 managedProjectIds（2026-06-14, 仅 project-manager 有效）
+   */
+  const managedProjectIds = computed((): string[] => {
+    return userStore.currentUser?.managedProjectIds || [];
+  });
+
   const managedCompanyCd = computed((): string | undefined => {
     return userStore.currentUser?.managedCompanyCd;
   });
@@ -332,8 +339,10 @@ export const usePermissionStore = defineStore('permission', () => {
 
     // —— 以下是"非项目经理提交者"的正常逻辑 ——
 
-    // project-manager / project-owner:可以审批自己负责项目的加班记录
+    // project-manager / project-owner: 可以审批自己负责/管理项目的加班记录
     if (isProjectOwner(projectId)) return true;
+    // 2026-06-14: 项目经理可通过 managed_project_ids 管辖项目
+    if (isProjectManager() && isManagedProject(projectId)) return true;
     // dept-project-manager(2026-06-14): 提交者所属部门在管辖部门范围内即可审批
     if (isDeptProjectManager() && submitter && submitter.deptCode && isDeptManager(submitter.deptCode)) {
       return true;
@@ -399,6 +408,7 @@ export const usePermissionStore = defineStore('permission', () => {
     currentRole,
     currentPermissions,
     managedDeptCodes,
+    managedProjectIds,
     managedCompanyCd,
     hasPermission,
     hasAnyPermission,

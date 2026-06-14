@@ -746,7 +746,31 @@ public class PermissionService {
             }
             return Collections.emptySet();
         }
-        // project-manager / 普通项目 owner: 其负责的所有项目的成员 ID
+        // 2026-06-14: project-manager: 其 owner 的项目 + managed_project_ids 中的项目的所有成员 ID
+        // 确保项目经理能看到由他管理/创建的项目中所有成员的加班信息
+        if (isProjectManager(userId)) {
+            Set<String> allMemberIds = new HashSet<>();
+            // owner 项目的成员
+            allMemberIds.addAll(getOwnerProjectMemberIds(userId));
+            // managed_project_ids 项目的成员
+            User u = userMapper.selectById(userId);
+            if (u != null) {
+                List<String> managedIds = parseProjectIds(u.getManagedProjectIds());
+                if (!managedIds.isEmpty()) {
+                    List<String> managedMemberIds = projectMemberMapper.selectMemberIdsByProjectIds(managedIds);
+                    if (managedMemberIds != null) {
+                        allMemberIds.addAll(managedMemberIds);
+                    }
+                }
+            }
+            allMemberIds.add(userId); // 确保能看到自己的记录
+            if (!allMemberIds.isEmpty()) {
+                return allMemberIds;
+            }
+            return Set.of(userId);
+        }
+
+        // 普通项目 owner(非 project-manager): 其负责的所有项目的成员 ID
         Set<String> ownerProjectMemberIds = getOwnerProjectMemberIds(userId);
         if (!ownerProjectMemberIds.isEmpty()) {
             return ownerProjectMemberIds;

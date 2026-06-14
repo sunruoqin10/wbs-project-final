@@ -17,7 +17,7 @@ export const useUserStore = defineStore('user', () => {
     return users.value.find(u => u.id === currentUserId.value) || null;
   });
 
-  // 解析用户数据，处理 skills / managedDeptCodes 字段的 JSON 字符串
+  // 解析用户数据，处理 skills / managedDeptCodes / managedProjectIds 字段的 JSON 字符串
   const parseUserData = (user: any): User => {
     // 处理 skills 字段：如果是 JSON 字符串则解析为数组
     if (user.skills && typeof user.skills === 'string') {
@@ -43,6 +43,19 @@ export const useUserStore = defineStore('user', () => {
     }
     if (user.managedDeptCodes && !Array.isArray(user.managedDeptCodes)) {
       user.managedDeptCodes = [];
+    }
+    // 2026-06-14: managedProjectIds 也是 JSON 字符串（仅 project-manager 有效）
+    // 确保项目经理能正确解析管辖项目 ID 列表，以便看到管辖项目中所有成员的加班信息
+    if (user.managedProjectIds && typeof user.managedProjectIds === 'string') {
+      try {
+        user.managedProjectIds = JSON.parse(user.managedProjectIds);
+      } catch (e) {
+        console.warn('Failed to parse managedProjectIds JSON:', user.managedProjectIds, e);
+        user.managedProjectIds = [];
+      }
+    }
+    if (user.managedProjectIds && !Array.isArray(user.managedProjectIds)) {
+      user.managedProjectIds = [];
     }
     return user as User;
   };

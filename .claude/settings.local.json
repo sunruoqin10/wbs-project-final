@@ -27,7 +27,14 @@
       "Bash(git commit -m '🔧 config: update port to 8084 and vue-tsc to v2.2.12 *)",
       "Bash(pnpm lint *)",
       "Bash(git commit -m '✨ feat: add UserAvatar component with DiceBear avatars *)",
-      "Bash(git commit *)"
+      "Bash(git commit *)",
+      "Bash(xxd)",
+      "mcp__MySQL__get_schema_info",
+      "Bash(git restore *)",
+      "Bash(xargs cat)",
+      "Bash(xargs grep -n \"selectByCondition\\\\|userIds\")",
+      "Bash(xargs grep -n \"class OvertimeStats\\\\|class ProjectOvertimeStats\\\\|class ByTypeStats\\\\|thisMonthHours\\\\|byProject\\\\|totalHours\\\\|getHours\\\\|setHours\")",
+      "Bash(xargs grep -n \"private.*hours\\\\|getHours\\\\|setHours\")"
     ]
   }
 }
