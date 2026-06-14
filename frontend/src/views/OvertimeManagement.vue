@@ -239,7 +239,7 @@
                   <td class="whitespace-nowrap px-4 py-3 text-sm">
                     <div class="flex items-center gap-2">
                       <button
-                        v-if="isManagerOrAdmin && record.status === 'pending' && canApprove(record.projectId)"
+                        v-if="isManagerOrAdmin && record.status === 'pending' && canApprove(record.projectId, record.userId)"
                         @click="handleApprove(record)"
                         class="text-primary-600 hover:text-primary-800"
                         title="审批"
@@ -544,7 +544,7 @@
                   <td class="whitespace-nowrap px-4 py-3 text-sm">
                     <div class="flex items-center gap-2">
                       <button
-                        v-if="isManagerOrAdmin && record.status === 'pending' && canApprove(record.projectId)"
+                        v-if="isManagerOrAdmin && record.status === 'pending' && canApprove(record.projectId, record.userId)"
                         @click="handleApprove(record)"
                         class="text-primary-600 hover:text-primary-800"
                         title="审批"
@@ -745,20 +745,27 @@ const managedRecords = computed(() => {
   const currentUserId = userStore.currentUserId;
   if (!currentUserId) return [];
 
-  if (isAdmin.value || isProjectManager.value) {
+  // admin 可看所有他人记录
+  if (isAdmin.value) {
     return overtimeStore.overtimeRecords.filter(r => r.userId !== currentUserId);
   }
 
-  if (isProjectOwner.value) {
+  // 2026-06-14: project-manager / project-owner: 仅看自己负责项目的记录,
+  // 但需排除"提交者是 project-manager"的记录(这类记录只能由 dept-project-manager 审批)。
+  if (isProjectManager.value || isProjectOwner.value) {
     const managedProjectIds = getManagedProjectIds();
-    return overtimeStore.overtimeRecords.filter(r =>
-      managedProjectIds.includes(r.projectId) && r.userId !== currentUserId
-    );
+    return overtimeStore.overtimeRecords.filter(r => {
+      if (r.userId === currentUserId) return false;
+      if (!managedProjectIds.includes(r.projectId)) return false;
+      // 提交者是 project-manager → 无权查看(应交由 dept-project-manager 处理)
+      const submitter = userStore.userById(r.userId);
+      if (submitter?.role === 'project-manager') return false;
+      return true;
+    });
   }
 
-  // 2026-06-14: 部门项目负责人 — 所辖部门成员的加班记录(不含自己)。
-  // 后端 OvertimeService.hasPermission L82-88 已按 dept-pm 范围预过滤,
-  // 这里二次过滤为防御(应对 dept-pm 自己的或 owner 路径混入的记录)。
+  // 2026-06-14: 部门项目负责人 — 所辖部门成员的加班记录(不含自己),
+  // 包含同部门的 project-manager 提交的记录(只有他们能审批)。
   if (permissionStore.isDeptProjectManager()) {
     const codes = permissionStore.managedDeptCodes;
     if (codes.length === 0) return [];
@@ -989,11 +996,13 @@ const getManagedProjectIds = (): string[] => {
   const currentUserId = userStore.currentUserId;
   if (!currentUserId) return [];
 
-  if (isAdmin.value || isProjectManager.value) {
+  // admin 可管理所有项目
+  if (isAdmin.value) {
     return projectStore.projects.map(p => p.id);
   }
 
-  // 2026-06-14: 部门项目负责人 — 所辖部门的项目
+  // 2026-06-14: project-manager 不再全量 — 与 project-owner 一致,仅自己负责的项目
+  // 部门项目负责人 — 所辖部门的项目
   if (permissionStore.isDeptProjectManager()) {
     const codes = permissionStore.managedDeptCodes;
     return projectStore.projects
@@ -1126,11 +1135,11 @@ const getStatusBadgeClass = (status: string) => {
 };
 
 // 2026-06-14: 复用 permissionStore.canApproveOvertime,该 helper 已正确处理
-// admin / owner / dept-pm(project.deptCode ∈ managed_dept_codes)三种情况。
-// 原本地实现无 dept-pm 分支,dept-pm 看不到审批按钮。
-// (frontend/src/stores/permission.ts:310-316)
-const canApprove = (projectId: string) =>
-  permissionStore.canApproveOvertime(projectId);
+// 2026-06-14: 透传 record.userId 给 canApproveOvertime,
+// 让 dept-pm 分支在 project store 缺失时能按 submitter.deptCode 兜底判定。
+// (frontend/src/stores/permission.ts:canApproveOvertime)
+const canApprove = (projectId: string, submitterId?: string) =>
+  permissionStore.canApproveOvertime(projectId, submitterId);
 
 const canEdit = (record: OvertimeRecord) => {
   if (record.status === 'approved') return false;

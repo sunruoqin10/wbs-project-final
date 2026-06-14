@@ -720,12 +720,12 @@ public class PermissionService {
      * 返回当前用户能查看的「加班记录提交者」userId 集合。
      * 与 getAccessibleUploaderIds 同形（对齐 dept-pm 维度），但语义是"可见的加班来源"。
      *
-     * 规则（2026-06-13）：
-     *  - admin / project-manager 返回 null（语义：不限）
-     *  - dept-project-manager 返回所辖部门内的在职用户 ID 集合
-     *  - 其他角色（MEMBER / VIEWER）返回仅自己
-     *  - 项目负责人（owner 但非 admin/PM/dept-pm）走兜底返回仅自己
-     *    （owner 看自己 owner 项目的成员加班，目前不在此方法覆盖范围，由 hasPermission 单独处理）
+     * 规则（2026-06-14 修订）：
+     *  - admin 返回 null（不限）
+     *  - project-manager → 其作为 owner 的所有项目的成员 ID
+     *  - dept-project-manager → 所辖部门内的在职用户 ID 集合
+     *  - 项目负责人（owner 但非 admin/PM/dept-pm）→ 其作为 owner 的所有项目的成员 ID
+     *  - 其他（MEMBER / VIEWER）→ 仅自己
      *
      * 业务方应这样用：对 null 跳过 IN 守卫，非空 IN (...) 守卫，空集合 → 直接返回空结果。
      */
@@ -733,8 +733,8 @@ public class PermissionService {
         if (userId == null) {
             return Collections.emptySet();
         }
-        if (isAdmin(userId) || isProjectManager(userId)) {
-            return null; // null = 不限
+        if (isAdmin(userId)) {
+            return null; // admin = 不限
         }
         if (isDeptProjectManager(userId)) {
             User u = userMapper.selectById(userId);
@@ -746,8 +746,30 @@ public class PermissionService {
             }
             return Collections.emptySet();
         }
-        // MEMBER / VIEWER / owner: 仅自己
+        // project-manager / 普通项目 owner: 其负责的所有项目的成员 ID
+        Set<String> ownerProjectMemberIds = getOwnerProjectMemberIds(userId);
+        if (!ownerProjectMemberIds.isEmpty()) {
+            return ownerProjectMemberIds;
+        }
+        // 兜底: 仅自己
         return Set.of(userId);
+    }
+
+    /**
+     * 获取用户作为 owner 的所有项目的成员 userId 集合（含自身）
+     */
+    private Set<String> getOwnerProjectMemberIds(String userId) {
+        List<String> ownerProjectIds = projectMapper.selectIdsByOwner(userId);
+        if (ownerProjectIds == null || ownerProjectIds.isEmpty()) {
+            return Collections.emptySet();
+        }
+        List<String> memberIds = projectMemberMapper.selectMemberIdsByProjectIds(ownerProjectIds);
+        Set<String> result = new HashSet<>();
+        if (memberIds != null) {
+            result.addAll(memberIds);
+        }
+        result.add(userId); // 确保能看到自己的记录
+        return result;
     }
 
     // ============ 文档权限单文档判定（2026-06-13） ============

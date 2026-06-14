@@ -70,8 +70,9 @@ public class OvertimeService {
             return false;
         }
 
-        // 管理员和项目经理可以访问所有项目
-        if ("admin".equals(user.getRole()) || "project-manager".equals(user.getRole())) {
+        // 管理员可以访问所有项目
+        // 2026-06-14: 移除 project-manager 全量放行 — project-manager 只能查看/审批自己负责（owner）项目的加班记录
+        if ("admin".equals(user.getRole())) {
             return true;
         }
 
@@ -80,15 +81,27 @@ public class OvertimeService {
             return true;
         }
 
+        // 2026-06-14: 项目经理的加班申请 — 只有同部门 dept-project-manager 能看到/审批,
+        // project-owner 也无法看到其他 project-manager 的加班申请
+        User recordUser = recordUserId != null ? userMapper.selectById(recordUserId) : null;
+        boolean recordUserIsProjectManager = recordUser != null
+                && "project-manager".equals(recordUser.getRole());
+
+        if (recordUserIsProjectManager) {
+            // 只有同部门 dept-project-manager 或 admin(已在上方返回) 能访问
+            return permissionService.isDeptProjectManager(userId)
+                    && recordUser.getDeptCode() != null
+                    && permissionService.isDeptManager(userId, recordUser.getDeptCode());
+        }
+
+        // —— 以下是"非项目经理提交者"的正常逻辑 ——
+
         // 部门项目负责人(2026-06-13): 提交者 dept 在 managed_dept_codes 内则放行
         // 注意: recordUserId 必须非空(避免只看 projectId 误放行),且复用 permissionService.isDeptManager
         // 性能 trade-off: 列表场景下每次调用会多查一次 user(拿 deptCode); 当前 N+1 接受,见 spec §4.1
-        if (recordUserId != null) {
-            User recordUser = userMapper.selectById(recordUserId);
-            if (recordUser != null && recordUser.getDeptCode() != null
-                    && permissionService.isDeptManager(userId, recordUser.getDeptCode())) {
-                return true;
-            }
+        if (recordUser != null && recordUser.getDeptCode() != null
+                && permissionService.isDeptManager(userId, recordUser.getDeptCode())) {
+            return true;
         }
 
         // 检查用户是否是项目的负责人（owner_id）
@@ -296,7 +309,7 @@ public class OvertimeService {
         }
 
         // 验证审批人是否有权限（项目负责人可以审批）
-        validateApprover(request.getApproverId(), record.getProjectId());
+        validateApprover(request.getApproverId(), record.getProjectId(), record.getUserId());
 
         LocalDateTime now = LocalDateTime.now();
 
@@ -400,18 +413,41 @@ public class OvertimeService {
 
     /**
      * 验证审批人权限
+     *
+     * @param approverId  审批人ID
+     * @param projectId   项目ID
+     * @param submitterId 加班申请提交者ID（部门项目负责人基于提交者所属部门判断权限）
      */
-    private void validateApprover(String approverId, String projectId) {
+    private void validateApprover(String approverId, String projectId, String submitterId) {
         // 查询审批人
         User approver = userMapper.selectById(approverId);
         if (approver == null) {
             throw new RuntimeException("审批人不存在");
         }
 
-        // 管理员和项目经理可以审批所有项目的加班申请
-        if ("admin".equals(approver.getRole()) || "project-manager".equals(approver.getRole())) {
+        // 管理员可以审批所有项目的加班申请
+        // 2026-06-14: 移除 project-manager 全量放行 — project-manager 只能审批自己负责（owner）项目的加班申请
+        if ("admin".equals(approver.getRole())) {
             return;
         }
+
+        // 2026-06-14: 获取提交者，判断其角色 — 项目经理的加班申请只能由部门项目负责人审批
+        // 规则: 若提交者 role == "project-manager",则只有 admin 或 同部门 dept-project-manager 能审批,
+        //       project-owner 无法审批其他 project-manager 的加班申请
+        User submitter = submitterId != null ? userMapper.selectById(submitterId) : null;
+        boolean submitterIsProjectManager = submitter != null
+                && "project-manager".equals(submitter.getRole());
+
+        if (submitterIsProjectManager) {
+            // 项目经理的加班申请:只能由同部门的部门项目负责人审批
+            if (permissionService.isDeptProjectManager(approverId) && submitter.getDeptCode() != null
+                    && permissionService.isDeptManager(approverId, submitter.getDeptCode())) {
+                return;
+            }
+            throw new RuntimeException("项目经理的加班申请需由部门项目负责人审批");
+        }
+
+        // —— 以下是"非项目经理提交者"的正常审批逻辑 ——
 
         Project project = projectMapper.selectById(projectId);
         if (project == null) {
@@ -423,12 +459,13 @@ public class OvertimeService {
             return;
         }
 
-        // 部门项目负责人(2026-06-13): 项目归属部门在 managed_dept_codes 内则可审批
-        // 判定口径: 按 project.deptCode(而非 recordUser.deptCode),避免提交者换部门后授权漂移
-        if (permissionService.isDeptProjectManager(approverId)
-                && project.getDeptCode() != null
-                && permissionService.isDeptManager(approverId, project.getDeptCode())) {
-            return;
+        // 部门项目负责人(2026-06-14): 提交者所属部门在 managed_dept_codes 内则可审批
+        // 判定口径: 按 submitter.deptCode(而非 project.deptCode),确保部门项目负责人可审批该部门所有人员的加班申请
+        if (permissionService.isDeptProjectManager(approverId) && submitterId != null) {
+            if (submitter != null && submitter.getDeptCode() != null
+                    && permissionService.isDeptManager(approverId, submitter.getDeptCode())) {
+                return;
+            }
         }
 
         throw new RuntimeException("您没有权限审批此加班申请");

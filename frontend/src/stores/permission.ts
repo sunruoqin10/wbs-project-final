@@ -306,12 +306,38 @@ export const usePermissionStore = defineStore('permission', () => {
 
   /**
    * 是否能审批加班
+   *
+   * 2026-06-14 修复:加 submitterId 参数 + dept-pm 分支加 submitter.deptCode 降级。
+   * 原实现 100% 依赖 projectStore.projectById(projectId) 能拿到项目,
+   * 但团队 tab 渲染瞬间如果 project store 数据还没回来(竞态),
+   * dept-pm 的"项目归属部门"判定就拿不到 deptCode,直接 false → 按钮不显示。
+   *
+   * 降级方案:project 缺失时,改用 submitter.deptCode 判定 —
+   * 这与后端 OvertimeService.hasPermission 的 dept-pm 分支(L86-92)语义一致:
+   * "提交者 dept 在 managed_dept_codes 内" 也算可见/可审。
+   * 优先级:project.deptCode 优先(主规范口径),submitter.deptCode 兜底。
    */
-  const canApproveOvertime = (projectId: string): boolean => {
+  const canApproveOvertime = (projectId: string, submitterId?: string): boolean => {
     if (isAdmin()) return true;
+
+    // 2026-06-14: 项目经理的加班申请 — 只有同部门 dept-project-manager 能审批,
+    // project-owner 也无法审批其他 project-manager 的加班申请
+    const submitter = submitterId ? userStore.userById(submitterId) : null;
+    const submitterIsProjectManager = submitter?.role === 'project-manager';
+
+    if (submitterIsProjectManager) {
+      // 只有同部门 dept-project-manager 或 admin(已在上方返回) 能审批
+      return isDeptProjectManager() && !!submitter?.deptCode && isDeptManager(submitter.deptCode);
+    }
+
+    // —— 以下是"非项目经理提交者"的正常逻辑 ——
+
+    // project-manager / project-owner:可以审批自己负责项目的加班记录
     if (isProjectOwner(projectId)) return true;
-    const project = projectStore.projectById(projectId);
-    if (isDeptProjectManager() && project && isDeptManager(project.deptCode)) return true;
+    // dept-project-manager(2026-06-14): 提交者所属部门在管辖部门范围内即可审批
+    if (isDeptProjectManager() && submitter && submitter.deptCode && isDeptManager(submitter.deptCode)) {
+      return true;
+    }
     return false;
   };
 
