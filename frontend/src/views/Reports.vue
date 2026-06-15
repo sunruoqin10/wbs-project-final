@@ -184,25 +184,30 @@ const projectProgressChartRef = ref<HTMLElement>();
 const teamPerformanceChartRef = ref<HTMLElement>();
 const isExporting = ref(false);
 
-// 根据角色过滤项目：member 只能看自己参加的项目
+// 根据数据范围过滤项目:统一走 permissionStore.canViewProject
+// (admin / creator / owner / member / dept-pm 五档,与后端 PermissionService.canViewProject 对齐)
 const userProjects = computed(() => {
-  if (permissionStore.currentRole === 'admin' || permissionStore.currentRole === 'project-manager') {
-    return projectStore.projects;
-  }
   const currentUserId = userStore.currentUserId;
   if (!currentUserId) return [];
-  return projectStore.projects.filter(
-    p => p.ownerId === currentUserId || (p.memberIds && p.memberIds.includes(currentUserId))
-  );
+  return projectStore.projects.filter(p => permissionStore.canViewProject(p.id));
 });
 
-// 根据角色过滤任务：只显示用户参与项目的任务
+// 根据数据范围过滤任务:任务所属项目能看,则任务能看
 const userTasks = computed(() => {
-  if (permissionStore.currentRole === 'admin' || permissionStore.currentRole === 'project-manager') {
-    return taskStore.tasks;
-  }
-  const userProjectIds = new Set(userProjects.value.map(p => p.id));
-  return taskStore.tasks.filter(t => userProjectIds.has(t.projectId));
+  const currentUserId = userStore.currentUserId;
+  if (!currentUserId) return [];
+  return taskStore.tasks.filter(t => permissionStore.canViewProject(t.projectId));
+});
+
+// 导出用用户子集:"出现在可见范围内"的所有用户
+//   = 可见项目的 owner ∪ 可见任务的 assignee
+// 理由:exportComprehensive 内部按 data.users.find(ownerId) 查项目负责人名称
+//      (export.ts L141-156),若 owner 不在此子集,owner 单元格会落到 '未分配' fallback
+const usersInScope = computed(() => {
+  const ownerIds = new Set(userProjects.value.map(p => p.ownerId));
+  const assigneeIds = new Set(userTasks.value.map(t => t.assigneeId).filter(Boolean));
+  const scopedIds = new Set([...ownerIds, ...assigneeIds]);
+  return userStore.users.filter(u => scopedIds.has(u.id));
 });
 
 // 从真实数据计算统计数据
@@ -474,6 +479,7 @@ onMounted(async () => {
 // Export function
 const exportComprehensive = async () => {
   const projects = userProjects.value;
+  const tasks = userTasks.value;
   if (projects.length === 0) {
     alert(t('reports.messages.noData'));
     return;
@@ -490,8 +496,8 @@ const exportComprehensive = async () => {
     exportToExcelNamespace.comprehensive(
       {
         projects,
-        tasks: taskStore.tasks,
-        users: userStore.users,
+        tasks: tasks,
+        users: usersInScope.value,
         stats: statistics.value
       },
       `${t('reports.export.comprehensiveReport')}_${getTimestamp()}.xlsx`
@@ -508,6 +514,7 @@ const exportComprehensive = async () => {
 // Export Gantt function
 const exportGantt = async () => {
   const projects = userProjects.value;
+  const tasks = userTasks.value;
   if (projects.length === 0) {
     alert(t('reports.messages.noData'));
     return;
@@ -524,8 +531,8 @@ const exportGantt = async () => {
     await exportToExcelNamespace.gantt(
       {
         projects,
-        tasks: taskStore.tasks,
-        users: userStore.users
+        tasks: tasks,
+        users: usersInScope.value
       },
       `甘特图_${getTimestamp()}.xlsx`
     );
