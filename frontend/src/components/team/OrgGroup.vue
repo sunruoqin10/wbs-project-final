@@ -77,6 +77,11 @@
               <div v-if="user.email" class="mt-0.5 truncate text-xs text-secondary-500">
                 {{ user.email }}
               </div>
+              <!-- 2026-06-16: 职级展示 (HR 同步字段,JPSTN_CD ∈ {BA,BF} 显示 JPSTN_NAM,否则 TL) -->
+              <div class="mt-0.5 truncate text-xs text-secondary-500">
+                <span class="text-secondary-400">{{ $t('team.position') }}:</span>
+                <span class="ml-1 font-medium text-secondary-700">{{ displayPosition(user) }}</span>
+              </div>
               <div class="mt-1 flex items-center justify-between gap-2">
                 <Badge :variant="roleBadgeVariant(user.role)">
                   {{ roleLabel(user.role) }}
@@ -209,6 +214,14 @@ const badgeClass = computed(() => {
 function displayName(user: User): string {
   // 优先用中文名
   return user.chineseNam && user.chineseNam.trim() ? user.chineseNam : user.name;
+}
+
+// 2026-06-16: 职级展示 (HR 同步字段,JPSTN_CD ∈ {BA, BF} 时显示 JPSTN_NAM,否则显示 TL)
+function displayPosition(user: User): string {
+  if (user.jpstnCd === 'BA' || user.jpstnCd === 'BF') {
+    return user.jpstnNam || 'TL';
+  }
+  return 'TL';
 }
 
 function roleLabel(role: string): string {

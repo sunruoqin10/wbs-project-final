@@ -501,6 +501,8 @@ export default {
     actions: '操作',
     workloadDistribution: '工作负载分布',
     taskCount: '任务数',
+    // 2026-06-16: 人员职级 (HR 同步字段,JPSTN_CD ∈ {BA,BF} 显示 JPSTN_NAM,否则 TL)
+    position: '职级',
     // 成员新增/编辑/删除入口已移除:由 HR 同步统一管理
     allMembers: {
       title: '所有成员',

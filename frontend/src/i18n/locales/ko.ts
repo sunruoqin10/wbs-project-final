@@ -505,6 +505,8 @@ export default {
     delete: '삭제',
     workloadDistribution: '작업 부하 분포',
     taskCount: '작업 수',
+    // 2026-06-16: 직급 (HR 동기화 필드,JPSTN_CD ∈ {BA,BF} → JPSTN_NAM,그 외 TL)
+    position: '직급',
     editMember: '구성원 편집',
     addNewMember: '새 구성원 추가',
     form: {
