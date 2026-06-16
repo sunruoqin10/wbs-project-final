@@ -432,6 +432,13 @@ public class OvertimeService {
             return;
         }
 
+        // 2026-06-16: 防自审 — 项目负责人(项目 owner)与项目经理(角色)都不能审批自己的加班
+        // 集中闸口,放在所有业务分支之前,统一兜底
+        // 与 PermissionService.canApproveWeeklyReport 的 "防自审" 先例保持一致
+        if (submitterId != null && approverId.equals(submitterId)) {
+            throw new RuntimeException("不能审批自己的加班申请");
+        }
+
         // 2026-06-14: 获取提交者，判断其角色 — 项目经理的加班申请只能由部门项目负责人审批
         // 规则: 若提交者 role == "project-manager",则只有 admin 或 同部门 dept-project-manager 能审批,
         //       project-owner 无法审批其他 project-manager 的加班申请
@@ -517,7 +524,9 @@ public class OvertimeService {
                 userId, projectId, null, startDate, endDate, null, accessibleUserIds);
 
         OvertimeDTO.OvertimeStats stats = new OvertimeDTO.OvertimeStats();
-        stats.setTotalRecords(records.size());
+        // 2026-06-16: 总记录数改为只统计已审批通过的加班(对齐前端 personalStats/teamStats 口径)
+        // pending / rejected 不计入 totalRecords(它们各自有 pendingRecords/rejectedRecords 单独指标)
+        stats.setTotalRecords((int) records.stream().filter(r -> "approved".equals(r.getStatus())).count());
         stats.setPendingRecords((int) records.stream().filter(r -> "pending".equals(r.getStatus())).count());
         stats.setApprovedRecords((int) records.stream().filter(r -> "approved".equals(r.getStatus())).count());
         stats.setRejectedRecords((int) records.stream().filter(r -> "rejected".equals(r.getStatus())).count());

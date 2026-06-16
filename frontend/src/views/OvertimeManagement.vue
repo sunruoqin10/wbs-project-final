@@ -812,11 +812,14 @@ const teamTotalPayHours = computed(() => {
 
 const personalStats = computed(() => {
   const records = personalRecords.value;
+  // 2026-06-16: 统计口径对齐后端 — 只把"已审批"的记录算入时长/人数/总数
+  // pending / rejected 不进入统计;pendingApprovals 仍按 pending 单独统计(KPI 维度)
+  const approved = records.filter(r => r.status === 'approved');
   const thisMonth = dayjs().format('YYYY-MM');
-  const thisMonthRecords = records.filter(r => dayjs(r.overtimeDate).format('YYYY-MM') === thisMonth);
-  
+  const thisMonthApproved = approved.filter(r => dayjs(r.overtimeDate).format('YYYY-MM') === thisMonth);
+
   const projectStats = new Map<string, { projectId: string; projectName: string; hours: number; count: number }>();
-  records.forEach(r => {
+  approved.forEach(r => {
     const project = projectStore.projectById(r.projectId);
     if (project) {
       const existing = projectStats.get(project.id);
@@ -833,18 +836,18 @@ const personalStats = computed(() => {
       }
     }
   });
-  
+
   return {
-    totalRecords: records.length,
-    totalHours: records.reduce((sum, r) => sum + r.hours, 0),
+    totalRecords: approved.length,
+    totalHours: approved.reduce((sum, r) => sum + r.hours, 0),
     totalPeople: 1,
     pendingApprovals: records.filter(r => r.status === 'pending').length,
-    thisMonthHours: thisMonthRecords.reduce((sum, r) => sum + r.hours, 0),
-    thisMonthPeople: thisMonthRecords.length > 0 ? 1 : 0,
+    thisMonthHours: thisMonthApproved.reduce((sum, r) => sum + r.hours, 0),
+    thisMonthPeople: thisMonthApproved.length > 0 ? 1 : 0,
     byType: {
-      weekday: records.filter(r => r.overtimeType === 'weekday').reduce((sum, r) => sum + r.hours, 0),
-      weekend: records.filter(r => r.overtimeType === 'weekend').reduce((sum, r) => sum + r.hours, 0),
-      holiday: records.filter(r => r.overtimeType === 'holiday').reduce((sum, r) => sum + r.hours, 0)
+      weekday: approved.filter(r => r.overtimeType === 'weekday').reduce((sum, r) => sum + r.hours, 0),
+      weekend: approved.filter(r => r.overtimeType === 'weekend').reduce((sum, r) => sum + r.hours, 0),
+      holiday: approved.filter(r => r.overtimeType === 'holiday').reduce((sum, r) => sum + r.hours, 0)
     },
     byProject: Array.from(projectStats.values())
   };
@@ -852,13 +855,15 @@ const personalStats = computed(() => {
 
 const teamStats = computed(() => {
   const records = managedRecords.value;
+  // 2026-06-16: 团队维度同理 — 已审批记录才计入统计;pendingApprovals 仍是 pending 指标
+  const approved = records.filter(r => r.status === 'approved');
   const thisMonth = dayjs().format('YYYY-MM');
-  const thisMonthRecords = records.filter(r => dayjs(r.overtimeDate).format('YYYY-MM') === thisMonth);
-  
+  const thisMonthApproved = approved.filter(r => dayjs(r.overtimeDate).format('YYYY-MM') === thisMonth);
+
   const projectStats = new Map<string, { projectId: string; projectName: string; hours: number; count: number }>();
   const userStats = new Set<string>();
-  
-  records.forEach(r => {
+
+  approved.forEach(r => {
     const project = projectStore.projectById(r.projectId);
     if (project) {
       const existing = projectStats.get(project.id);
@@ -876,18 +881,18 @@ const teamStats = computed(() => {
     }
     userStats.add(r.userId);
   });
-  
+
   return {
-    totalRecords: records.length,
-    totalHours: records.reduce((sum, r) => sum + r.hours, 0),
+    totalRecords: approved.length,
+    totalHours: approved.reduce((sum, r) => sum + r.hours, 0),
     totalPeople: userStats.size,
     pendingApprovals: records.filter(r => r.status === 'pending').length,
-    thisMonthHours: thisMonthRecords.reduce((sum, r) => sum + r.hours, 0),
-    thisMonthPeople: new Set(thisMonthRecords.map(r => r.userId)).size,
+    thisMonthHours: thisMonthApproved.reduce((sum, r) => sum + r.hours, 0),
+    thisMonthPeople: new Set(thisMonthApproved.map(r => r.userId)).size,
     byType: {
-      weekday: records.filter(r => r.overtimeType === 'weekday').reduce((sum, r) => sum + r.hours, 0),
-      weekend: records.filter(r => r.overtimeType === 'weekend').reduce((sum, r) => sum + r.hours, 0),
-      holiday: records.filter(r => r.overtimeType === 'holiday').reduce((sum, r) => sum + r.hours, 0)
+      weekday: approved.filter(r => r.overtimeType === 'weekday').reduce((sum, r) => sum + r.hours, 0),
+      weekend: approved.filter(r => r.overtimeType === 'weekend').reduce((sum, r) => sum + r.hours, 0),
+      holiday: approved.filter(r => r.overtimeType === 'holiday').reduce((sum, r) => sum + r.hours, 0)
     },
     byProject: Array.from(projectStats.values())
   };
@@ -1631,7 +1636,7 @@ const handleApprovalSubmit = async (recordId: string) => {
     }, 100);
   } catch (error) {
     console.error('Failed to approve overtime record:', error);
-    alert('审批失败，请重试');
+    alert((error as Error)?.message || '审批失败，请重试');
   }
 };
 
@@ -1660,7 +1665,7 @@ const handleRejectSubmit = async (recordId: string, rejectReason: string) => {
     }, 100);
   } catch (error) {
     console.error('Failed to reject overtime record:', error);
-    alert('拒绝失败，请重试');
+    alert((error as Error)?.message || '拒绝失败，请重试');
   }
 };
 
