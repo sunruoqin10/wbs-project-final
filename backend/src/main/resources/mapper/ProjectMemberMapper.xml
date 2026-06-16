@@ -67,4 +67,13 @@
         </foreach>
     </select>
 
+    <!-- 2026-06-16：把 project 上 role='owner' 的 fromUserId 迁移到 toUserId -->
+    <update id="migrateOwner">
+        UPDATE sys_project_member
+        SET user_id = #{toUserId}
+        WHERE project_id = #{projectId}
+          AND user_id = #{fromUserId}
+          AND role = 'owner'
+    </update>
+
 </mapper>

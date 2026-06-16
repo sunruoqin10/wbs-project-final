@@ -9,8 +9,9 @@ import com.wbs.project.exception.BusinessException;
 import com.wbs.project.mapper.RoleChangeLogMapper;
 import com.wbs.project.mapper.UserMapper;
 import com.wbs.project.service.PermissionService;
-import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.beans.factory.annotation.Qualifier;
+import org.springframework.context.annotation.Lazy;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -23,13 +24,27 @@ import java.util.List;
  */
 @Slf4j
 @Service
-@RequiredArgsConstructor
 public class UserService {
 
+    // 2026-06-16:打破 UserService <-> HandoverService 循环依赖
+    // (UserService.changeUserRole 需要调 HandoverService.handoverPm/DeptPm;
+    //  HandoverService 又需要 UserService.parseManagedDeptCodes 解析)
+    // 解决方案:HandoverService 注入时 @Lazy,Spring 注入代理,首次调用才解析
     private final UserMapper userMapper;
     private final RoleChangeLogMapper roleChangeLogMapper;
     private final PermissionService permissionService;
+    private final HandoverService handoverService;
     private final ObjectMapper objectMapper = new ObjectMapper();
+
+    public UserService(UserMapper userMapper,
+                       RoleChangeLogMapper roleChangeLogMapper,
+                       PermissionService permissionService,
+                       @Lazy HandoverService handoverService) {
+        this.userMapper = userMapper;
+        this.roleChangeLogMapper = roleChangeLogMapper;
+        this.permissionService = permissionService;
+        this.handoverService = handoverService;
+    }
 
     /**
      * 查询所有用户
@@ -242,7 +257,13 @@ public class UserService {
         // 2. 同步流程
         int inserted = userMapper.syncHrInsert();
         int updated = userMapper.syncHrUpdate();
-        int resigned = userMapper.syncHrMarkResigned();
+        // 2026-06-16:SELECT-then-UPDATE 模式,触发交接冻结副作用
+        java.util.List<String> resignedIds = userMapper.syncHrMarkResignedReturnIds();
+        if (!resignedIds.isEmpty()) {
+            userMapper.syncHrMarkResignedByIds(resignedIds);
+            handoverService.handleResigned(resignedIds);
+        }
+        int resigned = resignedIds.size();
         java.util.Map<String, Integer> result = new java.util.HashMap<>();
         result.put("inserted", inserted);
         result.put("updated", updated);
@@ -275,6 +296,7 @@ public class UserService {
                                 List<String> managedDeptCodes,
                                 String managedCompanyCd,
                                 List<String> managedProjectIds,
+                                String successorUserId,   // 2026-06-16:降级 PM/Dept-PM 时必填
                                 String reason) {
         User target = userMapper.selectById(targetUserId);
         if (target == null) {
@@ -286,6 +308,26 @@ public class UserService {
         // 权限校验(2026-06-12):admin 可改任何人;dept-pm 仅可改本部门非 admin 用户
         if (!permissionService.canChangeRoleInDept(operatorId, targetUserId, newRole)) {
             throw new BusinessException(403, "无权修改该用户角色");
+        }
+
+        // 角色管理 v3(2026-06-16):PM / Dept-PM 降级时强制先交接
+        boolean isDemotingFromPM = "project-manager".equals(target.getRole())
+                                   && !"project-manager".equals(newRoleEnum.code);
+        boolean isDemotingFromDeptPM = "dept-project-manager".equals(target.getRole())
+                                        && !"dept-project-manager".equals(newRoleEnum.code);
+        if (isDemotingFromPM) {
+            if (successorUserId == null || successorUserId.isEmpty()) {
+                throw new BusinessException(400,
+                    "必须先完成交接,请调用 /api/users/" + targetUserId + "/handover 并指定 successorUserId");
+            }
+            handoverService.handoverPm(operatorId, targetUserId, successorUserId, null, reason);
+        } else if (isDemotingFromDeptPM) {
+            if (successorUserId == null || successorUserId.isEmpty()) {
+                throw new BusinessException(400,
+                    "必须先完成交接,请调用 /api/users/" + targetUserId + "/handover (handoverType=DEPT_PM_HANDOVER) 并指定 successorUserId");
+            }
+            List<String> codes = parseManagedDeptCodes(target.getManagedDeptCodes());
+            handoverService.handoverDeptPm(operatorId, targetUserId, successorUserId, codes, reason);
         }
 
         // 校验 dept-project-manager 必须指定 managed_company_cd

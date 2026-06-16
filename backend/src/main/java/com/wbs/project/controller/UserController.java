@@ -132,7 +132,7 @@ public class UserController {
         String operatorId = (String) request.getAttribute("userId");
         User updated = userService.changeUserRole(operatorId, id, req.getNewRole(),
                 req.getManagedDeptCodes(), req.getManagedCompanyCd(),
-                req.getManagedProjectIds(), req.getReason());
+                req.getManagedProjectIds(), req.getSuccessorUserId(), req.getReason());
         return Result.success("角色变更成功,目标用户需重新登录", updated);
     }
 

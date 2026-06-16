@@ -7,6 +7,9 @@
     <!-- Color Bar -->
     <div class="absolute left-0 top-0 bottom-0 w-1.5" :style="{ backgroundColor: project.color || '#3b82f6' }"></div>
 
+    <!-- 待指派 角标(PM/Dept-PM 离任后,admin/dept-pm 可见) -->
+    <NeedsHandoverBadge :needs-handover="!!project.needsHandover" />
+
     <!-- Header -->
     <div class="pl-4">
       <div class="mb-3 flex items-start justify-between">
@@ -96,6 +99,7 @@ import Card from '@/components/common/Card.vue';
 import Badge from '@/components/common/Badge.vue';
 import ProgressBar from '@/components/common/ProgressBar.vue';
 import UserAvatar from '@/components/common/UserAvatar.vue';
+import NeedsHandoverBadge from '@/components/handover/NeedsHandoverBadge.vue';
 import type { Project } from '@/types';
 import { useUserStore } from '@/stores/user';
 import dayjs from 'dayjs';

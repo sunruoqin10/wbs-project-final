@@ -88,6 +88,29 @@
         </Card>
       </div>
 
+      <!-- 待指派项目 widget(admin only) -->
+      <Card v-if="isAdmin">
+        <div class="flex items-center">
+          <div class="rounded-lg bg-red-100 p-3">
+            <svg class="h-6 w-6 text-red-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path
+                stroke-linecap="round"
+                stroke-linejoin="round"
+                stroke-width="2"
+                d="M12 9v2m0 4h.01M5 19h14a2 2 0 001.84-2.75L13.74 4a2 2 0 00-3.48 0L3.16 16.25A2 2 0 005 19z"
+              />
+            </svg>
+          </div>
+          <div class="ml-4 flex-1">
+            <p class="text-sm font-medium text-secondary-600">{{ $t('dashboard.needsHandoverTitle') }}</p>
+            <p class="text-2xl font-semibold text-secondary-900">{{ needsHandoverCount }}</p>
+          </div>
+          <router-link to="/projects?filter=needsHandover" class="text-sm text-primary-600 hover:text-primary-700">
+            {{ $t('dashboard.viewAll') }}
+          </router-link>
+        </div>
+      </Card>
+
       <!-- 预期 vs 实际进度对比 -->
       <div class="grid grid-cols-1 gap-6 sm:grid-cols-2 lg:grid-cols-3">
         <Card>
@@ -281,6 +304,7 @@ import { useProjectStore } from '@/stores/project';
 import { useTaskStore } from '@/stores/task';
 import { useUserStore } from '@/stores/user';
 import { usePermissionStore } from '@/stores/permission';
+import { handoverService } from '@/services/handoverService';
 import dayjs from 'dayjs';
 
 const { t } = useI18n();
@@ -288,6 +312,10 @@ const projectStore = useProjectStore();
 const taskStore = useTaskStore();
 const userStore = useUserStore();
 const permissionStore = usePermissionStore();
+
+// admin 角标:仅 admin 可见"待指派" widget(2026-06-16 PM/Dept-PM 变更方案)
+const isAdmin = computed(() => userStore.currentUser?.role === 'admin');
+const needsHandoverCount = ref(0);
 
 // 存储图表实例用于 resize
 let taskChart: echarts.ECharts | null = null;
@@ -706,6 +734,16 @@ onMounted(async () => {
     taskStore.loadTasks(),
     userStore.loadUsers()
   ]);
+
+  // admin 加载"待指派"项目数(2026-06-16 PM/Dept-PM 变更方案)
+  if (isAdmin.value) {
+    try {
+      const list = (await handoverService.listNeedsHandover()) as unknown[];
+      needsHandoverCount.value = Array.isArray(list) ? list.length : 0;
+    } catch (e) {
+      console.error('Failed to load needs-handover count', e);
+    }
+  }
 
   // 初始化图表
   await nextTick();

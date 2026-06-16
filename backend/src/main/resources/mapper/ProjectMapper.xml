@@ -16,12 +16,14 @@
         <result column="created_by" property="createdBy"/>
         <result column="color" property="color"/>
         <result column="dept_code" property="deptCode"/>
+        <result column="needs_handover" property="needsHandover"/>
+        <result column="previous_owner_id" property="previousOwnerId"/>
         <result column="created_at" property="createdAt"/>
         <result column="updated_at" property="updatedAt"/>
     </resultMap>
 
     <sql id="Base_Column_List">
-        id, name, description, status, priority, start_date, end_date, progress, owner_id, created_by, color, dept_code, created_at, updated_at
+        id, name, description, status, priority, start_date, end_date, progress, owner_id, created_by, color, dept_code, needs_handover, previous_owner_id, created_at, updated_at
     </sql>
 
     <select id="selectAll" resultMap="BaseResultMap">
@@ -138,5 +140,136 @@
         )
         ORDER BY created_at DESC
     </select>
+
+    <!-- ============ PM / Dept-PM 变更交接(2026-06-16) ============ -->
+
+    <!-- 可交接项目:owner = X 且 status NOT IN (completed, cancelled) 且 needs_handover = 0 -->
+    <select id="selectHandoverableByOwnerId" resultMap="BaseResultMap">
+        SELECT <include refid="Base_Column_List"/>
+        FROM sys_project
+        WHERE owner_id = #{ownerId}
+          AND status NOT IN ('completed','cancelled')
+          AND needs_handover = 0
+        ORDER BY created_at DESC
+    </select>
+
+    <!-- 行级锁(SELECT ... FOR UPDATE) -->
+    <select id="lockByIds" resultMap="BaseResultMap">
+        SELECT <include refid="Base_Column_List"/>
+        FROM sys_project
+        WHERE id IN
+        <foreach collection="ids" item="id" open="(" separator="," close=")">
+            #{id}
+        </foreach>
+        FOR UPDATE
+    </select>
+
+    <!-- needs_handover=1 列表按角色过滤 -->
+    <select id="selectNeedsHandoverVisibleTo" resultMap="BaseResultMap">
+        SELECT <include refid="Base_Column_List"/>
+        FROM sys_project
+        WHERE needs_handover = 1
+          AND status NOT IN ('completed','cancelled')
+          <choose>
+              <when test="role == 'admin'">
+                  <!-- 全部可见 -->
+              </when>
+              <when test="role == 'dept-project-manager' and managedDeptCodes != null and managedDeptCodes.size() > 0">
+                  AND dept_code IN
+                  <foreach collection="managedDeptCodes" item="dc" open="(" separator="," close=")">
+                      #{dc}
+                  </foreach>
+              </when>
+              <otherwise>
+                  AND 1 = 0
+              </otherwise>
+          </choose>
+        ORDER BY created_at DESC
+    </select>
+
+    <!-- 部门(们)下未完成项目 owner_id 去重 -->
+    <select id="selectPmIdsByDeptCodes" resultType="java.lang.String">
+        SELECT DISTINCT owner_id
+        FROM sys_project
+        WHERE dept_code IN
+        <foreach collection="deptCodes" item="dc" open="(" separator="," close=")">
+            #{dc}
+        </foreach>
+          AND owner_id IS NOT NULL
+          AND status NOT IN ('completed','cancelled')
+    </select>
+
+    <!-- DTO 专用 6 字段 -->
+    <select id="selectProjectBriefRowsByOwnerId"
+            resultType="com.wbs.project.dto.ProjectBriefRow">
+        SELECT id, name, status, dept_code AS deptCode,
+               previous_owner_id AS previousOwnerId,
+               needs_handover AS needsHandover
+        FROM sys_project
+        WHERE owner_id = #{ownerId}
+          AND status NOT IN ('completed','cancelled')
+          AND needs_handover = 0
+        ORDER BY created_at DESC
+    </select>
+
+    <!-- 部门编码下未完成项目数 -->
+    <select id="countActiveByDeptCode" resultType="int">
+        SELECT COUNT(*) FROM sys_project
+        WHERE dept_code = #{deptCode}
+          AND status NOT IN ('completed','cancelled')
+          AND needs_handover = 0
+    </select>
+
+    <!-- 部门合并:把 dept_code = oldCode 的未完成项目改 newCode -->
+    <update id="updateDeptCodeForActiveProjects">
+        UPDATE sys_project
+           SET dept_code  = #{newCode},
+               updated_at = NOW()
+         WHERE dept_code = #{oldCode}
+           AND status NOT IN ('completed','cancelled')
+           AND needs_handover = 0
+    </update>
+
+    <!-- 部门(们)下按状态过滤的项目 ID 列表 -->
+    <select id="selectIdsByDeptCodesAndStatus" resultType="java.lang.String">
+        SELECT id FROM sys_project
+        WHERE dept_code IN
+        <foreach collection="deptCodes" item="dc" open="(" separator="," close=")">
+            #{dc}
+        </foreach>
+        <choose>
+            <when test="exclude">
+                AND status NOT IN
+                <foreach collection="excludeStatuses" item="s" open="(" separator="," close=")">
+                    #{s}
+                </foreach>
+            </when>
+            <otherwise>
+                AND status IN
+                <foreach collection="excludeStatuses" item="s" open="(" separator="," close=")">
+                    #{s}
+                </foreach>
+            </otherwise>
+        </choose>
+    </select>
+
+    <!-- owner 名下未完成项目 ID 列表(离职冻结用) -->
+    <select id="selectIdsByActiveOwner" resultType="java.lang.String">
+        SELECT id FROM sys_project
+        WHERE owner_id = #{ownerId}
+          AND status NOT IN ('completed','cancelled')
+    </select>
+
+    <!-- 部门(们)下未完成项目标记 needs_handover=1 -->
+    <update id="markNeedsHandoverByDeptCodes">
+        UPDATE sys_project
+           SET needs_handover = 1,
+               updated_at     = NOW()
+         WHERE dept_code IN
+        <foreach collection="deptCodes" item="dc" open="(" separator="," close=")">
+            #{dc}
+        </foreach>
+           AND status NOT IN ('completed','cancelled')
+    </update>
 
 </mapper>

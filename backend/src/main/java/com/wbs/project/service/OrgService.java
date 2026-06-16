@@ -2,6 +2,7 @@ package com.wbs.project.service;
 
 import com.wbs.project.dto.OrgNode;
 import com.wbs.project.mapper.OrgMapper;
+import com.wbs.project.mapper.UserMapper;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 
@@ -20,6 +21,17 @@ import java.util.*;
 public class OrgService {
 
     private final OrgMapper orgMapper;
+    private final UserMapper userMapper;
+
+    /**
+     * 通过 dept_code 反查所属 company_cd(spec §4.2 step 1)
+     * 数据源:sys_user(本项目无 sys_org 表,任何 dept_code 都至少有 1 个用户)
+     * @return company_cd 或 null(dept_code 不存在)
+     */
+    public String getCompanyByDeptCode(String deptCode) {
+        if (deptCode == null || deptCode.isEmpty()) return null;
+        return userMapper.selectCompanyCdByDeptCode(deptCode);
+    }
 
     /**
      * 公司名映射（已知公司）

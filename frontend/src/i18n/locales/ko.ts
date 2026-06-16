@@ -777,6 +777,52 @@ export default {
     cancelled: '취소됨'
   },
 
+  // 프로젝트(최상위 네임스페이스,2026-06-16 PM/Dept-PM 변경 방안 — 배정 대기 배지 / 재배정)
+  project: {
+    needsHandoverBadge: '배정 대기',
+    unfreezeAction: '재배정'
+  },
+
+  // 인수인계(2026-06-16 PM/Dept-PM 변경 방안)
+  handover: {
+    title: '프로젝트 인수인계',
+    deptPmTitle: '부서 관할권 인수인계',
+    outgoingLabel: '인도자',
+    projectScope: '인수인계 프로젝트 범위',
+    deptScope: '인수인계 부서 범위',
+    successorLabel: '후임자',
+    successorPlaceholder: '후임자를 선택하세요',
+    reasonLabel: '인수인계 사유',
+    reasonPlaceholder: '인수인계 사유를 입력하세요',
+    selectedCount: '{count}개 선택됨',
+    validation: {
+      needSuccessor: '후임자를 선택하세요',
+      needProject: '하나 이상의 프로젝트를 선택하세요',
+      needDept: '하나 이상의 부서를 선택하세요'
+    },
+    errorMessage: '인수인계 실패',
+    history: {
+      empty: '인수인계 기록 없음',
+      col: {
+        createdAt: '시간',
+        handoverType: '유형',
+        projectName: '프로젝트',
+        fromUserName: '기존 담당자',
+        toUserName: '후임자',
+        reason: '사유'
+      }
+    },
+    deptMerge: {
+      title: '부서 병합/분할'
+    },
+    // 팀 페이지 진입(2026-06-16 Team.vue 통합)
+    actions: {
+      pmHandover: '담당 프로젝트 인수인계',
+      deptPmHandover: '부서 관할권 인수인계',
+      historyTab: '인수인계 이력'
+    }
+  },
+
   // 알림 메시지
   messages: {
     success: {

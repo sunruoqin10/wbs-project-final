@@ -37,4 +37,8 @@ public class Project {
 
     // === 角色管理 v2 扩展字段（2026-06-11） ===
     private String deptCode;               // 项目归属部门编码(对应 mdm_if_or_a.ORG_CD),用于部门负责人数据范围过滤
+
+    // === PM / Dept-PM 变更交接(2026-06-16 新增) ===
+    private Boolean needsHandover;          // 来自 sys_project.needs_handover(0/1 -> Boolean)
+    private String previousOwnerId;         // 来自 sys_project.previous_owner_id
 }

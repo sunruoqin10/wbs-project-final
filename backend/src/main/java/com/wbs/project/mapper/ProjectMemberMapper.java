@@ -55,4 +55,12 @@ public interface ProjectMemberMapper {
      * 批量按项目 ID 查成员 user_id(DISTINCT 去重,用于 PM/项目负责人数据范围预计算)
      */
     List<String> selectMemberIdsByProjectIds(@Param("projectIds") List<String> projectIds);
+
+    /**
+     * 交接:把 project 上 role='owner' 的 fromUserId 迁移到 toUserId(2026-06-16)
+     * 返回受影响行数;0 表示原 owner 行不存在(由 Service 补一条 INSERT)
+     */
+    int migrateOwner(@Param("projectId") String projectId,
+                     @Param("fromUserId") String fromUserId,
+                     @Param("toUserId") String toUserId);
 }

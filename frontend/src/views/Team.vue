@@ -161,6 +161,19 @@
                           {{ $t('team.roleChange.title') }}
                         </button>
                       </div>
+                      <!-- 2026-06-16 PM/Dept-PM 变更方案:Team 页集成交接入口 -->
+                      <div v-if="handoverButtonKind(user) !== null" class="mt-1.5">
+                        <button
+                          type="button"
+                          class="rounded px-2 py-0.5 text-xs text-amber-700 hover:bg-amber-50 hover:text-amber-800"
+                          :title="$t('handover.actions.pmHandover')"
+                          @click="openHandoverFor(user)"
+                        >
+                          {{ handoverButtonKind(user) === 'pm'
+                            ? $t('handover.actions.pmHandover')
+                            : $t('handover.actions.deptPmHandover') }}
+                        </button>
+                      </div>
                     </div>
                   </div>
                 </div>
@@ -266,6 +279,19 @@
                               {{ $t('team.roleChange.title') }}
                             </button>
                           </div>
+                          <!-- 2026-06-16 PM/Dept-PM 变更方案:Team 页集成交接入口 -->
+                          <div v-if="handoverButtonKind(user) !== null" class="mt-1.5">
+                            <button
+                              type="button"
+                              class="rounded px-2 py-0.5 text-xs text-amber-700 hover:bg-amber-50 hover:text-amber-800"
+                              :title="$t('handover.actions.pmHandover')"
+                              @click="openHandoverFor(user)"
+                            >
+                              {{ handoverButtonKind(user) === 'pm'
+                                ? $t('handover.actions.pmHandover')
+                                : $t('handover.actions.deptPmHandover') }}
+                            </button>
+                          </div>
                         </div>
                       </div>
                     </div>
@@ -285,6 +311,30 @@
           </div>
 
           <div v-else-if="currentTab === 1" class="space-y-6">
+            <!-- 交接历史(2026-06-16 PM/Dept-PM 变更方案 — Team.vue 集成) -->
+            <Card>
+              <template #header>
+                <div class="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
+                  <h3 class="text-lg font-semibold text-secondary-900">{{ $t('handover.actions.historyTab') }}</h3>
+                  <select
+                    v-model="historySelectedUserId"
+                    class="rounded-lg border border-secondary-300 px-3 py-1.5 text-sm focus:border-primary-500 focus:outline-none focus:ring-1 focus:ring-primary-500"
+                  >
+                    <option value="">{{ $t('common.searchPlaceholder') }}</option>
+                    <option v-for="u in users" :key="u.id" :value="u.id">
+                      {{ displayName(u) }} ({{ u.id }})
+                    </option>
+                  </select>
+                </div>
+              </template>
+              <HandoverHistoryTab v-if="historySelectedUserId" :user-id="historySelectedUserId" />
+              <div v-else class="py-8 text-center text-sm text-secondary-500">
+                -
+              </div>
+            </Card>
+          </div>
+
+          <div v-else-if="currentTab === 2" class="space-y-6">
             <!-- Task Assignment Table -->
             <Card>
               <template #header>
@@ -505,6 +555,22 @@
       :current-managed-project-ids="roleChangeTarget.managedProjectIds || []"
       @success="onRoleChangeSuccess"
     />
+
+    <!-- 2026-06-16 PM/Dept-PM 变更方案:Team 页集成交接对话框 -->
+    <HandoverDialog
+      v-if="handoverTarget"
+      v-model:visible="handoverDialogVisible"
+      :user-id="handoverTarget.id"
+      :successor-options="successorOptionsFor(handoverTarget, 'project-manager')"
+      @success="onHandoverSuccess"
+    />
+    <DeptPmHandoverDialog
+      v-if="deptPmTarget"
+      v-model:visible="deptPmDialogVisible"
+      :user-id="deptPmTarget.id"
+      :successor-options="successorOptionsFor(deptPmTarget, 'dept-project-manager')"
+      @success="onHandoverSuccess"
+    />
   </MainLayout>
 </template>
 
@@ -521,6 +587,9 @@ import type { Tab } from '@/components/common/Tabs.vue';
 import UserAvatar from '@/components/common/UserAvatar.vue';
 import OrgGroup from '@/components/team/OrgGroup.vue';
 import RoleChangeDialog from '@/components/team/RoleChangeDialog.vue';
+import HandoverDialog from '@/components/handover/HandoverDialog.vue';
+import DeptPmHandoverDialog from '@/components/handover/DeptPmHandoverDialog.vue';
+import HandoverHistoryTab from '@/components/handover/HandoverHistoryTab.vue';
 import { useUserStore } from '@/stores/user';
 import { useTaskStore } from '@/stores/task';
 import { useProjectStore } from '@/stores/project';
@@ -563,6 +632,11 @@ const tabs = computed<Tab[]>(() => [
     label: t('team.allMembers.title'),
     badge: users.value.length,
     value: 'members'
+  },
+  {
+    label: t('handover.actions.historyTab'),
+    badge: 0,
+    value: 'handover-history'
   },
   {
     label: t('team.taskAssignment.title'),
@@ -678,6 +752,69 @@ const roleChangeTarget = ref<User | null>(null);
 const openRoleChangeDialog = (user: User) => {
   roleChangeTarget.value = user;
   roleChangeDialogVisible.value = true;
+};
+
+// ========== 2026-06-16 PM/Dept-PM 变更方案:Team 页集成交接入口 ==========
+// PM 交接对话框状态(交接手上的项目)
+const handoverDialogVisible = ref(false);
+const handoverTarget = ref<User | null>(null);
+// Dept-PM 交接对话框状态(部门管辖权交接)
+const deptPmDialogVisible = ref(false);
+const deptPmTarget = ref<User | null>(null);
+// 交接历史 Tab 中选中的用户(用于在第二个 tab 拉取历史)
+const historySelectedUserId = ref<string>('');
+
+/**
+ * 返回该用户应展示哪种交接按钮。
+ * - PM → 'pm' (交接手上的项目)
+ * - Dept-PM → 'dept-pm' (部门管辖权交接)
+ * - 其它角色 → null (不显示)
+ *
+ * actor 必须是 admin 才能触发交接动作(对应后端 handover 接口的权限)
+ */
+const handoverButtonKind = (user: User): 'pm' | 'dept-pm' | null => {
+  if (!permissionStore.isAdmin()) return null;
+  const role = user.role?.replace(/_/g, '-');
+  if (role === 'project-manager') return 'pm';
+  if (role === 'dept-project-manager') return 'dept-pm';
+  return null;
+};
+
+const openHandoverFor = (user: User) => {
+  const kind = handoverButtonKind(user);
+  if (kind === 'pm') {
+    handoverTarget.value = user;
+    handoverDialogVisible.value = true;
+  } else if (kind === 'dept-pm') {
+    deptPmTarget.value = user;
+    deptPmDialogVisible.value = true;
+  }
+};
+
+/**
+ * 构造继任者下拉选项。
+ * - PM 交接 → 只列其它 project-manager
+ * - Dept-PM 交接 → 只列其它 dept-project-manager
+ */
+const successorOptionsFor = (
+  user: User,
+  targetRole: 'project-manager' | 'dept-project-manager'
+): Array<{ value: string; label: string }> => {
+  return users.value
+    .filter(u => u.id !== user.id && (u.role || '').replace(/_/g, '-') === targetRole)
+    .map(u => ({
+      value: u.id,
+      label: `${displayName(u)} (${u.id})`
+    }));
+};
+
+const onHandoverSuccess = async () => {
+  // 交接成功后:目标用户 role 可能在后台未立即变更,但仍刷新用户列表保持一致
+  try {
+    await userStore.refreshUsers();
+  } catch (e) {
+    console.error('交接后刷新用户列表失败', e);
+  }
 };
 
 /**

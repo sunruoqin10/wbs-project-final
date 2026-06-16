@@ -53,6 +53,35 @@
             </div>
           </div>
 
+          <!-- 交接过滤:全部 / 待指派 (PM/Dept-PM 离任后) -->
+          <div class="flex items-center gap-2">
+            <span class="text-sm font-medium text-secondary-700">{{ $t('projectList.handover.label') }}:</span>
+            <div class="flex gap-2">
+              <button
+                @click="setHandoverFilter('all')"
+                :class="[
+                  'rounded-lg px-3 py-1.5 text-sm font-medium transition-colors',
+                  handoverFilter === 'all'
+                    ? 'bg-primary-600 text-white'
+                    : 'bg-secondary-100 text-secondary-700 hover:bg-secondary-200'
+                ]"
+              >
+                {{ $t('projectList.handover.all') }}
+              </button>
+              <button
+                @click="setHandoverFilter('needsHandover')"
+                :class="[
+                  'rounded-lg px-3 py-1.5 text-sm font-medium transition-colors',
+                  handoverFilter === 'needsHandover'
+                    ? 'bg-red-500 text-white'
+                    : 'bg-secondary-100 text-secondary-700 hover:bg-secondary-200'
+                ]"
+              >
+                {{ $t('projectList.handover.needsHandover') }}
+              </button>
+            </div>
+          </div>
+
           <!-- View Toggle -->
           <div class="flex items-center gap-1 rounded-lg bg-secondary-100 p-1">
             <button
@@ -260,6 +289,7 @@ import UserAvatar from '@/components/common/UserAvatar.vue';
 import { useProjectStore } from '@/stores/project';
 import { usePermissionStore } from '@/stores/permission';
 import { useUserStore } from '@/stores/user';
+import { handoverService } from '@/services/handoverService';
 import type { Project, User } from '@/types';
 import dayjs from 'dayjs';
 import 'dayjs/locale/zh-cn';
@@ -276,6 +306,32 @@ const searchQuery = ref('');
 const selectedStatuses = ref<string[]>([]);
 const modalOpen = ref(false);
 const editingProject = ref<Project | null>(null);
+
+// 交接过滤: 'all' = 显示全部; 'needsHandover' = 仅显示 needsHandover=true 的项目
+// 后端 /api/projects/needs-handover 返回 Project 实体列表(已含 needsHandover 字段)
+const handoverFilter = ref<'all' | 'needsHandover'>('all');
+const handoverProjects = ref<Project[]>([]);
+const handoverLoading = ref(false);
+
+const loadHandoverProjects = async () => {
+  handoverLoading.value = true;
+  try {
+    const list = (await handoverService.listNeedsHandover()) as Project[];
+    handoverProjects.value = Array.isArray(list) ? list : [];
+  } catch (e) {
+    console.error('Failed to load needs-handover projects', e);
+    handoverProjects.value = [];
+  } finally {
+    handoverLoading.value = false;
+  }
+};
+
+const setHandoverFilter = (value: 'all' | 'needsHandover') => {
+  handoverFilter.value = value;
+  if (value === 'needsHandover' && handoverProjects.value.length === 0) {
+    loadHandoverProjects();
+  }
+};
 
 const STORAGE_KEY = 'wbs-project-view-mode';
 
@@ -345,13 +401,19 @@ const statusOptions = computed(() => [
 ]);
 
 const filteredProjects = computed(() => {
-  let result = projectStore.projects;
+  // 当"待指派"过滤激活时,数据源来自 handoverService.listNeedsHandover();
+  // 否则使用主项目列表
+  let result: Project[] =
+    handoverFilter.value === 'needsHandover'
+      ? handoverProjects.value
+      : projectStore.projects;
 
   // 角色管理 v2:后端 ProjectController.getAllProjects 已按 currentUserId 数据范围过滤
   // 此处不再做前端过滤,避免数据泄露与双重判断不一致
   // 如需兜底,可用 permissionStore.canViewProject(project.id) 二次过滤(性能损耗)
+  // 待指派过滤时,/needs-handover 接口已自行鉴权(仅 admin/dept-pm),不再二次过滤
   const currentUserId = userStore.currentUserId;
-  if (currentUserId) {
+  if (currentUserId && handoverFilter.value !== 'needsHandover') {
     // 兜底:防止后端漏判时泄露
     result = result.filter(project => permissionStore.canViewProject(project.id));
   }
@@ -388,6 +450,7 @@ const toggleStatus = (status: string) => {
 const clearFilters = () => {
   searchQuery.value = '';
   selectedStatuses.value = [];
+  handoverFilter.value = 'all';
 };
 
 const createNewProject = () => {

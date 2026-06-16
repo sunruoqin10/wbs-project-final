@@ -276,4 +276,77 @@
          WHERE id = #{id}
     </update>
 
+    <!-- ============ PM / Dept-PM 变更交接(2026-06-16) ============ -->
+
+    <!-- 整列覆写 managed_project_ids JSON(应用层负责序列化) -->
+    <update id="updateManagedProjectIds">
+        UPDATE sys_user
+           SET managed_project_ids = #{managedProjectIds},
+               updated_at          = NOW()
+         WHERE id = #{id}
+    </update>
+
+    <!-- 整列覆写 managed_dept_codes JSON -->
+    <update id="updateManagedDeptCodes">
+        UPDATE sys_user
+           SET managed_dept_codes = #{managedDeptCodes},
+               updated_at         = NOW()
+         WHERE id = #{id}
+    </update>
+
+    <!-- 行级锁(SELECT ... FOR UPDATE)用于交接事务 -->
+    <select id="lockUsersForUpdate" resultMap="BaseResultMap">
+        SELECT <include refid="Base_Column_List"/>
+        FROM sys_user
+        WHERE id IN
+        <foreach collection="ids" item="id" open="(" separator="," close=")">
+            #{id}
+        </foreach>
+        FOR UPDATE
+    </select>
+
+    <!-- HR 同步:返回本次将被标记为离职的 user id 列表(SELECT-then-UPDATE 模式) -->
+    <select id="syncHrMarkResignedReturnIds" resultType="java.lang.String">
+        SELECT u.id FROM sys_user u
+        LEFT JOIN mdm_if_pa_a p ON u.id = p.EMP_NUM COLLATE utf8mb4_unicode_ci
+        WHERE u.status != 'T'
+          AND (p.EMP_NUM IS NULL OR p.ACT_CLSS_CD = 'T')
+        ORDER BY u.id
+    </select>
+
+    <!-- HR 同步:按 id 列表批量标记离职 -->
+    <update id="syncHrMarkResignedByIds">
+        UPDATE sys_user
+           SET status     = 'T',
+               updated_at = NOW()
+         WHERE id IN
+        <foreach collection="ids" item="id" open="(" separator="," close=")">
+            #{id}
+        </foreach>
+           AND status != 'T'
+    </update>
+
+    <!-- 部门编码反查公司编码(取任一在职用户) -->
+    <select id="selectCompanyCdByDeptCode" resultType="java.lang.String">
+        SELECT company_cd FROM sys_user
+        WHERE dept_code = #{deptCode}
+          AND status != 'T'
+        LIMIT 1
+    </select>
+
+    <!-- 部门编码下在职用户数 -->
+    <select id="countByDeptCode" resultType="int">
+        SELECT COUNT(*) FROM sys_user
+        WHERE dept_code = #{deptCode}
+          AND status != 'T'
+    </select>
+
+    <!-- 部门编码下 dept-project-manager 列表 -->
+    <select id="selectIdsByManagedDeptCode" resultType="java.lang.String">
+        SELECT id FROM sys_user
+        WHERE JSON_CONTAINS(managed_dept_codes, JSON_QUOTE(#{deptCode}))
+          AND role = 'dept-project-manager'
+          AND status != 'T'
+    </select>
+
 </mapper>

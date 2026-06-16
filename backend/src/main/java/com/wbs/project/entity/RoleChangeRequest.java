@@ -15,5 +15,6 @@ public class RoleChangeRequest {
     private List<String> managedDeptCodes;  // 管辖部门编码列表(仅 newRole=dept-project-manager 有效)
     private String managedCompanyCd;        // 管辖公司编码(仅 newRole=dept-project-manager 必填)
     private List<String> managedProjectIds; // 管辖项目 ID 列表(2026-06-12 新增,仅 newRole=project-manager 有效)
+    private String successorUserId;         // 2026-06-16:降级 PM/Dept-PM 时必填
     private String reason;                  // 变更原因(可选,便于审计)
 }
