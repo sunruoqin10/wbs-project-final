@@ -125,28 +125,32 @@
           <div>
             <label class="mb-1 block text-sm font-medium text-secondary-600">
               实际开始日期
-              <span class="text-xs text-secondary-400 font-normal ml-1">(选填)</span>
+              <span class="text-xs text-secondary-400 font-normal ml-1">(自动计算)</span>
             </label>
             <input
               v-model="formData.actualStartDate"
               type="date"
-              class="w-full rounded-lg border border-secondary-200 px-3 py-2 text-sm focus:border-primary-500 focus:outline-none focus:ring-2 focus:ring-primary-500/20"
+              readonly
+              disabled
+              class="w-full cursor-not-allowed rounded-lg border border-secondary-200 bg-secondary-100 px-3 py-2 text-sm text-secondary-500 focus:outline-none"
             />
           </div>
           <div>
             <label class="mb-1 block text-sm font-medium text-secondary-600">
               实际结束日期
-              <span class="text-xs text-secondary-400 font-normal ml-1">(选填)</span>
+              <span class="text-xs text-secondary-400 font-normal ml-1">(自动计算)</span>
             </label>
             <input
               v-model="formData.actualEndDate"
               type="date"
-              class="w-full rounded-lg border border-secondary-200 px-3 py-2 text-sm focus:border-primary-500 focus:outline-none focus:ring-2 focus:ring-primary-500/20"
+              readonly
+              disabled
+              class="w-full cursor-not-allowed rounded-lg border border-secondary-200 bg-secondary-100 px-3 py-2 text-sm text-secondary-500 focus:outline-none"
             />
           </div>
         </div>
         <p class="mt-2 text-xs text-secondary-400">
-          状态变为"进行中"时自动记录实际开始；变为"已完成"时自动记录实际结束。也可手动修改。
+          状态变为"进行中"时自动记录实际开始;变为"已完成"时自动记录实际结束。本字段仅展示,不可编辑。
         </p>
       </div>
 
