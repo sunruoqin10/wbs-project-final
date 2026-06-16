@@ -112,8 +112,10 @@ const getStatusLabel = (status: string) => {
 };
 
 const getProjectName = (projectId: string) => {
+  if (!projectId) return '-';
   const project = projectStore.projects.find(p => p.id === projectId);
-  return project?.name || t('common.unknown');
+  // 2026-06-16: 找不到时回退显示 ID,便于排查
+  return project?.name || projectId;
 };
 
 const getReportTitle = (report: WeeklyReport) => {

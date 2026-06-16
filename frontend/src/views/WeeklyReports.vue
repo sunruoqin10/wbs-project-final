@@ -244,9 +244,12 @@ const setViewMode = (mode: 'card' | 'list') => {
 };
 
 onMounted(async () => {
+  // 2026-06-16: 补 loadProjects — 项目名称依赖 projectStore.projects
+  // 登录后 setCurrentUser 会清空 projects,若本页不重新拉,getProjectName 全部走到 common.unknown 兜底
   await Promise.all([
     weeklyReportStore.loadReports(),
-    userStore.loadUsers()
+    userStore.loadUsers(),
+    projectStore.loadProjects()
   ]);
 });
 
@@ -325,9 +328,10 @@ const goToReportDetail = (reportId: string) => {
 };
 
 const getProjectName = (projectId: string | undefined): string => {
-  if (!projectId) return t('common.unknown');
+  if (!projectId) return '-';
   const project = projectStore.projects.find(p => p.id === projectId);
-  return project?.name || t('common.unknown');
+  // 2026-06-16: 找不到时回退显示 ID,便于排查(原 t('common.unknown') 过于隐晦)
+  return project?.name || projectId;
 };
 
 const getProjectColor = (projectId: string | undefined): string => {
@@ -337,9 +341,10 @@ const getProjectColor = (projectId: string | undefined): string => {
 };
 
 const getUserName = (userId: string | undefined | null): string => {
-  if (!userId) return t('common.unknown');
+  if (!userId) return '-';
   const user = userStore.userById(userId);
-  return user?.name || t('common.unknown');
+  // 2026-06-16: 找不到时回退显示 ID
+  return user?.name || userId;
 };
 
 const formatWeekRange = (report: WeeklyReport): string => {

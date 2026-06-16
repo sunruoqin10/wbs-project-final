@@ -462,19 +462,23 @@ const formatFileSize = (bytes: number): string => {
 };
 
 const getProjectName = (projectId: string): string => {
+  if (!projectId) return '-';
   const project = projectStore.projects.find(p => p.id === projectId);
-  return project?.name || t('common.unknown');
+  // 2026-06-16: 找不到时回退显示 ID,便于排查
+  return project?.name || projectId;
 };
 
 const getProjectColor = (projectId: string): string => {
+  if (!projectId) return '#3b82f6';
   const project = projectStore.projects.find(p => p.id === projectId);
   return project?.color || '#3b82f6';
 };
 
 const getUserName = (userId: string | undefined | null): string => {
-  if (!userId) return t('common.unknown');
+  if (!userId) return '-';
   const user = userStore.userById(userId);
-  return user?.name || t('common.unknown');
+  // 2026-06-16: 找不到时回退显示 ID,便于排查
+  return user?.name || userId;
 };
 
 const formatWeekRange = (report: WeeklyReport | undefined | null): string => {
