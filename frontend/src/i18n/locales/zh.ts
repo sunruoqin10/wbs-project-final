@@ -81,6 +81,7 @@ export default {
     reports: '报表统计',
     settings: '设置',
     schedulerManagement: '定时任务管理',
+    adminAccessHeatmap: '访问率热力图',
     test: '测试页面'
   },
 
@@ -1223,5 +1224,51 @@ export default {
     everyMonth: '每月',
     dayOfMonth: '日',
     customCronDesc: '自定义 Cron 表达式'
-  }
+  },
+
+  // === 访问率热力图(2026-06-16) ===
+  admin: {
+    accessHeatmap: {
+      title: '访问率热力图',
+      description: '各页面在不同小时的访问热度,显示窗口内的总访问次数。',
+      controls: {
+        windowLabel: '时间窗口',
+        windowOptions: {
+          d1: '今日',
+          d7: '最近 7 天',
+          d30: '最近 30 天',
+          d90: '最近 90 天',
+        },
+        refresh: '刷新',
+        refreshing: '刷新中…',
+      },
+      kpi: {
+        totalVisits: '总访问',
+        totalVisitsSub: '窗口内累计',
+        topPage: '最热页面',
+        topPageSub: '共 {total} 次',
+        peakHour: '最热时段',
+        peakHourSub: '共 {total} 次',
+        pageCount: '活跃页面',
+        pageCountSub: '有访问记录的页面数',
+      },
+      chart: {
+        hourAxis: '小时',
+        pageAxis: '页面',
+        tooltipTotal: '共 {total} 次',
+        empty: '尚无访问数据',
+      },
+      footer: {
+        lastUpdated: '最后更新',
+        dataRange: '数据范围',
+        dataRangeValue: '最近 90 天',
+        dataSource: '数据源',
+        dataSourceValue: 'sys_page_view',
+      },
+      errors: {
+        loadFailed: '统计服务暂不可用,请稍后重试',
+        forbidden: '需要管理员权限',
+      },
+    },
+  },
 };

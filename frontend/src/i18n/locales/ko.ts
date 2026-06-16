@@ -81,6 +81,7 @@ export default {
     reports: '보고서',
     settings: '설정',
     schedulerManagement: '스케줄러 관리',
+    adminAccessHeatmap: '페이지 방문 히트맵',
     test: '테스트 페이지'
   },
 
@@ -1206,5 +1207,51 @@ export default {
     everyMonth: '매월',
     dayOfMonth: '일',
     customCronDesc: '사용자 정의 Cron 표현식'
-  }
+  },
+
+  // === 방문율 히트맵(2026-06-16) ===
+  admin: {
+    accessHeatmap: {
+      title: '페이지 방문율 히트맵',
+      description: '각 페이지의 시간대별 방문热度,값은 "일 평균"으로 정규화되었습니다.',
+      controls: {
+        windowLabel: '기간',
+        windowOptions: {
+          d1: '오늘',
+          d7: '최근 7일',
+          d30: '최근 30일',
+          d90: '최근 90일',
+        },
+        refresh: '새로고침',
+        refreshing: '새로고침 중…',
+      },
+      kpi: {
+        totalVisits: '총 방문',
+        totalVisitsSub: '기간 내 누적',
+        dailyAvg: '일 평균 방문',
+        dailyAvgSub: '총 방문 ÷ 일수',
+        topPage: '최다 방문 페이지',
+        topPageSub: '일 평균 {avg}회',
+        peakHour: '최다 방문 시간',
+        peakHourSub: '일 평균 {avg}회',
+      },
+      chart: {
+        hourAxis: '시간',
+        pageAxis: '페이지',
+        tooltipAvg: '일 평균 {avg}회',
+        empty: '방문 데이터가 없습니다',
+      },
+      footer: {
+        lastUpdated: '마지막 업데이트',
+        dataRange: '데이터 범위',
+        dataRangeValue: '최근 90일',
+        dataSource: '데이터 소스',
+        dataSourceValue: 'sys_page_view',
+      },
+      errors: {
+        loadFailed: '통계 서비스를 일시적으로 사용할 수 없습니다. 잠시 후 다시 시도해 주세요',
+        forbidden: '관리자 권한이 필요합니다',
+      },
+    },
+  },
 };

@@ -148,6 +148,12 @@ const routes: RouteRecordRaw[] = [
     meta: { titleKey: 'routes.schedulerManagement', permission: 'settings:edit' }
   },
   {
+    path: '/admin/access-heatmap',
+    name: 'AdminAccessHeatmap',
+    component: () => import('@/views/AccessHeatmapView.vue'),
+    meta: { titleKey: 'routes.adminAccessHeatmap', permission: 'admin' }
+  },
+  {
     path: '/weekly-reports/debug',
     name: 'WeeklyReportDebug',
     component: () => import('@/views/WeeklyReportDebug.vue'),

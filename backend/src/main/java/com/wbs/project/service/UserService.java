@@ -40,7 +40,11 @@ public class UserService {
      */
     public List<User> getAllUsers() {
         List<User> list = userMapper.selectAll();
-        fillRoleInferredMarkers(list);
+        try {
+            fillRoleInferredMarkers(list);
+        } catch (Exception e) {
+            log.warn("填充角色推断标记失败(不影响用户列表返回): {}", e.getMessage());
+        }
         return list;
     }
 
@@ -65,7 +69,11 @@ public class UserService {
      */
     public List<User> getUsersByIds(List<String> ids) {
         List<User> list = userMapper.selectByIds(ids);
-        fillRoleInferredMarkers(list);
+        try {
+            fillRoleInferredMarkers(list);
+        } catch (Exception e) {
+            log.warn("填充角色推断标记失败(批量查询): {}", e.getMessage());
+        }
         return list;
     }
 
@@ -221,7 +229,11 @@ public class UserService {
     public java.util.Map<String, Object> searchUsers(String keyword, int page, int pageSize) {
         int offset = (page - 1) * pageSize;
         List<User> records = userMapper.searchUsers(keyword, offset, pageSize);
-        fillRoleInferredMarkers(records);   // ★ 在 records 装入 Map 之前
+        try {
+            fillRoleInferredMarkers(records);   // ★ 在 records 装入 Map 之前
+        } catch (Exception e) {
+            log.warn("填充角色推断标记失败(搜索): {}", e.getMessage());
+        }
         int total = userMapper.countSearchUsers(keyword);
         java.util.Map<String, Object> result = new java.util.HashMap<>();
         result.put("records", records);
@@ -350,18 +362,23 @@ public class UserService {
     /**
      * 给一组 User 填充 roleAutoInferred / roleInferredFromJpstn(2026-06-16 新增)
      * 来源: sys_role_change_log 中 changed_by='HR_SYNC' 的最近一条记录
-     * 性能: 单 SQL 批量查,O(1) round-trip;不影响现有 list / search / selectById
+     * 性能: 分批查询,每批 500 个 ID,避免单次 IN 子句参数过多导致 JDBC/MySQL 报错
      */
     private void fillRoleInferredMarkers(List<User> users) {
         if (users == null || users.isEmpty()) return;
         List<String> ids = users.stream().map(User::getId).collect(Collectors.toList());
-        List<Map<String, Object>> rows = userMapper.selectLatestHrSyncInferences(ids);
-        // 显式 (String) cast:userMapper.selectLatestHrSyncInferences 实际返 List<Map<String, Object>>,
-        // 这里用 Java 泛型擦除,需在 get 时强转,否则 mvn compile 报 unchecked warning
-        // 防御:Collectors.toMap 不允许 value 为 null,filter 掉 null 防止 NPE
-        Map<String, String> inferredMap = rows.stream()
-            .filter(r -> r.get("user_id") != null && r.get("jpstn_cd") != null)
-            .collect(Collectors.toMap(r -> (String) r.get("user_id"), r -> (String) r.get("jpstn_cd")));
+
+        Map<String, String> inferredMap = new HashMap<>();
+        int batchSize = 500;
+        for (int i = 0; i < ids.size(); i += batchSize) {
+            int end = Math.min(i + batchSize, ids.size());
+            List<String> batch = ids.subList(i, end);
+            List<Map<String, Object>> rows = userMapper.selectLatestHrSyncInferences(batch);
+            rows.stream()
+                .filter(r -> r.get("user_id") != null && r.get("jpstn_cd") != null)
+                .forEach(r -> inferredMap.put((String) r.get("user_id"), (String) r.get("jpstn_cd")));
+        }
+
         for (User u : users) {
             String jpstn = inferredMap.get(u.getId());
             if (jpstn != null) {

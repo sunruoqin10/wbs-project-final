@@ -1,6 +1,6 @@
 // API Service Layer - Connects to Spring Boot backend
 
-import type { Project, Task, User, DelayStats, OvertimeRecord, OvertimeStats, OvertimeApprovalLog, Permission, TaskOvertimeStats, WeeklyReport, WeeklyReportComment, WeeklyReportApprovalLog, Document, OrgNode, RoleChangeLog, RoleChangeRequest } from '@/types';
+import type { Project, Task, User, DelayStats, OvertimeRecord, OvertimeStats, OvertimeApprovalLog, Permission, TaskOvertimeStats, WeeklyReport, WeeklyReportComment, WeeklyReportApprovalLog, HeatmapResponse, Document, OrgNode, RoleChangeLog, RoleChangeRequest } from '@/types';
 import type { SchedulerConfig } from '@/types/scheduler';
 import { useUserStore } from '@/stores/user';
 
@@ -903,6 +903,24 @@ class ApiService {
     return request<string>(`/scheduler/${id}/trigger`, {
       method: 'POST',
     });
+  }
+
+  // === Page View API(2026-06-16 访问率热力图) ===
+
+  async postPageView(payload: {
+    pagePath: string;
+    pageName: string;
+    occurredAt: string;
+  }): Promise<void> {
+    return request<void>('/page-views', {
+      method: 'POST',
+      body: JSON.stringify(payload),
+      silent: true,
+    });
+  }
+
+  async getHeatmap(window: '1d' | '7d' | '30d' | '90d'): Promise<HeatmapResponse> {
+    return request<HeatmapResponse>(`/admin/page-views/heatmap?window=${window}`);
   }
 }
 

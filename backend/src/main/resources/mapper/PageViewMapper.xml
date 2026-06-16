@@ -1,0 +1,38 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+        "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.wbs.project.mapper.PageViewMapper">
+
+    <insert id="insert" parameterType="com.wbs.project.entity.PageView"
+            useGeneratedKeys="true" keyProperty="id">
+        INSERT INTO sys_page_view (user_id, page_path, page_name, occurred_at)
+        VALUES (#{userId}, #{pagePath}, #{pageName}, #{occurredAt})
+    </insert>
+
+    <!-- 热力图主查询:返回每页每小时的总 PV,在 Java 侧 / days 转日均 -->
+    <select id="aggregateByPageAndHour" resultType="java.util.HashMap">
+        SELECT page_name                                       AS pageName,
+               HOUR(occurred_at)                               AS hour,
+               COUNT(*)                                        AS pv
+          FROM sys_page_view
+         WHERE occurred_at &gt;= #{fromTs}
+           AND occurred_at &lt;= #{toTs}
+         GROUP BY page_name, HOUR(occurred_at)
+    </select>
+
+    <!-- 页面列表:总 PV + 日均,按总 PV 倒序 -->
+    <select id="aggregateByPage" resultType="java.util.HashMap">
+        SELECT page_name                                       AS pageName,
+               COUNT(*)                                        AS totalVisits
+          FROM sys_page_view
+         WHERE occurred_at &gt;= #{fromTs}
+           AND occurred_at &lt;= #{toTs}
+         GROUP BY page_name
+         ORDER BY totalVisits DESC
+    </select>
+
+    <delete id="deleteOlderThan">
+        DELETE FROM sys_page_view WHERE occurred_at &lt; #{cutoff}
+    </delete>
+
+</mapper>

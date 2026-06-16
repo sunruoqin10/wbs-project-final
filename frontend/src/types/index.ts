@@ -360,3 +360,25 @@ export interface OrgNode {
   /** 子组织 */
   children: OrgNode[];
 }
+
+// === 访问率热力图(2026-06-16) ===
+
+export interface HeatmapKpi {
+  totalVisits: number;
+  topPageName: string | null;
+  topPageTotal: number | null;
+  peakHour: number;
+  peakHourTotal: number;
+}
+
+export interface HeatmapResponse {
+  window: '1d' | '7d' | '30d' | '90d';
+  fromTs: string;
+  toTs: string;
+  days: number;
+  kpi: HeatmapKpi;
+  xAxis: number[];
+  yAxis: string[];
+  matrix: number[][];
+  maxValue: number;
+}

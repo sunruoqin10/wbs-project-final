@@ -1,6 +1,7 @@
 package com.wbs.project.interceptor;
 
 import com.wbs.project.entity.User;
+import com.wbs.project.exception.BusinessException;
 import com.wbs.project.mapper.UserMapper;
 import com.wbs.project.util.JwtUtil;
 import jakarta.servlet.http.HttpServletRequest;
@@ -83,6 +84,13 @@ public class AuthInterceptor implements HandlerInterceptor {
 
         request.setAttribute("userId", userId);
         request.setAttribute("userRole", role);
+
+        // 2026-06-16: /api/admin/** 路径前缀强制 role=admin(访问率热力图 admin-only)
+        if (request.getRequestURI().startsWith("/api/admin/")) {
+            if (!"admin".equals(role)) {
+                throw new BusinessException(403, "需要管理员权限");
+            }
+        }
 
         return true;
     }
