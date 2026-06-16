@@ -14,6 +14,8 @@
         <result column="sub_org_cd"  property="subOrgCd"/>
         <result column="sub_org_nam" property="subOrgNam"/>
         <result column="company_cd"  property="companyCd"/>
+        <result column="jpstn_cd"    property="jpstnCd"/>
+        <result column="jpstn_nam"   property="jpstnNam"/>
         <result column="chinese_nam" property="chineseNam"/>
         <result column="skills" property="skills"/>
         <result column="password" property="password"/>
@@ -29,7 +31,7 @@
 
     <sql id="Base_Column_List">
         id, name, email, avatar, role, department,
-        dept_code, sub_org_cd, sub_org_nam, company_cd, chinese_nam,
+        dept_code, sub_org_cd, sub_org_nam, company_cd, jpstn_cd, jpstn_nam, chinese_nam,
         skills, password, status,
         managed_dept_codes, managed_company_cd, managed_project_ids, token_version,
         joined_at, created_at, updated_at
@@ -164,7 +166,7 @@
     <insert id="syncHrInsert">
         INSERT IGNORE INTO sys_user
           (id, name, chinese_nam, email, role, department,
-           dept_code, sub_org_cd, sub_org_nam, company_cd,
+           dept_code, sub_org_cd, sub_org_nam, company_cd, jpstn_cd, jpstn_nam,
            password, status)
         SELECT
             p.EMP_NUM,
@@ -177,6 +179,8 @@
             IFNULL(p.SUB_ORG_CD, ''),
             IFNULL(p.SUB_ORG_NAM, ''),
             IFNULL(p.COMPANY_CD, ''),
+            IFNULL(p.JPSTN_CD, ''),
+            IFNULL(p.JPSTN_NAM, ''),
             '1',
             IFNULL(p.ACT_CLSS_CD, 'C')
         FROM mdm_if_pa_a p
@@ -201,6 +205,8 @@
             u.sub_org_cd  = IFNULL(p.SUB_ORG_CD, ''),
             u.sub_org_nam = IFNULL(p.SUB_ORG_NAM, ''),
             u.company_cd  = IFNULL(p.COMPANY_CD, ''),
+            u.jpstn_cd    = IFNULL(p.JPSTN_CD, ''),
+            u.jpstn_nam   = IFNULL(p.JPSTN_NAM, ''),
             u.status      = IFNULL(p.ACT_CLSS_CD, 'C'),
             u.updated_at  = NOW()
         WHERE p.EMP_NAM IS NOT NULL

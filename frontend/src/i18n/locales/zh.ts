@@ -656,6 +656,9 @@ export default {
       email: '邮箱',
       department: '部门',
       role: '角色',
+      // 2026-06-16: 职级(HR 同步字段,只读)
+      jpstnCd: '职级编码',
+      jpstnNam: '职级名称',
       saveChanges: '保存更改',
       saveSuccess: '个人资料已保存'
     },

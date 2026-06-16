@@ -27,6 +27,9 @@ public class User {
     private String subOrgNam;    // 父部门名（来自 mdm_if_pa_a.SUB_ORG_NAM）
     private String companyCd;    // 公司 code（来自 mdm_if_pa_a.COMPANY_CD，2700/8400）
     private String chineseNam;   // 中文姓名（来自 mdm_if_pa_a.CHINESE_NAM）
+    // === HR 同步扩展字段(2026-06-16 新增,职级) ===
+    private String jpstnCd;      // 职级 code（来自 mdm_if_pa_a.JPSTN_CD）
+    private String jpstnNam;     // 职级名（来自 mdm_if_pa_a.JPSTN_NAM）
     private String status = "C"; // 在职状态: C=在职, H=休职, T=离职（来自 mdm_if_pa_a.ACT_CLSS_CD）
 
     // === 角色管理 v2 扩展字段(2026-06-11) ===

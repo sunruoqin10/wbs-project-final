@@ -14,6 +14,9 @@ export interface User {
   subOrgCd?: string;
   subOrgNam?: string;
   companyCd?: string;
+  // === HR 同步扩展字段(2026-06-16,职级) ===
+  jpstnCd?: string;
+  jpstnNam?: string;
   chineseNam?: string;
   status?: 'C' | 'H' | 'T'; // C=在职, H=休职, T=离职（后端已过滤 T，前端不展示）
   // === 角色管理 v2 扩展 ===

@@ -657,6 +657,9 @@ export default {
       email: '이메일',
       department: '부서',
       role: '역할',
+      // 2026-06-16: 직급 (HR 동기화 필드, 읽기 전용)
+      jpstnCd: '직급 코드',
+      jpstnNam: '직급명',
       saveChanges: '변경사항 저장',
       saveSuccess: '프로필이 저장되었습니다'
     },

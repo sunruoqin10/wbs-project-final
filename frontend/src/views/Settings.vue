@@ -64,6 +64,9 @@
                   <option value="member">{{ t('roles.member') }}</option>
                   <option value="viewer">{{ t('roles.viewer') }}</option>
                 </Select>
+                <!-- 2026-06-16: 职级 (HR 同步字段,只读) -->
+                <Input :label="t('settings.profile.jpstnCd')" :modelValue="currentUser?.jpstnCd || '-'" disabled />
+                <Input :label="t('settings.profile.jpstnNam')" :modelValue="currentUser?.jpstnNam || '-'" disabled />
               </div>
 
               <div class="flex justify-end">
