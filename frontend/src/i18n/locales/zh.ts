@@ -549,6 +549,13 @@ export default {
       itemsPerPage: '每页条数',
       sort: '排序'
     },
+    // 角色来源标识 (HR 同步按职级自动推断)
+    roleSource: {
+      autoInferred: '职级推断',
+      autoInferredHint: '此角色由 HR 同步按职级自动分配,手动修改后不再自动覆盖',
+      fromBa: '来源:BA(部门项目负责人)',
+      fromBf: '来源:BF(项目经理)',
+    },
     // 角色管理 v2
     roleChange: {
       title: '修改角色',
@@ -720,6 +727,7 @@ export default {
       syncing: '同步中...',
       syncSuccess: '人事数据同步成功',
       syncSuccessWithCount: '同步完成：新增 {inserted} 人，更新 {updated} 人，标记离职 {resigned} 人',
+      syncSuccessWithInference: '同步完成：新增 {inserted} 人，更新 {updated} 人，标记离职 {resigned} 人，职级自动推断 {inferred} 人（被升级用户需重新登录）',
       syncFailed: '人事数据同步失败',
     },
     // 通用

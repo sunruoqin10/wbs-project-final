@@ -24,6 +24,11 @@ export interface User {
   managedCompanyCd?: string;    // 管辖公司编码(仅 dept-project-manager 有效)
   managedProjectIds?: string[]; // 管辖项目 ID 列表(2026-06-12 新增,仅 project-manager 有效)
   tokenVersion?: number;        // JWT 版本号(角色变更后旧 token 失效)
+  // === 职级默认角色推断(2026-06-16,见 docs/superpowers/specs/2026-06-16-jpstn-role-default-design.md §6.1) ===
+  /** HR 同步按 JPSTN_CD 推断得来(2026-06-16) */
+  roleAutoInferred?: boolean;
+  /** 推断来源 JPSTN_CD('BA' / 'BF') */
+  roleInferredFromJpstn?: string;
 }
 
 export interface Comment {

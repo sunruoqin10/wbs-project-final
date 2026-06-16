@@ -140,9 +140,22 @@
                         <span class="ml-1 font-medium text-secondary-700">{{ displayPosition(user) }}</span>
                       </div>
                       <div class="mt-1 flex items-center justify-between gap-2">
-                        <Badge :variant="roleBadgeVariant(user.role)">
-                          {{ roleLabel(user.role) }}
-                        </Badge>
+                        <div class="flex items-center gap-1">
+                          <Badge :variant="roleBadgeVariant(user.role)">
+                            {{ roleLabel(user.role) }}
+                          </Badge>
+                          <Badge
+                            v-if="user.roleAutoInferred"
+                            variant="info"
+                            :title="user.roleInferredFromJpstn === 'BA'
+                              ? $t('team.roleSource.fromBa')
+                              : (user.roleInferredFromJpstn === 'BF'
+                                ? $t('team.roleSource.fromBf')
+                                : $t('team.roleSource.autoInferredHint'))"
+                          >
+                            {{ $t('team.roleSource.autoInferred') }}
+                          </Badge>
+                        </div>
                         <!-- 修改角色按钮:永远显示,仅 admin 可点;非 admin 显示灰色 + tooltip 提示 -->
                         <button
                           type="button"
@@ -503,6 +516,7 @@
       :user-company-cd="roleChangeTarget.companyCd || ''"
       :user-dept-code="roleChangeTarget.deptCode || ''"
       :current-managed-project-ids="roleChangeTarget.managedProjectIds || []"
+      :current-role-auto-inferred="roleChangeTarget.roleAutoInferred || false"
       @success="onRoleChangeSuccess"
     />
   </MainLayout>

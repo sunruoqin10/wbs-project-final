@@ -12,6 +12,8 @@
         <result column="new_managed_dept_codes" property="newManagedDeptCodes"/>
         <result column="old_managed_company_cd" property="oldManagedCompanyCd"/>
         <result column="new_managed_company_cd" property="newManagedCompanyCd"/>
+        <result column="old_managed_project_ids" property="oldManagedProjectIds"/>
+        <result column="new_managed_project_ids" property="newManagedProjectIds"/>
         <result column="changed_by" property="changedBy"/>
         <result column="changed_at" property="changedAt"/>
         <result column="reason" property="reason"/>
@@ -22,11 +24,13 @@
           (user_id, old_role, new_role,
            old_managed_dept_codes, new_managed_dept_codes,
            old_managed_company_cd, new_managed_company_cd,
+           old_managed_project_ids, new_managed_project_ids,
            changed_by, changed_at, reason)
         VALUES
           (#{userId}, #{oldRole}, #{newRole},
            #{oldManagedDeptCodes}, #{newManagedDeptCodes},
            #{oldManagedCompanyCd}, #{newManagedCompanyCd},
+           #{oldManagedProjectIds}, #{newManagedProjectIds},
            #{changedBy}, #{changedAt}, #{reason})
     </insert>
 
@@ -34,6 +38,7 @@
         SELECT id, user_id, old_role, new_role,
                old_managed_dept_codes, new_managed_dept_codes,
                old_managed_company_cd, new_managed_company_cd,
+               old_managed_project_ids, new_managed_project_ids,
                changed_by, changed_at, reason
         FROM sys_role_change_log
         WHERE user_id = #{userId}

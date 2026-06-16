@@ -83,9 +83,22 @@
                 <span class="ml-1 font-medium text-secondary-700">{{ displayPosition(user) }}</span>
               </div>
               <div class="mt-1 flex items-center justify-between gap-2">
-                <Badge :variant="roleBadgeVariant(user.role)">
-                  {{ roleLabel(user.role) }}
-                </Badge>
+                <div class="flex items-center gap-1">
+                  <Badge :variant="roleBadgeVariant(user.role)">
+                    {{ roleLabel(user.role) }}
+                  </Badge>
+                  <Badge
+                    v-if="user.roleAutoInferred"
+                    variant="info"
+                    :title="user.roleInferredFromJpstn === 'BA'
+                      ? $t('team.roleSource.fromBa')
+                      : (user.roleInferredFromJpstn === 'BF'
+                        ? $t('team.roleSource.fromBf')
+                        : $t('team.roleSource.autoInferredHint'))"
+                  >
+                    {{ $t('team.roleSource.autoInferred') }}
+                  </Badge>
+                </div>
                 <button
                   type="button"
                   :class="[

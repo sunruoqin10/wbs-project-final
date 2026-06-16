@@ -37,4 +37,8 @@ public class User {
     private String managedCompanyCd;  // 该用户作为部门项目负责人的公司编码(需与 user.companyCd 一致)
     private String managedProjectIds; // JSON 字符串,该用户作为项目经理管理的项目 ID 列表(仅 role=project-manager 有效,2026-06-12 新增)
     private Integer tokenVersion = 0; // JWT 版本号,角色/管辖范围变更时 +1,AuthInterceptor 校验不一致则 401
+
+    // === HR 推断标记(2026-06-16 新增,前端 Badge 用;不入库靠 MyBatis XML 不列这俩字段,JPA 注解不需要) ===
+    private Boolean roleAutoInferred;          // true = 此 role 由 HR_SYNC 按 JPSTN_CD 推断得来
+    private String roleInferredFromJpstn;      // 推断来源 JPSTN_CD('BA' / 'BF'),前端 hover 提示用
 }

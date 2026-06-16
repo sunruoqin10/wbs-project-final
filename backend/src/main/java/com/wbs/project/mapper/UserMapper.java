@@ -148,4 +148,19 @@ public interface UserMapper {
      * @return 更新行数
      */
     int bumpTokenVersion(@Param("id") String id);
+
+    /**
+     * JPSTN 推断配套 1（2026-06-16）: mdm 中 C/H 在职的 EMP_NUM 列表
+     * 覆盖 insert + update 两条路径,过滤 EMP_NAM / EMAIL_ADDR / EMP_NUM 非空且 ACT_CLSS_CD IN ('C','H')
+     * @return 在职 EMP_NUM 列表
+     */
+    List<String> selectMdmActiveEmpNums();
+
+    /**
+     * JPSTN 推断配套 2（2026-06-16）: 批量拿最近一次 HR_SYNC 推断的 JPSTN_CD 来源（从 reason 字符串解析）
+     * SQL resultType="java.util.HashMap" 实际返 Object,需在 get 时 (String) 强转
+     * @param ids 用户 ID 列表
+     * @return user_id → jpstn_cd 的 map 列表
+     */
+    List<java.util.Map<String, Object>> selectLatestHrSyncInferences(@Param("ids") List<String> ids);
 }

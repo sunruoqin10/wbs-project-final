@@ -551,11 +551,18 @@ const handleSyncHr = async () => {
     const result = await apiService.syncHrUsers();
     syncResult.value = {
       success: true,
-      message: t('settings.hrSync.syncSuccessWithCount', {
-        inserted: result.inserted,
-        updated: result.updated,
-        resigned: result.resigned,
-      })
+      message: result.inferred > 0
+        ? t('settings.hrSync.syncSuccessWithInference', {
+            inserted: result.inserted,
+            updated: result.updated,
+            resigned: result.resigned,
+            inferred: result.inferred,
+          })
+        : t('settings.hrSync.syncSuccessWithCount', {
+            inserted: result.inserted,
+            updated: result.updated,
+            resigned: result.resigned,
+          })
     };
   } catch (error: any) {
     syncResult.value = {

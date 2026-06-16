@@ -572,6 +572,13 @@ export default {
       page: '{current} / {total} 페이지',
       itemsPerPage: '페이지당 항목 수',
       sort: '정렬'
+    },
+    // 역할 출처 표시 (HR 동기화로 직급 기반 자동 추론)
+    roleSource: {
+      autoInferred: '직급 추론',
+      autoInferredHint: '이 역할은 HR 동기화로 직급에 따라 자동 할당되었으며,수동으로 수정하면 더 이상 자동 덮어쓰지 않습니다',
+      fromBa: '출처:BA(부서 프로젝트 책임자)',
+      fromBf: '출처:BF(프로젝트 매니저)',
     }
   },
 
@@ -721,6 +728,7 @@ export default {
       syncing: '동기화 중...',
       syncSuccess: '인사 데이터 동기화 성공',
       syncSuccessWithCount: '동기화 완료: {inserted}명 추가, {updated}명 업데이트, {resigned}명 퇴직 처리',
+      syncSuccessWithInference: '동기화 완료: {inserted}명 추가, {updated}명 업데이트, {resigned}명 퇴직 처리, 직급 자동 추론 {inferred}명(업그레이드된 사용자 재로그인 필요)',
       syncFailed: '인사 데이터 동기화 실패',
     },
     // 공통

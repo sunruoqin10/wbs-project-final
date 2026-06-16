@@ -16,6 +16,8 @@ interface Props {
   /** 员工所属部门代码，作为管辖部门的默认值 */
   userDeptCode?: string;
   currentManagedProjectIds?: string[];
+  /** 当前 role 是否由 HR 同步按 JPSTN_CD 自动推断(2026-06-16) */
+  currentRoleAutoInferred?: boolean;
 }
 const props = withDefaults(defineProps<Props>(), {
   currentManagedDeptCodes: () => [],
@@ -23,6 +25,7 @@ const props = withDefaults(defineProps<Props>(), {
   userCompanyCd: '',
   userDeptCode: '',
   currentManagedProjectIds: () => [],
+  currentRoleAutoInferred: false,   // 默认 false(不影响现有调用方)
 });
 const emit = defineEmits<{
   (e: 'update:visible', val: boolean): void;
@@ -272,6 +275,13 @@ const formatTime = (iso: string): string => {
         </div>
         <div class="rounded-lg border border-amber-200 bg-amber-50 p-3 text-sm text-amber-800">
           {{ t('team.roleChange.warning') }}
+        </div>
+        <div
+          v-if="currentRoleAutoInferred"
+          class="rounded-lg border border-blue-200 bg-blue-50 p-3 text-sm text-blue-800"
+        >
+          <span class="font-medium">{{ t('team.roleSource.autoInferred') }}:</span>
+          {{ t('team.roleSource.autoInferredHint') }}
         </div>
 
         <!-- 新角色 -->

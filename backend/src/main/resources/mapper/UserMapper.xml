@@ -276,4 +276,35 @@
          WHERE id = #{id}
     </update>
 
+    <!-- 5.2.1 配套 1: mdm 中 C/H 在职的 EMP_NUM 列表(覆盖 insert + update 两条路径) -->
+    <select id="selectMdmActiveEmpNums" resultType="java.lang.String">
+        SELECT DISTINCT p.EMP_NUM
+          FROM mdm_if_pa_a p
+         WHERE p.EMP_NAM IS NOT NULL
+           AND p.EMAIL_ADDR IS NOT NULL
+           AND p.ACT_CLSS_CD IN ('C','H')
+           AND p.EMP_NUM IS NOT NULL
+    </select>
+
+    <!-- 5.2.2 配套 2: 批量拿最近一次 HR_SYNC 推断的 JPSTN_CD 来源(从 reason 字符串解析) -->
+    <select id="selectLatestHrSyncInferences" resultType="java.util.HashMap">
+        SELECT user_id,
+               SUBSTRING_INDEX(SUBSTRING_INDEX(reason, 'JPSTN_CD=', -1), ' ', 1) AS jpstn_cd
+          FROM sys_role_change_log
+         WHERE changed_by = 'HR_SYNC'
+           AND user_id IN
+           <foreach collection="ids" item="id" open="(" separator="," close=")">
+               #{id}
+           </foreach>
+           AND id IN (
+             SELECT MAX(id) FROM sys_role_change_log
+              WHERE changed_by = 'HR_SYNC'
+                AND user_id IN
+                <foreach collection="ids" item="id2" open="(" separator="," close=")">
+                    #{id2}
+                </foreach>
+              GROUP BY user_id
+           )
+    </select>
+
 </mapper>

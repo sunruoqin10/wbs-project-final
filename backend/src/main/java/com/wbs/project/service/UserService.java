@@ -9,6 +9,7 @@ import com.wbs.project.exception.BusinessException;
 import com.wbs.project.mapper.RoleChangeLogMapper;
 import com.wbs.project.mapper.UserMapper;
 import com.wbs.project.service.PermissionService;
+import com.wbs.project.util.JpstnRoleMapping;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
@@ -16,7 +17,10 @@ import org.springframework.transaction.annotation.Transactional;
 
 import java.time.LocalDateTime;
 import java.util.Collections;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
+import java.util.stream.Collectors;
 
 /**
  * 用户Service
@@ -35,14 +39,18 @@ public class UserService {
      * 查询所有用户
      */
     public List<User> getAllUsers() {
-        return userMapper.selectAll();
+        List<User> list = userMapper.selectAll();
+        fillRoleInferredMarkers(list);
+        return list;
     }
 
     /**
      * 根据ID查询用户
      */
     public User getUserById(String id) {
-        return userMapper.selectById(id);
+        User u = userMapper.selectById(id);
+        if (u != null) fillRoleInferredMarkers(Collections.singletonList(u));
+        return u;
     }
 
     /**
@@ -56,7 +64,9 @@ public class UserService {
      * 根据ID列表查询用户
      */
     public List<User> getUsersByIds(List<String> ids) {
-        return userMapper.selectByIds(ids);
+        List<User> list = userMapper.selectByIds(ids);
+        fillRoleInferredMarkers(list);
+        return list;
     }
 
     /**
@@ -211,6 +221,7 @@ public class UserService {
     public java.util.Map<String, Object> searchUsers(String keyword, int page, int pageSize) {
         int offset = (page - 1) * pageSize;
         List<User> records = userMapper.searchUsers(keyword, offset, pageSize);
+        fillRoleInferredMarkers(records);   // ★ 在 records 装入 Map 之前
         int total = userMapper.countSearchUsers(keyword);
         java.util.Map<String, Object> result = new java.util.HashMap<>();
         result.put("records", records);
@@ -242,12 +253,122 @@ public class UserService {
         // 2. 同步流程
         int inserted = userMapper.syncHrInsert();
         int updated = userMapper.syncHrUpdate();
+        // ④ ★ HR 同步后按 JPSTN_CD 推断角色(启发式预填,2026-06-16)
+        int inferred = inferRoleFromJpstnForHrSync();
         int resigned = userMapper.syncHrMarkResigned();
         java.util.Map<String, Integer> result = new java.util.HashMap<>();
         result.put("inserted", inserted);
         result.put("updated", updated);
         result.put("resigned", resigned);
+        result.put("inferred", inferred);
         return result;
+    }
+
+    /**
+     * 对"mdm 中 C/H 在职"的全体用户跑 JPSTN_CD → role 推断(2026-06-16)
+     * 仅当 sys_user.role == 'member' 且 jpstnCd ∈ {BA, BF} 时升级 role + managed_* + 写 audit
+     *
+     * 事务语义:由外层 syncHrData 的 @Transactional 整事务包裹
+     * - 单条推断失败 → 异常向上传播 → 整事务回滚(连同 syncHrInsert / syncHrUpdate),HR 重跑即可
+     * - 这里不再写 try/catch:写了也无效,事务回滚照样发生,反而误导
+     */
+    private int inferRoleFromJpstnForHrSync() {
+        List<String> empNums = userMapper.selectMdmActiveEmpNums();
+        if (empNums == null || empNums.isEmpty()) return 0;
+
+        List<User> users = userMapper.selectByIds(empNums);
+        int inferred = 0;
+        for (User u : users) {
+            // 二次过滤保护:selectMdmActiveEmpNums 已 WHERE ACT_CLSS_CD IN ('C','H'),
+            // 但 sys_user.status 在 syncHrMarkResigned(步 ⑤)之前可能与 mdm 不一致;
+            // selectByIds 还 AND status != 'T',实测几乎不会触发 null,
+            // 保留此 continue 作为 defensive coding 防 NPE,避免循环中某条 mapper 抛异常导致整循环崩
+            if (u == null) continue;
+
+            // 启发式预填:仅当 role 仍为默认 member 时才覆盖
+            if (!"member".equals(u.getRole())) continue;
+            String newRole = JpstnRoleMapping.inferRoleCode(u.getJpstnCd());
+            if (newRole == null) continue;
+            UserRole newRoleEnum = UserRole.fromCode(newRole);   // 与 changeUserRole 风格一致,后续用 enum == 比较
+
+            String oldRole = u.getRole();
+            // role=member 时 managed_* 无业务意义,audit 里 old_* 强制 null,避免"member 拥有 dept 管理权"的语义混乱
+            String oldJsonCodes  = null;
+            String oldCompanyCd  = null;
+            String oldJsonProj   = null;
+            String jsonCodes     = null;
+            String companyCd     = null;
+            String jsonProjects  = null;
+
+            if (newRoleEnum == UserRole.DEPT_PROJECT_MANAGER) {
+                // BA → dept-pm:managed_dept_codes = [user.dept_code], managed_company_cd = user.company_cd
+                if (u.getDeptCode() == null || u.getDeptCode().isEmpty()) {
+                    log.warn("HR 推断跳过: user={} 职级=BA 但 dept_code 为空", u.getId());
+                    continue;
+                }
+                if (u.getCompanyCd() == null || u.getCompanyCd().isEmpty()) {
+                    log.warn("HR 推断跳过: user={} 职级=BA 但 company_cd 为空", u.getId());
+                    continue;
+                }
+                // 序列化风格与 changeUserRole 一致(objectMapper.writeValueAsString),
+                // 而不是手拼 JSON,避免引号 / 转义错
+                try {
+                    jsonCodes = objectMapper.writeValueAsString(Collections.singletonList(u.getDeptCode()));
+                } catch (Exception e) {
+                    throw new BusinessException(500, "managedDeptCodes 序列化失败: " + e.getMessage());
+                }
+                companyCd = u.getCompanyCd();
+            } else if (newRoleEnum == UserRole.PROJECT_MANAGER) {
+                // BF → pm:managed_project_ids = '[]'
+                jsonProjects = "[]";
+            }
+
+            // 写审计(reuse RoleChangeLog,与 changeUserRole 同口径)
+            RoleChangeLog changeLog = new RoleChangeLog();
+            changeLog.setUserId(u.getId());
+            changeLog.setOldRole(oldRole);
+            changeLog.setNewRole(newRole);
+            changeLog.setOldManagedDeptCodes(oldJsonCodes);
+            changeLog.setNewManagedDeptCodes(jsonCodes);
+            changeLog.setOldManagedCompanyCd(oldCompanyCd);
+            changeLog.setNewManagedCompanyCd(companyCd);
+            changeLog.setOldManagedProjectIds(oldJsonProj);
+            changeLog.setNewManagedProjectIds(jsonProjects);
+            changeLog.setChangedBy("HR_SYNC");          // ★ 标记来源(手工切 PM 时是 operatorId,不冲突)
+            changeLog.setChangedAt(LocalDateTime.now());
+            changeLog.setReason("自动推断:" + JpstnRoleMapping.describe(u.getJpstnCd()));
+            roleChangeLogMapper.insert(changeLog);
+
+            // 复用现有 mapper(token_version +1 自动包含)
+            userMapper.updateRoleAndScope(u.getId(), newRole, jsonCodes, companyCd, jsonProjects);
+            log.info("HR 推断: user={} jpstnCd={} {} → {}", u.getId(), u.getJpstnCd(), oldRole, newRole);
+            inferred++;
+        }
+        return inferred;
+    }
+
+    /**
+     * 给一组 User 填充 roleAutoInferred / roleInferredFromJpstn(2026-06-16 新增)
+     * 来源: sys_role_change_log 中 changed_by='HR_SYNC' 的最近一条记录
+     * 性能: 单 SQL 批量查,O(1) round-trip;不影响现有 list / search / selectById
+     */
+    private void fillRoleInferredMarkers(List<User> users) {
+        if (users == null || users.isEmpty()) return;
+        List<String> ids = users.stream().map(User::getId).collect(Collectors.toList());
+        List<Map<String, Object>> rows = userMapper.selectLatestHrSyncInferences(ids);
+        // 显式 (String) cast:userMapper.selectLatestHrSyncInferences 实际返 List<Map<String, Object>>,
+        // 这里用 Java 泛型擦除,需在 get 时强转,否则 mvn compile 报 unchecked warning
+        // 防御:Collectors.toMap 不允许 value 为 null,filter 掉 null 防止 NPE
+        Map<String, String> inferredMap = rows.stream()
+            .filter(r -> r.get("user_id") != null && r.get("jpstn_cd") != null)
+            .collect(Collectors.toMap(r -> (String) r.get("user_id"), r -> (String) r.get("jpstn_cd")));
+        for (User u : users) {
+            String jpstn = inferredMap.get(u.getId());
+            if (jpstn != null) {
+                u.setRoleAutoInferred(true);
+                u.setRoleInferredFromJpstn(jpstn);
+            }
+        }
     }
 
     // ============ 角色管理 v2 ============
@@ -337,6 +458,8 @@ public class UserService {
         changeLog.setNewManagedDeptCodes(jsonCodes);
         changeLog.setOldManagedCompanyCd(target.getManagedCompanyCd());
         changeLog.setNewManagedCompanyCd(managedCompanyCd);
+        changeLog.setOldManagedProjectIds(target.getManagedProjectIds());
+        changeLog.setNewManagedProjectIds(jsonProjects);
         changeLog.setChangedBy(operatorId);
         changeLog.setChangedAt(LocalDateTime.now());
         changeLog.setReason(reason);
