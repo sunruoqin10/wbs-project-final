@@ -117,8 +117,6 @@ export default {
   // 仪表盘
   dashboard: {
     welcome: '欢迎回来',
-    needsHandoverTitle: '待指派项目',
-    viewAll: '查看全部',
     stats: {
       totalProjects: '总项目数',
       activeProjects: '进行中的项目数',
@@ -163,11 +161,6 @@ export default {
     searchPlaceholder: '搜索项目...',
     status: '状态',
     clearFilters: '清除筛选',
-    handover: {
-      label: '交接',
-      all: '全部',
-      needsHandover: '待指派'
-    },
     viewModes: {
       card: '卡片',
       list: '列表'
@@ -785,52 +778,6 @@ export default {
     completed: '已完成',
     onHold: '已暂停',
     cancelled: '已废弃'
-  },
-
-  // 项目(顶层命名空间,2026-06-16 PM/Dept-PM 变更方案 — 待指派徽标 / 重新指派)
-  project: {
-    needsHandoverBadge: '待指派',
-    unfreezeAction: '重新指派'
-  },
-
-  // 交接(2026-06-16 PM/Dept-PM 变更方案)
-  handover: {
-    title: '项目交接',
-    deptPmTitle: '部门管辖权交接',
-    outgoingLabel: '出让人',
-    projectScope: '交接项目范围',
-    deptScope: '交接部门范围',
-    successorLabel: '继任者',
-    successorPlaceholder: '请选择继任者',
-    reasonLabel: '交接原因',
-    reasonPlaceholder: '请说明交接原因',
-    selectedCount: '已选 {count} 项',
-    validation: {
-      needSuccessor: '请选择继任者',
-      needProject: '请至少选择一个项目',
-      needDept: '请至少选择一个部门'
-    },
-    errorMessage: '交接失败',
-    history: {
-      empty: '暂无交接记录',
-      col: {
-        createdAt: '时间',
-        handoverType: '类型',
-        projectName: '项目',
-        fromUserName: '原负责人',
-        toUserName: '继任者',
-        reason: '原因'
-      }
-    },
-    deptMerge: {
-      title: '部门合并/拆分'
-    },
-    // 团队页入口(2026-06-16 Team.vue 集成)
-    actions: {
-      pmHandover: '交接手上的项目',
-      deptPmHandover: '部门管辖权交接',
-      historyTab: '交接历史'
-    }
   },
 
   // 通知消息

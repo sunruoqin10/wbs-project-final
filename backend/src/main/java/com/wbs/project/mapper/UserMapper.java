@@ -148,48 +148,4 @@ public interface UserMapper {
      * @return 更新行数
      */
     int bumpTokenVersion(@Param("id") String id);
-
-    // ============ PM / Dept-PM 变更交接(2026-06-16) ============
-
-    /**
-     * 整列覆写 managed_project_ids JSON(spec §5.1 应用层 read-filter-write)
-     */
-    int updateManagedProjectIds(@Param("id") String id,
-                                @Param("managedProjectIds") String managedProjectIds);
-
-    /**
-     * 整列覆写 managed_dept_codes JSON
-     */
-    int updateManagedDeptCodes(@Param("id") String id,
-                               @Param("managedDeptCodes") String managedDeptCodes);
-
-    /**
-     * 行级锁(SELECT ... FOR UPDATE)用于交接事务(spec §4.1 step 3)
-     */
-    List<User> lockUsersForUpdate(@Param("ids") List<String> ids);
-
-    /**
-     * HR 同步:返回本次将被标记为离职的 user id 列表
-     */
-    List<String> syncHrMarkResignedReturnIds();
-
-    /**
-     * HR 同步:按 id 列表批量标记离职(配合 syncHrMarkResignedReturnIds 使用)
-     */
-    int syncHrMarkResignedByIds(@Param("ids") List<String> ids);
-
-    /**
-     * 部门编码反查公司编码(spec §4.2 部门合并使用)
-     */
-    String selectCompanyCdByDeptCode(@Param("deptCode") String deptCode);
-
-    /**
-     * 部门编码下用户数(spec §4.2 校验)
-     */
-    int countByDeptCode(@Param("deptCode") String deptCode);
-
-    /**
-     * 部门编码下 dept-project-manager 列表(spec §4.2 step 7 找原 dept-pm)
-     */
-    List<String> selectIdsByManagedDeptCode(@Param("deptCode") String deptCode);
 }

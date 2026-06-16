@@ -339,36 +339,4 @@ public class EmailNotificationService {
             default -> status;
         };
     }
-
-    // ============ PM / Dept-PM 变更交接通知(2026-06-16) ============
-    // 注:当前为 stub,只记日志;邮件模板由后续 PR 补
-
-    /**
-     * PM_HANDOVER 通知(spec §4.1 step 5):
-     * 收件人 = 出让人 + 继任者 + 项目 members + 双方所属 dept-pm
-     */
-    public void sendHandoverNotifications(String operatorId, String outgoingId,
-                                          String successorId, List<String> projectIds) {
-        log.info("PM_HANDOVER 通知: operator={}, outgoing={}, successor={}, projects={}",
-                operatorId, outgoingId, successorId, projectIds);
-    }
-
-    /**
-     * DEPT_PM_HANDOVER 通知(spec §4.1 step 5):
-     * 收件人 = 出让人 + 继任者 + 受影响 PM(部门下项目 owner)
-     */
-    public void sendDeptHandoverNotifications(String operatorId, String outgoingId,
-                                              String successorId, List<String> deptCodes,
-                                              List<String> affectedPmIds) {
-        log.info("DEPT_PM_HANDOVER 通知: operator={}, outgoing={}, successor={}, depts={}, pms={}",
-                operatorId, outgoingId, successorId, deptCodes, affectedPmIds);
-    }
-
-    /**
-     * RESIGN_FREEZE 通知(spec §4.3):
-     * 收件人 = admin(全量) + 该用户所属 dept-pm
-     */
-    public void sendResignFreezeNotifications(String resignedUserId, List<String> projectIds) {
-        log.info("RESIGN_FREEZE 通知: resigned={}, frozenProjects={}", resignedUserId, projectIds);
-    }
 }

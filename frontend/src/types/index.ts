@@ -116,8 +116,6 @@ export interface Project {
   isDelayed?: boolean;            // 是否有延期任务
   // === 角色管理 v2 扩展 ===
   deptCode?: string;              // 项目归属部门编码(对应 MDM ORG_CD)
-  // === PM/Dept-PM 交接扩展(2026-06-16,后端 sys_project.needs_handover 字段) ===
-  needsHandover?: boolean;        // 是否需要交接(true=原 PM/Dept-PM 已离任,项目待指派)
 }
 
 export interface Statistics {

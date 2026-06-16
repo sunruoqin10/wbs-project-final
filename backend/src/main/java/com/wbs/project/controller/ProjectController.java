@@ -2,11 +2,8 @@ package com.wbs.project.controller;
 
 import com.wbs.project.common.Result;
 import com.wbs.project.entity.Project;
-import com.wbs.project.entity.User;
-import com.wbs.project.mapper.ProjectMapper;
 import com.wbs.project.service.PermissionService;
 import com.wbs.project.service.ProjectService;
-import com.wbs.project.service.UserService;
 import jakarta.servlet.http.HttpServletRequest;
 import lombok.RequiredArgsConstructor;
 import org.springframework.web.bind.annotation.*;
@@ -20,8 +17,6 @@ public class ProjectController {
 
     private final ProjectService projectService;
     private final PermissionService permissionService;
-    private final ProjectMapper projectMapper;
-    private final UserService userService;
 
     /**
      * 查询所有项目（角色管理 v2：按当前用户数据范围过滤）
@@ -32,24 +27,6 @@ public class ProjectController {
         List<Project> projects = projectService.getAllProjectsForUser(currentUserId);
         projectService.updateProjectsDelayedStatus(projects);
         return Result.success(projects);
-    }
-
-    /**
-     * 待指派项目列表(2026-06-16 新增,spec §2.6)
-     * GET /api/projects/needs-handover
-     * 自动按 caller 角色过滤：admin: 全部;dept-pm: 本部门;其它: 空
-     */
-    @GetMapping("/needs-handover")
-    public Result<List<Project>> listNeedsHandover(HttpServletRequest request) {
-        String userId = (String) request.getAttribute("userId");
-        User caller = userService.getUserById(userId);
-        List<String> managedCodes = null;
-        if (caller != null && "dept-project-manager".equals(caller.getRole())) {
-            managedCodes = userService.parseManagedDeptCodes(caller.getManagedDeptCodes());
-        }
-        String role = caller == null ? "" : caller.getRole();
-        List<Project> list = projectMapper.selectNeedsHandoverVisibleTo(role, managedCodes);
-        return Result.success(list);
     }
 
     @GetMapping("/{id}")
