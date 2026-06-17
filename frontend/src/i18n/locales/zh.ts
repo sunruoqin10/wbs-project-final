@@ -561,6 +561,26 @@ export default {
       itemsPerPage: '每页条数',
       sort: '排序'
     },
+    // 2026-06-17: 本部门成员 tab（基于当前登录用户 deptCode 过滤,以表格展示）
+    currentDept: {
+      title: '本部门成员',
+      subtitle: '当前用户所在部门的成员列表',
+      noDept: '当前用户未关联部门，无法显示本部门成员',
+      noData: '本部门暂无成员数据',
+      memberName: '姓名',
+      userId: '工号',
+      email: '邮箱',
+      company: '公司',
+      department: '部门',
+      position: '职级',
+      role: '角色',
+      deptPath: '部门路径',
+      previous: '上一页',
+      next: '下一页',
+      page: '第 {current} 页 / 共 {total} 页',
+      itemsPerPage: '每页条数',
+      searchPlaceholder: '搜索姓名/工号/邮箱'
+    },
     // 角色来源标识 (HR 同步按职级自动推断)
     roleSource: {
       autoInferred: '职级推断',

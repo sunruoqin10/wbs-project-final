@@ -585,6 +585,26 @@ export default {
       itemsPerPage: '페이지당 항목 수',
       sort: '정렬'
     },
+    // 2026-06-17: 현재 부서 구성원 탭 (현재 로그인 사용자 deptCode 기준, 테이블 표시)
+    currentDept: {
+      title: '현재 부서 구성원',
+      subtitle: '현재 사용자가 속한 부서의 구성원 목록',
+      noDept: '현재 사용자에게 부서가 연결되어 있지 않아 표시할 수 없습니다',
+      noData: '현재 부서에 구성원이 없습니다',
+      memberName: '이름',
+      userId: '사번',
+      email: '이메일',
+      company: '회사',
+      department: '부서',
+      position: '직급',
+      role: '역할',
+      deptPath: '부서 경로',
+      previous: '이전 페이지',
+      next: '다음 페이지',
+      page: '{current} / {total} 페이지',
+      itemsPerPage: '페이지당 항목 수',
+      searchPlaceholder: '이름/사번/이메일 검색'
+    },
     // 역할 출처 표시 (HR 동기화로 직급 기반 자동 추론)
     roleSource: {
       autoInferred: '직급 추론',

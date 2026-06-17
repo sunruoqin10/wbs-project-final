@@ -354,6 +354,163 @@
           </div>
 
           <div v-else-if="currentTab === 1" class="space-y-6">
+            <!-- 2026-06-17: 本部门成员(表格视图,基于当前登录用户 deptCode 过滤) -->
+            <Card>
+              <template #header>
+                <div class="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
+                  <div>
+                    <h3 class="text-lg font-semibold text-secondary-900">{{ $t('team.currentDept.title') }}</h3>
+                    <p class="mt-0.5 text-xs text-secondary-500">
+                      {{ $t('team.currentDept.subtitle') }}
+                      <span v-if="currentUser?.deptCode" class="ml-1 font-mono text-secondary-700">
+                        ({{ currentUser.deptCode }})
+                      </span>
+                    </p>
+                  </div>
+                  <div class="flex items-center gap-2">
+                    <input
+                      v-model="currentDeptSearch"
+                      type="text"
+                      :placeholder="$t('team.currentDept.searchPlaceholder')"
+                      class="w-56 rounded-lg border border-secondary-300 px-3 py-1.5 text-sm focus:border-primary-500 focus:outline-none focus:ring-1 focus:ring-primary-500"
+                    />
+                  </div>
+                </div>
+              </template>
+
+              <!-- 当前用户未关联部门 -->
+              <div v-if="!currentUser?.deptCode" class="px-2 py-10 text-center text-sm text-secondary-500">
+                {{ $t('team.currentDept.noDept') }}
+              </div>
+
+              <div v-else class="overflow-x-auto">
+                <table class="min-w-full divide-y divide-secondary-200">
+                  <thead class="bg-secondary-50">
+                    <tr>
+                      <th class="px-6 py-3 text-left text-xs font-medium uppercase tracking-wider text-secondary-500">
+                        {{ $t('team.currentDept.memberName') }}
+                      </th>
+                      <th class="px-6 py-3 text-left text-xs font-medium uppercase tracking-wider text-secondary-500">
+                        {{ $t('team.currentDept.userId') }}
+                      </th>
+                      <th class="px-6 py-3 text-left text-xs font-medium uppercase tracking-wider text-secondary-500">
+                        {{ $t('team.currentDept.email') }}
+                      </th>
+                      <th class="px-6 py-3 text-left text-xs font-medium uppercase tracking-wider text-secondary-500">
+                        {{ $t('team.currentDept.company') }}
+                      </th>
+                      <th class="px-6 py-3 text-left text-xs font-medium uppercase tracking-wider text-secondary-500">
+                        {{ $t('team.currentDept.department') }}
+                      </th>
+                      <th class="px-6 py-3 text-left text-xs font-medium uppercase tracking-wider text-secondary-500">
+                        {{ $t('team.currentDept.position') }}
+                      </th>
+                      <th class="px-6 py-3 text-left text-xs font-medium uppercase tracking-wider text-secondary-500">
+                        {{ $t('team.currentDept.role') }}
+                      </th>
+                    </tr>
+                  </thead>
+                  <tbody class="divide-y divide-secondary-200 bg-white">
+                    <tr
+                      v-for="user in paginatedCurrentDeptUsers"
+                      :key="user.id"
+                      class="hover:bg-secondary-50"
+                    >
+                      <td class="whitespace-nowrap px-6 py-4">
+                        <div class="flex items-center">
+                          <UserAvatar :name="displayName(user)" :seed="user.avatar" size="md" />
+                          <div class="ml-3">
+                            <div class="text-sm font-medium text-secondary-900">{{ displayName(user) }}</div>
+                            <div v-if="user.chineseNam && user.chineseNam !== user.name" class="text-xs text-secondary-500">
+                              {{ user.name }}
+                            </div>
+                          </div>
+                        </div>
+                      </td>
+                      <td class="whitespace-nowrap px-6 py-4 font-mono text-sm text-secondary-900">{{ user.id }}</td>
+                      <td class="px-6 py-4 text-sm text-secondary-500">{{ user.email || '—' }}</td>
+                      <td class="whitespace-nowrap px-6 py-4 text-sm text-secondary-900">
+                        {{ user.companyCd || '—' }}
+                      </td>
+                      <td class="px-6 py-4 text-sm text-secondary-900">
+                        {{ user.department || '—' }}
+                      </td>
+                      <td class="whitespace-nowrap px-6 py-4 text-sm text-secondary-700">
+                        {{ displayPosition(user) }}
+                      </td>
+                      <td class="whitespace-nowrap px-6 py-4">
+                        <div class="flex items-center gap-1">
+                          <Badge :variant="roleBadgeVariant(user.role)">
+                            {{ roleLabel(user.role) }}
+                          </Badge>
+                          <Badge
+                            v-if="user.roleAutoInferred"
+                            variant="info"
+                            :title="user.roleInferredFromJpstn === 'BA'
+                              ? $t('team.roleSource.fromBa')
+                              : (user.roleInferredFromJpstn === 'BF'
+                                ? $t('team.roleSource.fromBf')
+                                : $t('team.roleSource.autoInferredHint'))"
+                          >
+                            {{ $t('team.roleSource.autoInferred') }}
+                          </Badge>
+                        </div>
+                      </td>
+                    </tr>
+                    <tr v-if="filteredCurrentDeptUsers.length === 0">
+                      <td colspan="7" class="px-6 py-12 text-center text-sm text-secondary-500">
+                        {{ $t('team.currentDept.noData') }}
+                      </td>
+                    </tr>
+                  </tbody>
+                </table>
+              </div>
+
+              <!-- Pagination -->
+              <div
+                v-if="filteredCurrentDeptUsers.length > 0"
+                class="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 border-t border-secondary-200 px-6 py-4"
+              >
+                <div class="flex items-center gap-2">
+                  <span class="text-sm text-secondary-600">{{ $t('team.currentDept.itemsPerPage') }}</span>
+                  <select
+                    v-model="currentDeptItemsPerPage"
+                    @change="currentDeptPage = 1"
+                    class="rounded-lg border border-secondary-300 px-2 py-1 text-sm focus:border-primary-500 focus:outline-none focus:ring-1 focus:ring-primary-500"
+                  >
+                    <option :value="10">10</option>
+                    <option :value="20">20</option>
+                    <option :value="50">50</option>
+                  </select>
+                </div>
+                <div class="flex items-center gap-4">
+                  <span class="text-sm text-secondary-600">
+                    {{ $t('team.currentDept.page', { current: currentDeptPage, total: currentDeptTotalPages }) }}
+                  </span>
+                  <div class="flex gap-2">
+                    <Button
+                      variant="secondary"
+                      size="sm"
+                      :disabled="currentDeptPage === 1"
+                      @click="currentDeptPage--"
+                    >
+                      {{ $t('team.currentDept.previous') }}
+                    </Button>
+                    <Button
+                      variant="secondary"
+                      size="sm"
+                      :disabled="currentDeptPage === currentDeptTotalPages"
+                      @click="currentDeptPage++"
+                    >
+                      {{ $t('team.currentDept.next') }}
+                    </Button>
+                  </div>
+                </div>
+              </div>
+            </Card>
+          </div>
+
+          <div v-else-if="currentTab === 2" class="space-y-6">
             <!-- Task Assignment Table -->
             <Card>
               <template #header>
@@ -715,6 +872,12 @@ const tabs = computed<Tab[]>(() => [
     value: 'members'
   },
   {
+    // 2026-06-17: 本部门成员 tab（基于当前用户 deptCode 过滤,以表格展示）
+    label: t('team.currentDept.title'),
+    badge: currentDeptUsers.value.length,
+    value: 'current-dept'
+  },
+  {
     label: t('team.taskAssignment.title'),
     badge: taskAssignments.value.length,
     value: 'tasks'
@@ -977,6 +1140,45 @@ function roleBadgeVariant(role: string): 'default' | 'primary' | 'danger' | 'suc
   };
   return map[normalized] || 'default';
 }
+
+// ============ 2026-06-17:本部门成员 tab(基于当前登录用户 deptCode 过滤) ============ //
+const currentDeptSearch = ref<string>('');
+const currentDeptPage = ref<number>(1);
+const currentDeptItemsPerPage = ref<number>(10);
+
+/** 当前部门成员:仅按当前用户的 deptCode 过滤,不依赖顶部 admin 部门筛选器 */
+const currentDeptUsers = computed<User[]>(() => {
+  const myDeptCode = currentUser.value?.deptCode;
+  if (!myDeptCode) return [];
+  return userStore.users.filter(u => u.deptCode === myDeptCode);
+});
+
+/** 当前部门成员 + 搜索过滤 */
+const filteredCurrentDeptUsers = computed<User[]>(() => {
+  const search = currentDeptSearch.value.trim().toLowerCase();
+  if (!search) return currentDeptUsers.value;
+  return currentDeptUsers.value.filter(u => {
+    const name = (u.chineseNam || u.name || '').toLowerCase();
+    const id = (u.id || '').toLowerCase();
+    const email = (u.email || '').toLowerCase();
+    return name.includes(search) || id.includes(search) || email.includes(search);
+  });
+});
+
+/** 切换搜索时重置到第一页 */
+watch(currentDeptSearch, () => {
+  currentDeptPage.value = 1;
+});
+
+const currentDeptTotalPages = computed(() =>
+  Math.ceil(filteredCurrentDeptUsers.value.length / currentDeptItemsPerPage.value) || 1
+);
+
+const paginatedCurrentDeptUsers = computed<User[]>(() => {
+  const start = (currentDeptPage.value - 1) * currentDeptItemsPerPage.value;
+  const end = start + currentDeptItemsPerPage.value;
+  return filteredCurrentDeptUsers.value.slice(start, end);
+});
 
 // Task Assignment Table
 const sortBy = ref<string>('memberName');
