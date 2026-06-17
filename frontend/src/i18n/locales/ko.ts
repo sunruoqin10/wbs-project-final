@@ -90,7 +90,7 @@ export default {
   // 애플리케이션 이름
   app: {
     name: 'WBS 프로젝트 관리 시스템',
-    shortName: 'WBS 시스템'
+    shortName: 'WBS 프로젝트 관리'
   },
 
   // 로그인 페이지
