@@ -9,15 +9,21 @@
         VALUES (#{userId}, #{pagePath}, #{pageName}, #{occurredAt})
     </insert>
 
-    <!-- 热力图主查询:返回每页每小时的总 PV,在 Java 侧 / days 转日均 -->
-    <select id="aggregateByPageAndHour" resultType="java.util.HashMap">
+    <!-- 热力图主查询:按 mode 选择分桶维度(hour / dayOfWeek / date / week),
+         bucket 是字符串键,Java 侧再映射为 0..N-1 行号。 -->
+    <select id="aggregateByBucket" resultType="java.util.HashMap">
         SELECT page_name                                       AS pageName,
-               HOUR(occurred_at)                               AS hour,
+               CASE
+                   WHEN #{mode} = 'hour'      THEN LPAD(HOUR(occurred_at), 2, '0')
+                   WHEN #{mode} = 'dayOfWeek' THEN DAYOFWEEK(occurred_at)
+                   WHEN #{mode} = 'date'      THEN DATE_FORMAT(occurred_at, '%m-%d')
+                   WHEN #{mode} = 'week'      THEN DATE_FORMAT(occurred_at, '%x-W%v')
+               END                                             AS bucket,
                COUNT(*)                                        AS pv
           FROM sys_page_view
          WHERE occurred_at &gt;= #{fromTs}
            AND occurred_at &lt;= #{toTs}
-         GROUP BY page_name, HOUR(occurred_at)
+         GROUP BY page_name, bucket
     </select>
 
     <!-- 页面列表:总 PV + 日均,按总 PV 倒序 -->

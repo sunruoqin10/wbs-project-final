@@ -125,7 +125,11 @@
                 {{ $t('admin.accessHeatmap.kpi.peakHour') }}
               </p>
               <p class="text-2xl font-semibold text-secondary-900">
-                {{ data?.kpi.peakHour != null ? pad(data.kpi.peakHour) + ':00' : '—' }}
+                {{
+                  data?.kpi.peakHour != null && data?.xAxis?.[data.kpi.peakHour] != null
+                    ? peakBucketLabel(data.xAxisUnit ?? 'hour', data.xAxis[data.kpi.peakHour])
+                    : '—'
+                }}
               </p>
               <p v-if="data?.kpi.peakHourTotal != null" class="mt-1 text-xs text-secondary-500">
                 {{ $t('admin.accessHeatmap.kpi.peakHourSub', { total: data.kpi.peakHourTotal }) }}
@@ -202,7 +206,7 @@
 </template>
 
 <script setup lang="ts">
-import { ref, onMounted, onBeforeUnmount, nextTick } from 'vue';
+import { ref, onMounted, onBeforeUnmount, nextTick, watch } from 'vue';
 import { useI18n } from 'vue-i18n';
 import * as echarts from 'echarts';
 import { apiService } from '@/services/api';
@@ -213,7 +217,7 @@ import Button from '@/components/common/Button.vue';
 
 type Window = '1d' | '7d' | '30d' | '90d';
 
-const { t: $t } = useI18n();
+const { t: $t, locale } = useI18n();
 
 const windowVal = ref<Window>('7d');
 const data = ref<HeatmapResponse | null>(null);
@@ -225,6 +229,31 @@ let chart: echarts.ECharts | null = null;
 const lastUpdatedStr = ref('');
 
 const pad = (n: number) => String(n).padStart(2, '0');
+
+const axisNameKey = (unit: string): string => {
+  switch (unit) {
+    case 'dayOfWeek': return 'admin.accessHeatmap.chart.dayOfWeekAxis';
+    case 'date': return 'admin.accessHeatmap.chart.dateAxis';
+    case 'week': return 'admin.accessHeatmap.chart.weekAxis';
+    case 'hour':
+    default: return 'admin.accessHeatmap.chart.hourAxis';
+  }
+};
+
+const bucketLabel = (unit: string, raw: string): string => {
+  if (!raw) return '';
+  if (unit === 'dayOfWeek') {
+    return $t(`admin.accessHeatmap.chart.dayOfWeek.${raw}`);
+  }
+  return raw;
+};
+
+// KPI "最热时段" 显示:hour → 06:00,dayOfWeek → 周一,date/week → 原样
+const peakBucketLabel = (unit: string, raw: string): string => {
+  if (!raw) return '';
+  if (unit === 'hour') return raw + ':00';
+  return bucketLabel(unit, raw);
+};
 
 const translatePageName = (pageName: string): string => {
   if (!pageName) return '';
@@ -261,16 +290,19 @@ const renderChart = (d: HeatmapResponse) => {
   if (!chartEl.value) return;
   if (!chart) chart = echarts.init(chartEl.value);
 
-  const xHours = d.xAxis ?? Array.from({ length: 24 }, (_, i) => i);
+  const unit = d.xAxisUnit ?? 'hour';
+  const xRaw = d.xAxis ?? (unit === 'hour'
+    ? Array.from({ length: 24 }, (_, i) => pad(i))
+    : []);
   const yPagesRaw = d.yAxis ?? [];
   const yPages = yPagesRaw.map(translatePageName);
-  const xCats = xHours.map((h) => pad(h));
+  const xCats = xRaw.map((b) => bucketLabel(unit, b));
   const matrix = d.matrix ?? [];
 
   const seriesData: [string, string, number][] = [];
   matrix.forEach((row, yi) => {
     row.forEach((v, xi) => {
-      seriesData.push([xCats[xi] ?? pad(xi), yPages[yi] ?? yPagesRaw[yi] ?? '', Number(v)]);
+      seriesData.push([xCats[xi] ?? String(xRaw[xi] ?? ''), yPages[yi] ?? yPagesRaw[yi] ?? '', Number(v)]);
     });
   });
 
@@ -281,14 +313,15 @@ const renderChart = (d: HeatmapResponse) => {
       tooltip: {
         position: 'top',
         formatter: (p: any) => {
-          const hourCat = String(p.data[0]);
+          const catRaw = String(p.data[0]);
           const pageCat = String(p.data[1]);
           const v = p.data[2];
 
           const pageName = pageCat || '-';
-          const hourStr = hourCat + ':00';
+          // p.data[0] 已经是显示标签,这里把 hour 类型补上 ":00" 后缀
+          const timeStr = unit === 'hour' ? catRaw + ':00' : catRaw;
 
-          return `${pageName}<br/>${hourStr}<br/>${$t(
+          return `${pageName}<br/>${timeStr}<br/>${$t(
             'admin.accessHeatmap.chart.tooltipTotal',
             { total: v },
           )}`;
@@ -298,7 +331,7 @@ const renderChart = (d: HeatmapResponse) => {
       xAxis: {
         type: 'category',
         data: xCats,
-        name: $t('admin.accessHeatmap.chart.hourAxis'),
+        name: $t(axisNameKey(unit)),
         nameLocation: 'end',
         splitArea: { show: true },
       },
@@ -353,6 +386,11 @@ const buildPieces = (maxVal: number): any[] => {
 onMounted(() => {
   fetchData();
   window.addEventListener('resize', onResize);
+});
+
+// 切换语言时重新渲染图表（Y 轴页面名翻译会随 locale 变化）
+watch(locale, () => {
+  if (data.value) renderChart(data.value);
 });
 
 onBeforeUnmount(() => {

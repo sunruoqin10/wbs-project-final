@@ -371,13 +371,17 @@ export interface HeatmapKpi {
   peakHourTotal: number;
 }
 
+export type HeatmapXAxisUnit = 'hour' | 'dayOfWeek' | 'date' | 'week';
+
 export interface HeatmapResponse {
   window: '1d' | '7d' | '30d' | '90d';
   fromTs: string;
   toTs: string;
   days: number;
   kpi: HeatmapKpi;
-  xAxis: number[];
+  xAxis: string[];
+  /** 1d=hour, 7d=dayOfWeek, 30d=date, 90d=week */
+  xAxisUnit: HeatmapXAxisUnit;
   yAxis: string[];
   matrix: number[][];
   maxValue: number;

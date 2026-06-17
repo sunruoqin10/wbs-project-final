@@ -11,10 +11,12 @@ import java.util.Map;
 public interface PageViewMapper {
     int insert(PageView record);
 
-    /** 热力图主查询:返回 [page_name, hour, daily_avg] */
-    List<Map<String, Object>> aggregateByPageAndHour(
+    /** 热力图主查询:按 mode 选分桶维度,返回 [page_name, bucket, pv]
+     *  mode: hour | dayOfWeek | date | week */
+    List<Map<String, Object>> aggregateByBucket(
         @Param("fromTs") LocalDateTime fromTs,
-        @Param("toTs")   LocalDateTime toTs
+        @Param("toTs")   LocalDateTime toTs,
+        @Param("mode")   String mode
     );
 
     /** 页面列表 + 各页面窗口内总 PV + 日均 */
