@@ -30,6 +30,11 @@ public interface DocumentMapper {
 
     int deleteById(@Param("id") String id);
 
+    /**
+     * 级联删除：根据项目ID删除该项目下所有文档（含 task 级文档）
+     */
+    int deleteByProjectId(@Param("projectId") String projectId);
+
     int incrementDownloadCount(@Param("id") String id);
 
     int countByProjectId(@Param("projectId") String projectId);

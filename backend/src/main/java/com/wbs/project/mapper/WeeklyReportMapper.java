@@ -30,6 +30,11 @@ public interface WeeklyReportMapper {
 
     int deleteById(@Param("id") String id);
 
+    /**
+     * 级联删除：根据项目ID删除该项目下所有周报
+     */
+    int deleteByProjectId(@Param("projectId") String projectId);
+
     int countByUserId(@Param("userId") String userId);
 
     int countByProjectId(@Param("projectId") String projectId);

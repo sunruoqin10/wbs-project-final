@@ -111,4 +111,9 @@
     <select id="countByStatus" resultType="int">
         SELECT COUNT(*) FROM sys_weekly_report WHERE status = #{status}
     </select>
+
+    <!-- 级联删除：按项目ID删除该项目所有周报 -->
+    <delete id="deleteByProjectId">
+        DELETE FROM sys_weekly_report WHERE project_id = #{projectId}
+    </delete>
 </mapper>

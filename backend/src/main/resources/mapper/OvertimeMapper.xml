@@ -370,4 +370,11 @@
         ORDER BY totalHours DESC
     </select>
 
+    <!-- 级联删除：项目级 + 任务级（task_id 指向该项目下任务的加班记录） -->
+    <delete id="deleteByProjectId">
+        DELETE FROM t_overtime_record
+        WHERE project_id = #{projectId}
+           OR task_id IN (SELECT id FROM sys_task WHERE project_id = #{projectId})
+    </delete>
+
 </mapper>

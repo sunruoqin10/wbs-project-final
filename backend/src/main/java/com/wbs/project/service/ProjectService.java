@@ -4,10 +4,17 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import com.wbs.project.entity.Project;
 import com.wbs.project.entity.Task;
 import com.wbs.project.entity.User;
+import com.wbs.project.entity.WeeklyReport;
+import com.wbs.project.mapper.DelayNotificationRecordMapper;
+import com.wbs.project.mapper.DocumentMapper;
+import com.wbs.project.mapper.OvertimeMapper;
 import com.wbs.project.mapper.ProjectMapper;
 import com.wbs.project.mapper.ProjectMemberMapper;
 import com.wbs.project.mapper.TaskMapper;
 import com.wbs.project.mapper.UserMapper;
+import com.wbs.project.mapper.WeeklyReportApprovalLogMapper;
+import com.wbs.project.mapper.WeeklyReportCommentMapper;
+import com.wbs.project.mapper.WeeklyReportMapper;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.context.annotation.Lazy;
@@ -33,6 +40,12 @@ public class ProjectService {
     private final TaskService taskService;
     private final TaskMapper taskMapper;
     private final EmailNotificationService emailNotificationService;
+    private final DocumentMapper documentMapper;
+    private final WeeklyReportMapper weeklyReportMapper;
+    private final WeeklyReportCommentMapper weeklyReportCommentMapper;
+    private final WeeklyReportApprovalLogMapper weeklyReportApprovalLogMapper;
+    private final OvertimeMapper overtimeMapper;
+    private final DelayNotificationRecordMapper delayNotificationRecordMapper;
     private final UserMapper userMapper;
     private final PermissionService permissionService;
     private final ObjectMapper objectMapper = new ObjectMapper();
@@ -333,7 +346,9 @@ public class ProjectService {
     }
 
     /**
-     * 删除项目（级联删除相关数据）
+     * 删除项目（级联删除相关数据）。
+     * 删除顺序：先删最深依赖（基于 task / report 的子表），再删主表，最后删项目本身。
+     * 备注：sys_project_handover_log 是废弃表，按约定保留不动。
      */
     @Transactional
     public void deleteProject(String id) {
@@ -342,13 +357,32 @@ public class ProjectService {
             throw new RuntimeException("项目不存在");
         }
 
-        // 删除项目的所有成员关系
-        projectMemberMapper.deleteByProjectId(id);
+        // 1) 延期通知记录（依赖 task，存有 project_id）
+        delayNotificationRecordMapper.deleteByProjectId(id);
 
-        // 删除项目的所有任务
+        // 2) 文档：项目级 + 任务级（SQL 内含 task 子查询）
+        documentMapper.deleteByProjectId(id);
+
+        // 3) 周报：先删子表（评论、审批日志），再删主表
+        List<WeeklyReport> reports = weeklyReportMapper.selectByProjectId(id);
+        if (reports != null && !reports.isEmpty()) {
+            for (WeeklyReport report : reports) {
+                weeklyReportCommentMapper.deleteByReportId(report.getId());
+                weeklyReportApprovalLogMapper.deleteByReportId(report.getId());
+            }
+            weeklyReportMapper.deleteByProjectId(id);
+        }
+
+        // 4) 加班记录：项目级 + 任务级（SQL 内含 task 子查询）
+        overtimeMapper.deleteByProjectId(id);
+
+        // 5) 任务
         taskMapper.deleteByProjectId(id);
 
-        // 最后删除项目本身
+        // 6) 项目成员
+        projectMemberMapper.deleteByProjectId(id);
+
+        // 7) 最后删除项目本身
         projectMapper.deleteById(id);
     }
 

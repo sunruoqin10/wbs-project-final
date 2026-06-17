@@ -30,4 +30,9 @@
         ORDER BY l.created_at ASC
     </select>
 
+    <!-- 级联删除：按周报ID删除该周报所有审批日志 -->
+    <delete id="deleteByReportId">
+        DELETE FROM sys_weekly_report_approval_log WHERE report_id = #{reportId}
+    </delete>
+
 </mapper>

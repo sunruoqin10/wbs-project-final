@@ -82,6 +82,11 @@ public interface OvertimeMapper {
     int deleteById(@Param("id") String id);
 
     /**
+     * 级联删除：根据项目ID删除该项目下所有加班记录
+     */
+    int deleteByProjectId(@Param("projectId") String projectId);
+
+    /**
      * 统计加班记录总数
      */
     int countTotal();
