@@ -10,6 +10,62 @@
         <!-- 成员由 HR 同步管理,无手动添加入口 -->
       </div>
 
+      <!-- 部门筛选行(2026-06-17 新增,仅 admin 可见,与 Dashboard 保持一致) -->
+      <Card v-if="currentUser?.role === 'admin'" class="relative">
+        <div class="flex items-center gap-4">
+          <span class="text-sm font-medium text-secondary-600">
+            {{ $t('dashboard.departmentFilter.label') }}
+          </span>
+          <OrgTreeSelect
+            v-model="selectedDeptCode"
+            @update:modelValue="onDeptChange"
+          />
+          <label
+            class="flex items-center gap-2 text-sm text-secondary-600"
+            :class="{ 'cursor-not-allowed opacity-50': isLeaf }"
+            :title="isLeaf ? $t('dashboard.departmentFilter.leafHint') : ''"
+          >
+            <input
+              type="checkbox"
+              v-model="includeSubDepts"
+              :disabled="isLeaf"
+              class="h-4 w-4 rounded border-secondary-300 text-primary-600
+                     focus:ring-primary-500 disabled:opacity-50"
+            />
+            <span>{{ $t('dashboard.departmentFilter.includeSubDepts') }}</span>
+          </label>
+        </div>
+        <!-- deptMissing 提示:当 admin 没有 deptCode 时显示 -->
+        <p
+          v-if="currentUser && !currentUser.deptCode"
+          class="mt-2 text-xs text-warning-600"
+        >
+          {{ $t('dashboard.departmentFilter.deptMissing') }}
+        </p>
+        <!-- 切换中遮罩 -->
+        <Transition name="fade">
+          <div
+            v-if="switching"
+            class="pointer-events-none absolute inset-0 flex items-center
+                   justify-center rounded-lg bg-white/60 backdrop-blur-sm"
+          >
+            <svg
+              class="h-6 w-6 animate-spin text-primary-600"
+              fill="none" viewBox="0 0 24 24"
+            >
+              <circle
+                class="opacity-25" cx="12" cy="12" r="10"
+                stroke="currentColor" stroke-width="4"
+              />
+              <path
+                class="opacity-75" fill="currentColor"
+                d="M4 12a8 8 0 018-8v4a4 4 0 00-4 4H4z"
+              />
+            </svg>
+          </div>
+        </Transition>
+      </Card>
+
       <!-- Stats -->
       <div class="grid grid-cols-1 gap-6 sm:grid-cols-2 lg:grid-cols-4">
         <Card>
@@ -535,6 +591,7 @@ import type { Tab } from '@/components/common/Tabs.vue';
 import UserAvatar from '@/components/common/UserAvatar.vue';
 import OrgGroup from '@/components/team/OrgGroup.vue';
 import RoleChangeDialog from '@/components/team/RoleChangeDialog.vue';
+import OrgTreeSelect from '@/components/common/OrgTreeSelect.vue';
 import { useUserStore } from '@/stores/user';
 import { useTaskStore } from '@/stores/task';
 import { useProjectStore } from '@/stores/project';
@@ -567,7 +624,86 @@ const projectStore = useProjectStore();
 const orgStore = useOrgStore();
 const permissionStore = usePermissionStore();
 
-const users = computed(() => userStore.users);
+const currentUser = computed(() => userStore.currentUser);
+
+// ============ 部门过滤(admin 专用,2026-06-17 新增,与 Dashboard 保持一致) ============ //
+const selectedDeptCode = ref<string | null>(currentUser.value?.deptCode ?? null);
+const includeSubDepts = ref(false);
+const switching = ref(false);
+let switchTimer: number | null = null;
+
+function onDeptChange(newCode: string | null) {
+  switching.value = true;
+  if (switchTimer) window.clearTimeout(switchTimer);
+  switchTimer = window.setTimeout(() => {
+    selectedDeptCode.value = newCode;
+    switching.value = false;
+  }, 100);
+}
+
+/** 工具:从 org 树中找到目标 code 节点,DFS 收集其所有后代 code */
+function collectDescendants(root: OrgNode, targetCode: string): string[] {
+  const result: string[] = [];
+  function find(node: OrgNode): OrgNode | null {
+    if (node.code === targetCode) return node;
+    for (const c of node.children || []) {
+      const hit = find(c);
+      if (hit) return hit;
+    }
+    return null;
+  }
+  const target = find(root);
+  if (!target) return result;
+  function walk(n: OrgNode) {
+    for (const c of n.children || []) {
+      if (c.code) result.push(c.code);
+      walk(c);
+    }
+  }
+  walk(target);
+  return result;
+}
+
+/** 工具:判断指定 code 在树中是否有子节点(用于「含子部门」checkbox enabled) */
+function hasChildrenInTree(root: OrgNode | null, code: string): boolean {
+  if (!root) return false;
+  function dfs(node: OrgNode): boolean {
+    if (node.code === code) return (node.children || []).length > 0;
+    for (const c of node.children || []) if (dfs(c)) return true;
+    return false;
+  }
+  return dfs(root);
+}
+
+const isLeaf = computed(() => {
+  if (selectedDeptCode.value === null) return true;
+  return !hasChildrenInTree(orgStore.tree, selectedDeptCode.value);
+});
+
+const effectiveDeptCodes = computed<Set<string | null>>(() => {
+  if (selectedDeptCode.value === null) return new Set([null]);
+  const codes = new Set<string | null>([selectedDeptCode.value]);
+  if (includeSubDepts.value && orgStore.tree) {
+    collectDescendants(orgStore.tree, selectedDeptCode.value).forEach(c => codes.add(c));
+  }
+  return codes;
+});
+
+/**
+ * 用户列表:admin 视角下先按部门过滤,再走 tab 内部筛选(search/role/company)
+ * 非 admin 维持原样,不受顶部部门筛选影响
+ */
+const users = computed(() => {
+  const all = userStore.users;
+  if (currentUser.value?.role !== 'admin') return all;
+  const codes = effectiveDeptCodes.value;
+  return all.filter(u => {
+    if (u.deptCode === null || u.deptCode === undefined || u.deptCode === '') {
+      return codes.has(null);
+    }
+    return codes.has(u.deptCode);
+  });
+});
 const workloadChartRef = ref<HTMLElement>();
 let workloadChartInstance: echarts.ECharts | null = null;
 const activeTab = ref(0);
@@ -592,18 +728,8 @@ const adminCount = computed(() => users.value.filter(u => u.role?.replace(/_/g, 
 const pmCount = computed(() => users.value.filter(u => u.role?.replace(/_/g, '-') === 'project-manager').length);
 const deptPmCount = computed(() => users.value.filter(u => u.role?.replace(/_/g, '-') === 'dept-project-manager').length);
 void deptPmCount; // 暂未在模板中使用,保留供后续"按角色统计"卡
-// 统计参与项目的总成员数（与 Dashboard 保持一致）
-const memberCount = computed(() => {
-  const projects = projectStore.projects;
-  const memberSet = new Set<string>();
-  projects.forEach(p => {
-    memberSet.add(p.ownerId);
-    if (p.memberIds) {
-      p.memberIds.forEach(id => memberSet.add(id));
-    }
-  });
-  return memberSet.size;
-});
+// 统计当前视图(部门过滤后)的总成员数 —— 与 Dashboard 的 totalMembers 语义保持一致
+const memberCount = computed(() => users.value.length);
 
 // (getRoleLabel / getRoleBadgeVariant / formattedDate removed: org
 // group view uses inline role/date formatting in OrgGroup.vue)
@@ -1076,6 +1202,15 @@ watch(() => taskStore.loaded, async (loaded) => {
     initWorkloadChart();
   }
 }, { immediate: false });
+
+// 部门筛选变化时,重新计算工作负载分布(2026-06-17)
+watch(
+  [selectedDeptCode, includeSubDepts, () => orgStore.tree],
+  async () => {
+    await nextTick();
+    initWorkloadChart();
+  }
+);
 
 // 窗口大小变化处理
 const handleResize = () => {
