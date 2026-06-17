@@ -207,6 +207,69 @@
         </div>
 
         <div v-else class="space-y-6">
+          <!-- 部门筛选行(2026-06-17 新增,仅 admin 可见) -->
+          <Card v-if="currentUser?.role === 'admin'" class="relative">
+            <div class="flex items-center gap-4">
+              <span class="text-sm font-medium text-secondary-600">
+                {{ $t('dashboard.departmentFilter.label') }}
+              </span>
+              <OrgTreeSelect
+                v-model="selectedDeptCode"
+                @update:modelValue="onDeptChange"
+              />
+              <label
+                class="flex items-center gap-2 text-sm text-secondary-600"
+                :class="{ 'cursor-not-allowed opacity-50': isLeaf }"
+                :title="isLeaf ? $t('dashboard.departmentFilter.leafHint') : ''"
+              >
+                <input
+                  type="checkbox"
+                  v-model="includeSubDepts"
+                  :disabled="isLeaf"
+                  class="h-4 w-4 rounded border-secondary-300 text-primary-600
+                         focus:ring-primary-500 disabled:opacity-50"
+                />
+                <span>{{ $t('dashboard.departmentFilter.includeSubDepts') }}</span>
+              </label>
+            </div>
+            <!-- deptMissing 提示:当 admin 没有 deptCode 时显示 -->
+            <p
+              v-if="currentUser && !currentUser.deptCode"
+              class="mt-2 text-xs text-warning-600"
+            >
+              {{ $t('dashboard.departmentFilter.deptMissing') }}
+            </p>
+            <!-- 切换中遮罩 -->
+            <Transition name="fade">
+              <div
+                v-if="switching"
+                class="pointer-events-none absolute inset-0 flex items-center
+                       justify-center rounded-lg bg-white/60 backdrop-blur-sm"
+              >
+                <svg
+                  class="h-6 w-6 animate-spin text-primary-600"
+                  fill="none" viewBox="0 0 24 24"
+                >
+                  <circle
+                    class="opacity-25" cx="12" cy="12" r="10"
+                    stroke="currentColor" stroke-width="4"
+                  />
+                  <path
+                    class="opacity-75" fill="currentColor"
+                    d="M4 12a8 8 0 018-8v4a4 4 0 00-4 4H4z"
+                  />
+                </svg>
+              </div>
+            </Transition>
+          </Card>
+
+          <!--
+            注意:不要给 <Transition> 加 mode="out-in",否则旧 div 的 200ms leave 动画期间
+            新的图表容器还没被创建,ref 仍指向旧 div,watch 里 init 出来的
+            图表会挂到旧 div 上,等 leave 结束旧 div 被销毁后,新 div 上就没有图表了。
+          -->
+          <Transition name="content-fade">
+            <div :key="`${selectedDeptCode}-${includeSubDepts}`" class="space-y-6">
           <div class="grid grid-cols-1 gap-6 sm:grid-cols-2 lg:grid-cols-4">
             <Card>
               <div class="flex items-center">
@@ -374,6 +437,8 @@
               </div>
             </div>
           </Card>
+            </div>
+          </Transition>
         </div>
       </div>
     </div>
@@ -440,7 +505,7 @@
 </template>
 
 <script setup lang="ts">
-import { ref, computed, onMounted, watch, onUnmounted } from 'vue';
+import { ref, computed, onMounted, watch, onUnmounted, nextTick } from 'vue';
 import { useI18n } from 'vue-i18n';
 import * as echarts from 'echarts';
 import dayjs from 'dayjs';
@@ -449,11 +514,13 @@ import Card from '@/components/common/Card.vue';
 import Button from '@/components/common/Button.vue';
 import Modal from '@/components/common/Modal.vue';
 import UserAvatar from '@/components/common/UserAvatar.vue';
+import OrgTreeSelect from '@/components/common/OrgTreeSelect.vue';
 import { useProjectStore } from '@/stores/project';
 import { useTaskStore } from '@/stores/task';
 import { useUserStore } from '@/stores/user';
 import { usePermissionStore } from '@/stores/permission';
-import type { Task } from '@/types';
+import { useOrgStore } from '@/stores/org';
+import type { Task, OrgNode } from '@/types';
 
 const { t } = useI18n();
 
@@ -461,11 +528,77 @@ const projectStore = useProjectStore();
 const taskStore = useTaskStore();
 const userStore = useUserStore();
 const permissionStore = usePermissionStore();
+const orgStore = useOrgStore();
 
 const activeTab = ref<'personal' | 'team'>('personal');
 const loading = ref(false);
 const showMemberDetailModal = ref(false);
 const selectedMemberId = ref<string>('');
+
+const currentUser = computed(() => userStore.currentUser);
+
+// ============ 部门过滤(admin 专用,2026-06-17 新增) ============ //
+const selectedDeptCode = ref<string | null>(currentUser.value?.deptCode ?? null);
+const includeSubDepts = ref(false);
+const switching = ref(false);
+let switchTimer: number | null = null;
+
+function onDeptChange(newCode: string | null) {
+  switching.value = true;
+  if (switchTimer) window.clearTimeout(switchTimer);
+  switchTimer = window.setTimeout(() => {
+    selectedDeptCode.value = newCode;
+    switching.value = false;
+  }, 100);
+}
+
+/** 工具:从 org 树中找到目标 code 节点,DFS 收集其所有后代 code */
+function collectDescendants(root: OrgNode, targetCode: string): string[] {
+  const result: string[] = [];
+  function find(node: OrgNode): OrgNode | null {
+    if (node.code === targetCode) return node;
+    for (const c of node.children || []) {
+      const hit = find(c);
+      if (hit) return hit;
+    }
+    return null;
+  }
+  const target = find(root);
+  if (!target) return result;
+  function walk(n: OrgNode) {
+    for (const c of n.children || []) {
+      if (c.code) result.push(c.code);
+      walk(c);
+    }
+  }
+  walk(target);
+  return result;
+}
+
+/** 工具:判断指定 code 在树中是否有子节点(用于「含子部门」checkbox enabled) */
+function hasChildrenInTree(root: OrgNode | null, code: string): boolean {
+  if (!root) return false;
+  function dfs(node: OrgNode): boolean {
+    if (node.code === code) return (node.children || []).length > 0;
+    for (const c of node.children || []) if (dfs(c)) return true;
+    return false;
+  }
+  return dfs(root);
+}
+
+const isLeaf = computed(() => {
+  if (selectedDeptCode.value === null) return true;
+  return !hasChildrenInTree(orgStore.tree, selectedDeptCode.value);
+});
+
+const effectiveDeptCodes = computed<Set<string | null>>(() => {
+  if (selectedDeptCode.value === null) return new Set([null]);
+  const codes = new Set<string | null>([selectedDeptCode.value]);
+  if (includeSubDepts.value && orgStore.tree) {
+    collectDescendants(orgStore.tree, selectedDeptCode.value).forEach(c => codes.add(c));
+  }
+  return codes;
+});
 
 const teamMembersPagination = ref({
   currentPage: 1,
@@ -507,9 +640,32 @@ const accessibleTasks = computed(() => {
   return taskStore.tasks.filter(t => accessibleProjectIds.value.includes(t.projectId));
 });
 
-const getTasksForUser = (userId: string): Task[] => {
-  const userTasks = accessibleTasks.value.filter(t => t.assigneeId === userId);
-  
+/** 部门二次过滤后的项目列表(2026-06-17 新增,仅团队 tab 使用) */
+const deptFilteredAccessibleProjects = computed(() => {
+  // 非 admin 直接用全量(没有部门筛选 UI,行为保持原样)
+  if (!currentUser.value || currentUser.value.role !== 'admin') {
+    return accessibleProjects.value;
+  }
+  return accessibleProjects.value.filter(p =>
+    effectiveDeptCodes.value.has(p.deptCode ?? null)
+  );
+});
+
+/** 部门二次过滤后的任务 ID 集合(2026-06-17 新增) */
+const deptFilteredAccessibleTasks = computed(() => {
+  const projectIds = new Set(deptFilteredAccessibleProjects.value.map(p => p.id));
+  return accessibleTasks.value.filter(t => projectIds.has(t.projectId));
+});
+
+/** 团队维度专用:从部门过滤后的任务中取某个用户负责的(2026-06-17 新增) */
+const getTasksForUserInDept = (userId: string): Task[] => {
+  return getTasksForUserImpl(userId, deptFilteredAccessibleTasks.value);
+};
+
+/** 任务筛选核心实现(2026-06-17 重构,与个人 tab 解耦,团队 tab 走部门过滤版) */
+function getTasksForUserImpl(userId: string, sourceTasks: Task[]): Task[] {
+  const userTasks = sourceTasks.filter(t => t.assigneeId === userId);
+
   const allTaskIds = new Set(userTasks.map(t => t.id));
   const parentTaskIds = new Set(userTasks.filter(t => t.parentTaskId).map(t => t.parentTaskId));
   const leafTaskIds = new Set([...allTaskIds].filter(id => !parentTaskIds.has(id)));
@@ -525,6 +681,10 @@ const getTasksForUser = (userId: string): Task[] => {
   }
 
   return userTasks;
+}
+
+const getTasksForUser = (userId: string): Task[] => {
+  return getTasksForUserImpl(userId, accessibleTasks.value);
 };
 
 const personalTasks = computed(() => {
@@ -556,9 +716,9 @@ const teamMembers = computed(() => {
   const currentUserId = userStore.currentUserId;
   if (!currentUserId) return [];
 
-  // 统计参与项目的总成员数（与 Dashboard 保持一致）
+  // 统计参与部门过滤后项目的总成员数(2026-06-17 改为基于 deptFilteredAccessibleProjects)
   const memberSet = new Set<string>();
-  accessibleProjects.value.forEach(p => {
+  deptFilteredAccessibleProjects.value.forEach(p => {
     memberSet.add(p.ownerId);
     if (p.memberIds) {
       p.memberIds.forEach(id => memberSet.add(id));
@@ -570,7 +730,8 @@ const teamMembers = computed(() => {
 
 const teamMemberStats = computed(() => {
   return teamMembers.value.map(member => {
-    const tasks = getTasksForUser(member.id);
+    // 2026-06-17:团队维度走部门过滤版,避免非成员项目中的任务污染统计
+    const tasks = getTasksForUserInDept(member.id);
     const delayedTasks = tasks.filter(t => (t.delayedDays || 0) > 0 && t.status !== 'done');
     const totalDelayedDays = delayedTasks.reduce((sum, t) => sum + (t.delayedDays || 0), 0);
     const delayRate = tasks.length > 0 ? (delayedTasks.length / tasks.length) * 100 : 0;
@@ -647,12 +808,13 @@ const handleTeamMembersPageChange = (page: number) => {
 
 const selectedMemberTasks = computed(() => {
   if (!selectedMemberId.value) return [];
-  return getTasksForUser(selectedMemberId.value);
+  // 2026-06-17:模态框从团队 tab 打开,数据走部门过滤版保持一致
+  return getTasksForUserInDept(selectedMemberId.value);
 });
 
 const selectedMemberStats = computed(() => {
   if (!selectedMemberId.value) return { totalTasks: 0, delayedTasks: 0, delayRate: 0, totalDelayedDays: 0 };
-  const tasks = getTasksForUser(selectedMemberId.value);
+  const tasks = getTasksForUserInDept(selectedMemberId.value);
   const delayedTasks = tasks.filter(t => (t.delayedDays || 0) > 0 && t.status !== 'done');
   const totalDelayedDays = delayedTasks.reduce((sum, t) => sum + (t.delayedDays || 0), 0);
   const delayRate = tasks.length > 0 ? (delayedTasks.length / tasks.length) * 100 : 0;
@@ -1065,13 +1227,38 @@ watch(activeTab, () => {
   initCharts();
 });
 
+// 2026-06-17:切换部门 / 含子部门勾选时,部门过滤后的统计数据已变化,
+// 但 echarts 是命令式渲染,需要主动重新调用 init 重绘团队图表。
+// <Transition> 会随 key 变化销毁并重建图表容器,所以:
+//  1) 不能给 <Transition> 加 mode="out-in",否则 leave 期间 ref 仍指向旧容器,
+//     init 会把图表挂到旧容器上,新容器出现后就没有图表了;
+//  2) 用 flush: 'post' 让 watch 在 DOM patch 之后再触发,此时新容器已挂载、
+//     ref 已更新,dispose 检查能识别出旧实例并清掉,然后 init 到新容器上。
+watch([selectedDeptCode, includeSubDepts], async () => {
+  teamMembersPagination.value.currentPage = 1;
+  if (activeTab.value !== 'team') return;
+  await nextTick();
+  if (teamMemberDelayRateChartInstance && (!teamMemberDelayRateChartRef.value || teamMemberDelayRateChartInstance.getDom() !== teamMemberDelayRateChartRef.value)) {
+    teamMemberDelayRateChartInstance.dispose();
+    teamMemberDelayRateChartInstance = null;
+  }
+  if (teamMemberDelayCountChartInstance && (!teamMemberDelayCountChartRef.value || teamMemberDelayCountChartInstance.getDom() !== teamMemberDelayCountChartRef.value)) {
+    teamMemberDelayCountChartInstance.dispose();
+    teamMemberDelayCountChartInstance = null;
+  }
+  initTeamMemberDelayRateChart();
+  initTeamMemberDelayCountChart();
+}, { flush: 'post' });
+
 onMounted(async () => {
   loading.value = true;
   try {
     await Promise.all([
       projectStore.loadProjects(),
       taskStore.loadTasks(),
-      userStore.loadUsers()
+      userStore.loadUsers(),
+      // 2026-06-17:部门过滤需要 org 树,提前加载
+      orgStore.loadTree()
     ]);
     initCharts();
   } finally {
@@ -1080,9 +1267,39 @@ onMounted(async () => {
 });
 
 onUnmounted(() => {
+  if (switchTimer) {
+    window.clearTimeout(switchTimer);
+    switchTimer = null;
+  }
   personalDelayDistributionChartInstance?.dispose();
   personalProjectDelayChartInstance?.dispose();
   teamMemberDelayRateChartInstance?.dispose();
   teamMemberDelayCountChartInstance?.dispose();
 });
 </script>
+
+<style scoped>
+/* 部门筛选行切换遮罩淡入淡出(2026-06-17) */
+.fade-enter-active,
+.fade-leave-active {
+  transition: opacity 100ms ease;
+}
+.fade-enter-from,
+.fade-leave-to {
+  opacity: 0;
+}
+
+/* 部门切换时下游内容(团队统计/图表/列表)淡入淡出 */
+.content-fade-enter-active,
+.content-fade-leave-active {
+  transition: opacity 200ms ease, transform 200ms ease;
+}
+.content-fade-enter-from {
+  opacity: 0;
+  transform: translateY(4px);
+}
+.content-fade-leave-to {
+  opacity: 0;
+  transform: translateY(-4px);
+}
+</style>
