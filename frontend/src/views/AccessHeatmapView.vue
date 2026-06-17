@@ -230,16 +230,6 @@ const lastUpdatedStr = ref('');
 
 const pad = (n: number) => String(n).padStart(2, '0');
 
-const axisNameKey = (unit: string): string => {
-  switch (unit) {
-    case 'dayOfWeek': return 'admin.accessHeatmap.chart.dayOfWeekAxis';
-    case 'date': return 'admin.accessHeatmap.chart.dateAxis';
-    case 'week': return 'admin.accessHeatmap.chart.weekAxis';
-    case 'hour':
-    default: return 'admin.accessHeatmap.chart.hourAxis';
-  }
-};
-
 const bucketLabel = (unit: string, raw: string): string => {
   if (!raw) return '';
   if (unit === 'dayOfWeek') {
@@ -312,6 +302,9 @@ const renderChart = (d: HeatmapResponse) => {
     {
       tooltip: {
         position: 'top',
+        backgroundColor: 'rgba(255,255,255,0.96)',
+        borderColor: '#d0d7de',
+        textStyle: { color: '#1f2328', fontSize: 12 },
         formatter: (p: any) => {
           const catRaw = String(p.data[0]);
           const pageCat = String(p.data[1]);
@@ -327,26 +320,45 @@ const renderChart = (d: HeatmapResponse) => {
           )}`;
         },
       },
-      grid: { left: 140, right: 30, top: 30, bottom: 60 },
+      grid: { left: 120, right: 16, top: 20, bottom: 80 },
       xAxis: {
         type: 'category',
         data: xCats,
-        name: $t(axisNameKey(unit)),
-        nameLocation: 'end',
-        splitArea: { show: true },
+        axisLine: { show: false },
+        axisTick: { show: false },
+        axisLabel: {
+          color: '#57606a',
+          fontSize: 10,
+          // 自动稀疏,避免横向标签拥挤
+          interval: Math.max(0, Math.floor(xCats.length / 12) - 1),
+        },
+        splitArea: { show: false },
       },
       yAxis: {
         type: 'category',
         data: yPages,
-        name: $t('admin.accessHeatmap.chart.pageAxis'),
-        nameLocation: 'end',
-        splitArea: { show: true },
+        axisLine: { show: false },
+        axisTick: { show: false },
+        axisLabel: {
+          color: '#57606a',
+          fontSize: 11,
+        },
+        splitArea: { show: false },
       },
       visualMap: {
         type: 'piecewise',
         orient: 'horizontal',
         left: 'center',
         bottom: 10,
+        itemWidth: 11,
+        itemHeight: 11,
+        itemGap: 3,
+        // ECharts 数组顺序: [右端文字, 左端文字] → "少在左,多在右"
+        text: [
+          $t('admin.accessHeatmap.chart.legend.more'),
+          $t('admin.accessHeatmap.chart.legend.less'),
+        ],
+        textStyle: { color: '#57606a', fontSize: 11 },
         pieces: buildPieces(maxVal),
       },
       series: [
@@ -354,7 +366,19 @@ const renderChart = (d: HeatmapResponse) => {
           type: 'heatmap',
           data: seriesData,
           label: { show: false },
-          emphasis: { itemStyle: { borderColor: '#000', borderWidth: 1 } },
+          // 白色细缝 → GitHub 风格的紧凑方块
+          itemStyle: {
+            borderColor: '#ffffff',
+            borderWidth: 1,
+          },
+          emphasis: {
+            itemStyle: {
+              borderColor: '#1f2328',
+              borderWidth: 1,
+              shadowBlur: 6,
+              shadowColor: 'rgba(0,0,0,0.25)',
+            },
+          },
         },
       ],
     },
@@ -362,25 +386,37 @@ const renderChart = (d: HeatmapResponse) => {
   );
 };
 
+// GitHub 贡献图风格配色:浅灰(0) → 5 级红系渐变
+const GH_COLORS = ['#ebedf0', '#ffddd6', '#ffb3a3', '#ff7a66', '#fa5d3c', '#c92a2a'];
+
 const buildPieces = (maxVal: number): any[] => {
-  const pieces: any[] = [];
-  pieces.push({ min: 0, max: 0, color: '#f5f5f5', label: '0' });
+  const zeroPiece = { value: 0, color: GH_COLORS[0], label: '0' };
 
-  if (maxVal <= 0) return pieces;
-
-  if (maxVal <= 10) {
-    pieces.push({ min: 1, max: 5, color: '#bfdbfe', label: '1-5' });
-    pieces.push({ min: 6, color: '#1d4ed8', label: '6+' });
-  } else if (maxVal <= 100) {
-    pieces.push({ min: 1, max: 10, color: '#bfdbfe', label: '1-10' });
-    pieces.push({ min: 11, max: 50, color: '#60a5fa', label: '11-50' });
-    pieces.push({ min: 51, color: '#1d4ed8', label: '51+' });
-  } else {
-    pieces.push({ min: 1, max: 20, color: '#bfdbfe', label: '1-20' });
-    pieces.push({ min: 21, max: 100, color: '#60a5fa', label: '21-100' });
-    pieces.push({ min: 101, color: '#1d4ed8', label: '101+' });
+  // 数据全 0 时,仍渲染 5 个图例色块占位(保证"少/多"图例始终可见)
+  if (maxVal <= 0) {
+    return [
+      zeroPiece,
+      { min: 1, max: 1, color: GH_COLORS[1] },
+      { min: 2, max: 2, color: GH_COLORS[2] },
+      { min: 3, max: 3, color: GH_COLORS[3] },
+      { min: 4, max: 4, color: GH_COLORS[4] },
+      { min: 5, color: GH_COLORS[5] },
+    ];
   }
-  return pieces;
+
+  // 阈值按 maxVal 的 20%/40%/60%/80% 切,得到 5 级渐变
+  const t1 = Math.max(1, Math.ceil(maxVal * 0.2));
+  const t2 = Math.max(t1 + 1, Math.ceil(maxVal * 0.4));
+  const t3 = Math.max(t2 + 1, Math.ceil(maxVal * 0.6));
+  const t4 = Math.max(t3 + 1, Math.ceil(maxVal * 0.8));
+  return [
+    zeroPiece,
+    { min: 1, max: t1, color: GH_COLORS[1] },
+    { min: t1 + 1, max: t2, color: GH_COLORS[2] },
+    { min: t2 + 1, max: t3, color: GH_COLORS[3] },
+    { min: t3 + 1, max: t4, color: GH_COLORS[4] },
+    { min: t4 + 1, color: GH_COLORS[5] },
+  ];
 };
 
 onMounted(() => {

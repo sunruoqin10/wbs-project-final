@@ -1275,6 +1275,10 @@ export default {
         tooltipTotal: '총 {total}회',
         tooltipAvg: '일 평균 {avg}회',
         empty: '방문 데이터가 없습니다',
+        legend: {
+          less: '적음',
+          more: '많음',
+        },
         dayOfWeek: {
           '1': '일',
           '2': '월',

@@ -1291,6 +1291,10 @@ export default {
         pageAxis: '页面',
         tooltipTotal: '共 {total} 次',
         empty: '尚无访问数据',
+        legend: {
+          less: '少',
+          more: '多',
+        },
         dayOfWeek: {
           '1': '周日',
           '2': '周一',
