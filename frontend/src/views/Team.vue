@@ -71,7 +71,8 @@
         <Card>
           <div class="p-4">
             <p class="text-sm font-medium text-secondary-600">{{ $t('common.members') }}</p>
-            <p class="mt-2 text-2xl font-semibold text-secondary-900">{{ users.length }}</p>
+            <!-- 2026-06-17: 改为 orgViewUsers,与「按组织架构查看」保持一致(总非离职人员数) -->
+            <p class="mt-2 text-2xl font-semibold text-secondary-900">{{ orgViewUsers.length }}</p>
           </div>
         </Card>
 
@@ -374,6 +375,18 @@
                       :placeholder="$t('team.currentDept.searchPlaceholder')"
                       class="w-56 rounded-lg border border-secondary-300 px-3 py-1.5 text-sm focus:border-primary-500 focus:outline-none focus:ring-1 focus:ring-primary-500"
                     />
+                    <!-- 2026-06-17: 角色筛选,与搜索共用过滤链 -->
+                    <select
+                      v-model="currentDeptRoleFilter"
+                      class="rounded-lg border border-secondary-300 px-3 py-1.5 text-sm focus:border-primary-500 focus:outline-none focus:ring-1 focus:ring-primary-500"
+                    >
+                      <option value="">{{ $t('team.allMembers.filterRole') }}</option>
+                      <option value="admin">{{ $t('team.allMembers.roleAdmin') }}</option>
+                      <option value="dept-project-manager">{{ $t('team.allMembers.roleDeptProjectManager') }}</option>
+                      <option value="project-manager">{{ $t('team.allMembers.roleProjectManager') }}</option>
+                      <option value="member">{{ $t('team.allMembers.roleMember') }}</option>
+                      <option value="viewer">{{ $t('team.allMembers.roleViewer') }}</option>
+                    </select>
                   </div>
                 </div>
               </template>
@@ -867,8 +880,10 @@ const activeTab = ref(0);
 
 const tabs = computed<Tab[]>(() => [
   {
+    // 2026-06-17: badge 改为 orgViewUsers(所有非离职人员),与「按组织架构查看」视图内容保持一致
+    // 之前用 users.value 会被 admin 部门筛选过滤,显示的是当前部门人数,跟 Tab 内容对不上
     label: t('team.allMembers.title'),
-    badge: users.value.length,
+    badge: orgViewUsers.value.length,
     value: 'members'
   },
   {
@@ -1011,12 +1026,22 @@ const onRoleChangeSuccess = async () => {
 };
 
 /**
+ * 「按组织架构查看」视图的源数据
+ * 不受顶部 admin 部门筛选影响,显示所有非离职人员（status != 'T'）
+ * 后端 getUsers 已过滤 T,此处再守一层,防止 mock / 缓存命中带 T 的脏数据
+ * 顶部统计卡片 / 工作负载图 / 任务分配 Tab 仍走 users.value(受部门筛选影响)
+ */
+const orgViewUsers = computed<User[]>(() => {
+  return userStore.users.filter(u => u.status !== 'T');
+});
+
+/**
  * 按顶部筛选条件过滤用户
- * 用于驱动 org 分组视图
+ * 用于驱动 org 分组视图(2026-06-17: 改为基于 orgViewUsers,而非 users.value)
  */
 const filteredUsers = computed<User[]>(() => {
   const search = memberSearch.value.trim().toLowerCase();
-  return users.value.filter(user => {
+  return orgViewUsers.value.filter(user => {
     if (search) {
       const name = (user.chineseNam || user.name || '').toLowerCase();
       const id = (user.id || '').toLowerCase();
@@ -1143,6 +1168,8 @@ function roleBadgeVariant(role: string): 'default' | 'primary' | 'danger' | 'suc
 
 // ============ 2026-06-17:本部门成员 tab(基于当前登录用户 deptCode 过滤) ============ //
 const currentDeptSearch = ref<string>('');
+// 2026-06-17: 角色筛选(本部门成员 tab 新增)
+const currentDeptRoleFilter = ref<string>('');
 const currentDeptPage = ref<number>(1);
 const currentDeptItemsPerPage = ref<number>(10);
 
@@ -1153,20 +1180,27 @@ const currentDeptUsers = computed<User[]>(() => {
   return userStore.users.filter(u => u.deptCode === myDeptCode);
 });
 
-/** 当前部门成员 + 搜索过滤 */
+/** 当前部门成员 + 搜索 + 角色过滤 */
 const filteredCurrentDeptUsers = computed<User[]>(() => {
   const search = currentDeptSearch.value.trim().toLowerCase();
-  if (!search) return currentDeptUsers.value;
+  const role = currentDeptRoleFilter.value;
   return currentDeptUsers.value.filter(u => {
-    const name = (u.chineseNam || u.name || '').toLowerCase();
-    const id = (u.id || '').toLowerCase();
-    const email = (u.email || '').toLowerCase();
-    return name.includes(search) || id.includes(search) || email.includes(search);
+    if (search) {
+      const name = (u.chineseNam || u.name || '').toLowerCase();
+      const id = (u.id || '').toLowerCase();
+      const email = (u.email || '').toLowerCase();
+      if (!name.includes(search) && !id.includes(search) && !email.includes(search)) return false;
+    }
+    if (role) {
+      const normalizedRole = u.role?.replace(/_/g, '-');
+      if (normalizedRole !== role) return false;
+    }
+    return true;
   });
 });
 
-/** 切换搜索时重置到第一页 */
-watch(currentDeptSearch, () => {
+/** 切换搜索/角色时重置到第一页 */
+watch([currentDeptSearch, currentDeptRoleFilter], () => {
   currentDeptPage.value = 1;
 });
 
