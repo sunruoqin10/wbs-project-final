@@ -14,6 +14,62 @@
         </Button>
       </div>
 
+      <!-- 部门筛选行(2026-06-17 新增,仅 admin 可见,与 Dashboard / ProjectList / DocumentManagement 保持一致) -->
+      <Card v-if="currentUser?.role === 'admin'" class="relative">
+        <div class="flex items-center gap-4">
+          <span class="text-sm font-medium text-secondary-600">
+            {{ $t('dashboard.departmentFilter.label') }}
+          </span>
+          <OrgTreeSelect
+            v-model="selectedDeptCode"
+            @update:modelValue="onDeptChange"
+          />
+          <label
+            class="flex items-center gap-2 text-sm text-secondary-600"
+            :class="{ 'cursor-not-allowed opacity-50': isLeaf }"
+            :title="isLeaf ? $t('dashboard.departmentFilter.leafHint') : ''"
+          >
+            <input
+              type="checkbox"
+              v-model="includeSubDepts"
+              :disabled="isLeaf"
+              class="h-4 w-4 rounded border-secondary-300 text-primary-600
+                     focus:ring-primary-500 disabled:opacity-50"
+            />
+            <span>{{ $t('dashboard.departmentFilter.includeSubDepts') }}</span>
+          </label>
+        </div>
+        <!-- deptMissing 提示:当 admin 没有 deptCode 时显示 -->
+        <p
+          v-if="currentUser && !currentUser.deptCode"
+          class="mt-2 text-xs text-warning-600"
+        >
+          {{ $t('dashboard.departmentFilter.deptMissing') }}
+        </p>
+        <!-- 切换中遮罩 -->
+        <Transition name="fade">
+          <div
+            v-if="switching"
+            class="pointer-events-none absolute inset-0 flex items-center
+                   justify-center rounded-lg bg-white/60 backdrop-blur-sm"
+          >
+            <svg
+              class="h-6 w-6 animate-spin text-primary-600"
+              fill="none" viewBox="0 0 24 24"
+            >
+              <circle
+                class="opacity-25" cx="12" cy="12" r="10"
+                stroke="currentColor" stroke-width="4"
+              />
+              <path
+                class="opacity-75" fill="currentColor"
+                d="M4 12a8 8 0 018-8v4a4 4 0 00-4 4H4z"
+              />
+            </svg>
+          </div>
+        </Transition>
+      </Card>
+
       <Card class="p-4">
         <div class="flex flex-wrap items-center gap-4">
           <div class="flex-1 min-w-[200px]">
@@ -191,9 +247,19 @@
           </svg>
           <h3 class="mt-4 text-lg font-medium text-secondary-900">{{ $t('weeklyReports.emptyState.title') }}</h3>
           <p class="mt-2 text-sm text-secondary-600">
-            {{ searchQuery || selectedStatuses.length > 0 ? $t('weeklyReports.emptyState.noResults') : $t('weeklyReports.emptyState.createFirst') }}
+            {{ searchQuery || selectedStatuses.length > 0
+                ? $t('weeklyReports.emptyState.noResults')
+                : isDeptFilterActive
+                  ? $t('dashboard.departmentFilter.emptyHint')
+                  : $t('weeklyReports.emptyState.createFirst') }}
           </p>
-          <Button v-if="!searchQuery && selectedStatuses.length === 0" variant="primary" class="mt-4" @click="createNewReport">
+          <!-- 2026-06-17: 部门过滤激活时,不显示「新建周报」按钮,避免给"未分配部门"以外的误操作引导 -->
+          <Button
+            v-if="!searchQuery && selectedStatuses.length === 0 && !isDeptFilterActive"
+            variant="primary"
+            class="mt-4"
+            @click="createNewReport"
+          >
             {{ $t('weeklyReports.emptyState.createButton') }}
           </Button>
         </div>
@@ -212,11 +278,13 @@ import Card from '@/components/common/Card.vue';
 import Button from '@/components/common/Button.vue';
 import Input from '@/components/common/Input.vue';
 import Badge from '@/components/common/Badge.vue';
+import OrgTreeSelect from '@/components/common/OrgTreeSelect.vue';
 import { useWeeklyReportStore } from '@/stores/weeklyReport';
 import { useProjectStore } from '@/stores/project';
 import { useUserStore } from '@/stores/user';
 import { usePermissionStore } from '@/stores/permission';
-import type { WeeklyReport } from '@/types';
+import { useOrgStore } from '@/stores/org';
+import type { WeeklyReport, OrgNode } from '@/types';
 import dayjs from 'dayjs';
 import 'dayjs/locale/zh-cn';
 
@@ -228,6 +296,9 @@ const weeklyReportStore = useWeeklyReportStore();
 const projectStore = useProjectStore();
 const userStore = useUserStore();
 const permissionStore = usePermissionStore();
+const orgStore = useOrgStore();
+
+const currentUser = computed(() => userStore.currentUser);
 
 const searchQuery = ref('');
 const selectedStatuses = ref<string[]>([]);
@@ -243,13 +314,98 @@ const setViewMode = (mode: 'card' | 'list') => {
   localStorage.setItem(STORAGE_KEY, mode);
 };
 
+// ============ 部门过滤(admin 专用,与 Dashboard / ProjectList 保持一致,2026-06-17 新增) ============ //
+const selectedDeptCode = ref<string | null>(currentUser.value?.deptCode ?? null);
+const includeSubDepts = ref(false);
+const switching = ref(false);
+let switchTimer: number | null = null;
+
+function onDeptChange(newCode: string | null) {
+  // 切换部门时给一点 loading 反馈,避免依赖项在 await 中抖动
+  switching.value = true;
+  if (switchTimer) window.clearTimeout(switchTimer);
+  switchTimer = window.setTimeout(() => {
+    selectedDeptCode.value = newCode;
+    switching.value = false;
+  }, 100);
+}
+
+/** 工具:从 org 树中找到目标 code 节点,DFS 收集其所有后代 code */
+function collectDescendants(root: OrgNode, targetCode: string): string[] {
+  const result: string[] = [];
+  function find(node: OrgNode): OrgNode | null {
+    if (node.code === targetCode) return node;
+    for (const c of node.children || []) {
+      const hit = find(c);
+      if (hit) return hit;
+    }
+    return null;
+  }
+  const target = find(root);
+  if (!target) return result;
+  function walk(n: OrgNode) {
+    for (const c of n.children || []) {
+      if (c.code) result.push(c.code);
+      walk(c);
+    }
+  }
+  walk(target);
+  return result;
+}
+
+/** 工具:判断指定 code 在树中是否有子节点(用于「含子部门」checkbox enabled) */
+function hasChildrenInTree(root: OrgNode | null, code: string): boolean {
+  if (!root) return false;
+  function dfs(node: OrgNode): boolean {
+    if (node.code === code) return (node.children || []).length > 0;
+    for (const c of node.children || []) if (dfs(c)) return true;
+    return false;
+  }
+  return dfs(root);
+}
+
+const isLeaf = computed(() => {
+  if (selectedDeptCode.value === null) return true;
+  return !hasChildrenInTree(orgStore.tree, selectedDeptCode.value);
+});
+
+const effectiveDeptCodes = computed<Set<string | null>>(() => {
+  if (selectedDeptCode.value === null) return new Set([null]);
+  const codes = new Set<string | null>([selectedDeptCode.value]);
+  if (includeSubDepts.value && orgStore.tree) {
+    collectDescendants(orgStore.tree, selectedDeptCode.value).forEach(c => codes.add(c));
+  }
+  return codes;
+});
+
+/** 部门过滤后的项目 ID 集合,用于在 filteredReports 阶段裁剪周报。
+ *  仅 admin 角色 + 已选部门时,过滤才会生效;否则视为不过滤。 */
+const deptFilteredProjectIds = computed<Set<string> | null>(() => {
+  if (currentUser.value?.role !== 'admin') return null;
+  const ids = new Set<string>();
+  for (const p of projectStore.projects) {
+    if (effectiveDeptCodes.value.has(p.deptCode ?? null)) {
+      ids.add(p.id);
+    }
+  }
+  return ids;
+});
+
+/** 是否激活了部门过滤(2026-06-17):admin + 已选部门(非 null)。
+ *  用于空结果状态文案 / 隐藏「新建周报」按钮等 UI 提示。 */
+const isDeptFilterActive = computed(() => {
+  return currentUser.value?.role === 'admin' && selectedDeptCode.value !== null;
+});
+
 onMounted(async () => {
   // 2026-06-16: 补 loadProjects — 项目名称依赖 projectStore.projects
   // 登录后 setCurrentUser 会清空 projects,若本页不重新拉,getProjectName 全部走到 common.unknown 兜底
+  // 2026-06-17: 部门过滤需要 orgStore.tree,这里一起加载
   await Promise.all([
     weeklyReportStore.loadReports(),
     userStore.loadUsers(),
-    projectStore.loadProjects()
+    projectStore.loadProjects(),
+    orgStore.loadTree()
   ]);
 });
 
@@ -264,7 +420,14 @@ const statusOptions = computed(() => [
 const filteredReports = computed(() => {
   // 2026-06-14 周报 4 角色对齐:后端已按 getAccessibleWeeklyReportUserIds 过滤,
   // 前端不再做二次角色 filter,只保留 UI 层的 status / keyword 筛选。
+  // 2026-06-17: 新增部门维度(仅 admin 生效),按 report.projectId 是否命中
+  // deptFilteredProjectIds 裁剪。这里走 projectId 而不是 userId,
+  // 避免误把同部门之外的成员撰写的周报挡掉——周报归属是「项目」,不是「人」。
   let result = weeklyReportStore.reports;
+  const deptIds = deptFilteredProjectIds.value;
+  if (deptIds) {
+    result = result.filter(r => r.projectId != null && deptIds.has(r.projectId));
+  }
 
   if (selectedStatuses.value.length > 0) {
     result = result.filter(r => selectedStatuses.value.includes(r.status));
