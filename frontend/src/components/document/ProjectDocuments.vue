@@ -10,7 +10,7 @@
           class="w-full rounded-lg border border-secondary-300 px-3 py-2.5 text-sm font-medium text-secondary-900 focus:border-primary-500 focus:outline-none focus:ring-1 focus:ring-primary-500 bg-white"
         >
           <option value="">{{ $t('documents.allProjects') }}</option>
-          <option v-for="project in projects" :key="project.id" :value="project.id">
+          <option v-for="project in availableProjects" :key="project.id" :value="project.id">
             {{ project.name }}
           </option>
         </select>
@@ -278,7 +278,7 @@
 </template>
 
 <script setup lang="ts">
-import { ref, computed, onMounted, watch } from 'vue';
+import { ref, computed, onMounted, watch, inject, type ComputedRef } from 'vue';
 import { useI18n } from 'vue-i18n';
 import Button from '@/components/common/Button.vue';
 import Badge from '@/components/common/Badge.vue';
@@ -289,6 +289,16 @@ import { usePermissionStore } from '@/stores/permission';
 import apiService from '@/services/api';
 import type { Document } from '@/types';
 import dayjs from 'dayjs';
+
+// 2026-06-17: 从 DocumentManagement 注入的部门过滤范围(仅 admin 才会被设置)。
+// 注意:父组件 provide 的是 ComputedRef,不是裸值——这里要先按 ref 类型接收,
+// 再用本地 computed 解包,后续用法(.has / 布尔判断)就保持原状。
+// 当未注入或非 admin 时,这两个 computed 都是 undefined,过滤函数按"不过滤"处理,
+// 保证该组件在其他场景(如 DocumentTest)被独立使用时行为不变。
+const deptFilteredProjectIdsRaw = inject<ComputedRef<Set<string | null>> | undefined>('docsDeptFilteredProjectIds', undefined);
+const deptFilterActiveRaw = inject<ComputedRef<boolean> | undefined>('docsDeptFilterActive', undefined);
+const deptFilteredProjectIds = computed<Set<string | null> | undefined>(() => deptFilteredProjectIdsRaw?.value);
+const deptFilterActive = computed<boolean | undefined>(() => deptFilterActiveRaw?.value);
 
 const { t } = useI18n();
 const projectStore = useProjectStore();
@@ -320,6 +330,16 @@ const categories = [
 const filteredDocuments = computed(() => {
   let result = documents.value.filter(doc => doc.status === 'active' && doc.projectId && !doc.reportId);
 
+  // 2026-06-17: 部门过滤(仅 admin + 已注入时生效)。
+  // 当 admin 选择了某部门,DocumentManagement 会通过 provide 注入该项目 ID 集合;
+  // 这里再叠加一层过滤,保证只展示属于该部门的项目的文档。
+  // 注意 deptFilteredProjectIds / deptFilterActive 都是 ComputedRef<T | undefined>,
+  // 访问裸值必须用 .value;先取出来再写 .has,避免在 filter 回调里反复 .value 带来歧义。
+  const deptIds = deptFilteredProjectIds.value;
+  if (deptFilterActive.value && deptIds) {
+    result = result.filter(doc => deptIds.has(doc.projectId ?? null));
+  }
+
   if (selectedProject.value) {
     result = result.filter(doc => doc.projectId === selectedProject.value);
   }
@@ -338,6 +358,24 @@ const filteredDocuments = computed(() => {
   }
 
   return result.sort((a, b) => new Date(b.createdAt || 0).getTime() - new Date(a.createdAt || 0).getTime());
+});
+
+// 2026-06-17: 项目下拉框选项。当部门过滤激活时,只列出属于该部门的项目;
+// 否则显示全部。这样切换部门后,「全部项目」一栏的语义与下方文档列表保持一致。
+const availableProjects = computed(() => {
+  const deptIds = deptFilteredProjectIds.value;
+  if (deptFilterActive.value && deptIds) {
+    return projects.value.filter(p => deptIds.has(p.id ?? null));
+  }
+  return projects.value;
+});
+
+// 2026-06-17: 当部门过滤变化时,如果当前选中的具体项目已不在新范围,清空选中,
+// 避免出现「选了项目但下方无文档」的迷惑状态。
+watch(availableProjects, (newList) => {
+  if (selectedProject.value && !newList.some(p => p.id === selectedProject.value)) {
+    selectedProject.value = '';
+  }
 });
 
 // 缩略图 blob URL 缓存，通过 apiService 携带认证 token
