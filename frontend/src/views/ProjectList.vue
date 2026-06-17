@@ -15,6 +15,37 @@
         </Button>
       </div>
 
+      <!-- 部门筛选行(仅 admin 可见,与 Dashboard 保持一致) -->
+      <Card v-if="currentUser?.role === 'admin'" class="relative">
+        <div class="flex items-center gap-4">
+          <span class="text-sm font-medium text-secondary-600">
+            {{ $t('dashboard.departmentFilter.label') }}
+          </span>
+          <OrgTreeSelect v-model="selectedDeptCode" />
+          <label
+            class="flex items-center gap-2 text-sm text-secondary-600"
+            :class="{ 'cursor-not-allowed opacity-50': isLeaf }"
+            :title="isLeaf ? $t('dashboard.departmentFilter.leafHint') : ''"
+          >
+            <input
+              type="checkbox"
+              v-model="includeSubDepts"
+              :disabled="isLeaf"
+              class="h-4 w-4 rounded border-secondary-300 text-primary-600
+                     focus:ring-primary-500 disabled:opacity-50"
+            />
+            <span>{{ $t('dashboard.departmentFilter.includeSubDepts') }}</span>
+          </label>
+        </div>
+        <!-- 部门信息缺失提示 -->
+        <p
+          v-if="currentUser && !currentUser.deptCode"
+          class="mt-2 text-xs text-warning-600"
+        >
+          {{ $t('dashboard.departmentFilter.deptMissing') }}
+        </p>
+      </Card>
+
       <!-- Filters -->
       <Card class="p-4">
         <div class="flex flex-wrap items-center gap-4">
@@ -89,7 +120,7 @@
 
           <!-- Clear Filters -->
           <Button
-            v-if="selectedStatuses.length > 0 || searchQuery"
+            v-if="selectedStatuses.length > 0 || searchQuery || (currentUser?.role === 'admin' && (includeSubDepts || selectedDeptCode !== (currentUser?.deptCode ?? null)))"
             variant="ghost"
             size="sm"
             @click="clearFilters"
@@ -257,10 +288,12 @@ import Input from '@/components/common/Input.vue';
 import Badge from '@/components/common/Badge.vue';
 import ProgressBar from '@/components/common/ProgressBar.vue';
 import UserAvatar from '@/components/common/UserAvatar.vue';
+import OrgTreeSelect from '@/components/common/OrgTreeSelect.vue';
 import { useProjectStore } from '@/stores/project';
 import { usePermissionStore } from '@/stores/permission';
 import { useUserStore } from '@/stores/user';
-import type { Project, User } from '@/types';
+import { useOrgStore } from '@/stores/org';
+import type { Project, User, OrgNode } from '@/types';
 import dayjs from 'dayjs';
 import 'dayjs/locale/zh-cn';
 
@@ -271,11 +304,66 @@ const { t } = useI18n();
 const projectStore = useProjectStore();
 const permissionStore = usePermissionStore();
 const userStore = useUserStore();
+const orgStore = useOrgStore();
+
+const currentUser = computed(() => userStore.currentUser);
 
 const searchQuery = ref('');
 const selectedStatuses = ref<string[]>([]);
 const modalOpen = ref(false);
 const editingProject = ref<Project | null>(null);
+
+// ============ 部门过滤(admin 专用,与 Dashboard 保持一致) ============ //
+const selectedDeptCode = ref<string | null>(currentUser.value?.deptCode ?? null);
+const includeSubDepts = ref(false);
+
+/** 工具:从 org 树中找到目标 code 节点,DFS 收集其所有后代 code */
+function collectDescendants(root: OrgNode, targetCode: string): string[] {
+  const result: string[] = [];
+  function find(node: OrgNode): OrgNode | null {
+    if (node.code === targetCode) return node;
+    for (const c of node.children || []) {
+      const hit = find(c);
+      if (hit) return hit;
+    }
+    return null;
+  }
+  const target = find(root);
+  if (!target) return result;
+  function walk(n: OrgNode) {
+    for (const c of n.children || []) {
+      if (c.code) result.push(c.code);
+      walk(c);
+    }
+  }
+  walk(target);
+  return result;
+}
+
+/** 工具:判断指定 code 在树中是否有子节点(用于「含子部门」checkbox enabled) */
+function hasChildrenInTree(root: OrgNode | null, code: string): boolean {
+  if (!root) return false;
+  function dfs(node: OrgNode): boolean {
+    if (node.code === code) return (node.children || []).length > 0;
+    for (const c of node.children || []) if (dfs(c)) return true;
+    return false;
+  }
+  return dfs(root);
+}
+
+const isLeaf = computed(() => {
+  if (selectedDeptCode.value === null) return true;
+  return !hasChildrenInTree(orgStore.tree, selectedDeptCode.value);
+});
+
+const effectiveDeptCodes = computed<Set<string | null>>(() => {
+  if (selectedDeptCode.value === null) return new Set([null]);
+  const codes = new Set<string | null>([selectedDeptCode.value]);
+  if (includeSubDepts.value && orgStore.tree) {
+    collectDescendants(orgStore.tree, selectedDeptCode.value).forEach(c => codes.add(c));
+  }
+  return codes;
+});
 
 const STORAGE_KEY = 'wbs-project-view-mode';
 
@@ -356,6 +444,12 @@ const filteredProjects = computed(() => {
     result = result.filter(project => permissionStore.canViewProject(project.id));
   }
 
+  // 部门过滤(仅 admin 生效):未选中时(null)只展示 deptCode 为空的"未分配"项目,
+  // 选中某部门时按 effectiveDeptCodes(可能含子部门)匹配。
+  if (currentUser.value?.role === 'admin') {
+    result = result.filter(p => effectiveDeptCodes.value.has(p.deptCode ?? null));
+  }
+
   if (selectedStatuses.value.length > 0) {
     result = result.filter(p => selectedStatuses.value.includes(p.status));
   }
@@ -388,6 +482,11 @@ const toggleStatus = (status: string) => {
 const clearFilters = () => {
   searchQuery.value = '';
   selectedStatuses.value = [];
+  // admin 角色:重置部门选择为当前用户所属部门(与初始值一致)
+  if (currentUser.value?.role === 'admin') {
+    selectedDeptCode.value = currentUser.value?.deptCode ?? null;
+    includeSubDepts.value = false;
+  }
 };
 
 const createNewProject = () => {
