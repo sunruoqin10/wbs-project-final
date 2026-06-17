@@ -66,7 +66,10 @@
       </Card>
 
       <!-- Stats Cards -->
-      <Transition name="content-fade" mode="out-in">
+      <!-- 注意:不要加 mode="out-in",否则旧 div 的 200ms leave 动画期间
+           新的图表容器还没被创建,ref 仍指向旧 div,watch 里 init 出来的
+           图表会挂到旧 div 上,等 leave 结束旧 div 被销毁后,新 div 上就没有图表了。 -->
+      <Transition name="content-fade">
         <div :key="`${selectedDeptCode}-${includeSubDepts}`" class="space-y-6">
           <div class="grid grid-cols-1 gap-6 sm:grid-cols-2 lg:grid-cols-4">
         <Card>
@@ -438,6 +441,14 @@ const deptFilteredProjects = computed(() => {
   );
 });
 
+/** 部门二次过滤后的任务列表:只保留属于 deptFilteredProjects 项目的任务,
+ *  用于驱动 statistics / planVsActual / upcomingTasks 等下游 computed,
+ *  保证切换部门时任务相关数据同步刷新。 */
+const deptFilteredTasks = computed(() => {
+  const projectIds = new Set(deptFilteredProjects.value.map(p => p.id));
+  return taskStore.tasks.filter(t => projectIds.has(t.projectId));
+});
+
 // 根据角色过滤项目:dept-pm 看所管部门 + 自己创建 / 参加的项目;member/viewer 看参与项目
 // 2026-06-12:与后端 ProjectService.getAllProjectsForUser 的数据范围对齐——
 // admin 全部;dept-pm 看所管部门;创建者 / owner / member 一律可看
@@ -461,19 +472,12 @@ const userProjects = computed(() => {
 });
 
 // 根据角色过滤任务：只显示用户参与项目的任务
-const userTasks = computed(() => {
-  if (!currentUser.value) return [];
-  if (currentUser.value.role === 'admin' || currentUser.value.role === 'project-manager') {
-    return taskStore.tasks;
-  }
-  const userProjectIds = new Set(userProjects.value.map(p => p.id));
-  return taskStore.tasks.filter(t => userProjectIds.has(t.projectId));
-});
+// 2026-06-17: 已不再使用,任务相关数据全部走 deptFilteredTasks(基于部门过滤后的项目列表)
 
-const recentProjects = computed(() => userProjects.value.slice(0, 5));
+const recentProjects = computed(() => deptFilteredProjects.value.slice(0, 5));
 const upcomingTasks = computed(() => {
   // 只统计叶子任务（没有子任务的任务）
-  const tasks = userTasks.value;
+  const tasks = deptFilteredTasks.value;
   const allTaskIds = new Set(tasks.map(t => t.id));
   const parentTaskIds = new Set(tasks.filter(t => t.parentTaskId).map(t => t.parentTaskId));
   const leafTaskIds = new Set([...allTaskIds].filter(id => !parentTaskIds.has(id)));
@@ -493,7 +497,7 @@ const statistics = computed(() => {
   const completedProjects = projects.filter(p => p.status === 'completed').length;
 
   // 只统计叶子任务（没有子任务的任务），避免重复统计
-  const tasks = userTasks.value;
+  const tasks = deptFilteredTasks.value;
   const allTaskIds = new Set(tasks.map(t => t.id));
   const parentTaskIds = new Set(tasks.filter(t => t.parentTaskId).map(t => t.parentTaskId));
   const leafTaskIds = new Set([...allTaskIds].filter(id => !parentTaskIds.has(id)));
@@ -528,7 +532,7 @@ const statistics = computed(() => {
 
 // 预期进度 vs 实际进度
 const planVsActual = computed(() => {
-  const tasks = userTasks.value;
+  const tasks = deptFilteredTasks.value;
   const allTaskIds = new Set(tasks.map(t => t.id));
   const parentTaskIds = new Set(tasks.filter(t => t.parentTaskId).map(t => t.parentTaskId));
   const leafTaskIds = new Set([...allTaskIds].filter(id => !parentTaskIds.has(id)));
@@ -766,7 +770,7 @@ const initProjectChart = () => {
 
   projectChart = echarts.init(projectChartRef.value);
 
-  const chartProjects = userProjects.value.slice(0, 5);
+  const chartProjects = deptFilteredProjects.value.slice(0, 5);
 
   // 检查是否有项目数据
   if (chartProjects.length === 0) {
@@ -889,6 +893,27 @@ watch([() => projectStore.loaded, () => taskStore.loaded], async ([projectsLoade
     initProjectChart();
   }
 }, { immediate: false });
+
+// 2026-06-17: 切换部门 / 含子部门勾选时,部门过滤后的 statistics / 图表数据已经变化,
+// 但 echarts 是命令式渲染,需要主动重新调用 init 重绘图表。
+// <Transition> 会随 key 变化销毁并重建图表容器,所以:
+//  1) 不能给 <Transition> 加 mode="out-in",否则 leave 期间 ref 仍指向旧容器,
+//     init 会把图表挂到旧容器上,新容器出现后就没有图表了;
+//  2) 用 flush: 'post' 让 watch 在 DOM patch 之后再触发,此时新容器已挂载、
+//     ref 已更新,dispose 检查能识别出旧实例并清掉,然后 init 到新容器上。
+watch([selectedDeptCode, includeSubDepts], async () => {
+  await nextTick();
+  if (taskChart && (!taskChartRef.value || taskChart.getDom() !== taskChartRef.value)) {
+    taskChart.dispose();
+    taskChart = null;
+  }
+  if (projectChart && (!projectChartRef.value || projectChart.getDom() !== projectChartRef.value)) {
+    projectChart.dispose();
+    projectChart = null;
+  }
+  initTaskChart();
+  initProjectChart();
+}, { flush: 'post' });
 </script>
 
 <style scoped>
