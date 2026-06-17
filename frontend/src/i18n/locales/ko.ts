@@ -17,6 +17,7 @@ export default {
     search: '검색',
     searchPlaceholder: '검색...',
     loading: '로딩 중...',
+    retry: '재시도',
     save: '저장',
     cancel: '취소',
     delete: '삭제',
@@ -152,6 +153,15 @@ export default {
         tomorrow: '내일 마감',
         days: '{days}일 남음'
       }
+    },
+    departmentFilter: {
+      label: '부서별 보기',
+      placeholder: '부서를 선택하세요',
+      includeSubDepts: '하위 부서 포함',
+      unassigned: '미할당',
+      leafHint: '하위 부서 없음, 펼치기 불필요',
+      emptyHint: '이 부서에 프로젝트가 없습니다',
+      deptMissing: '부서 정보가 없어 미할당 프로젝트를 표시합니다'
     }
   },
 

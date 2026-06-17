@@ -17,6 +17,7 @@ export default {
     search: '搜索',
     searchPlaceholder: '搜索...',
     loading: '加载中...',
+    retry: '重试',
     save: '保存',
     cancel: '取消',
     delete: '删除',
@@ -152,6 +153,15 @@ export default {
         tomorrow: '明天到期',
         days: '剩余 {days} 天'
       }
+    },
+    departmentFilter: {
+      label: '按部门查看',
+      placeholder: '请选择部门',
+      includeSubDepts: '含子部门',
+      unassigned: '未分配',
+      leafHint: '叶子部门,无需展开',
+      emptyHint: '该部门暂无项目',
+      deptMissing: '您的部门信息缺失,已默认展示未分配项目'
     }
   },
 
