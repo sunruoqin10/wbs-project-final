@@ -204,8 +204,7 @@ const roleLabel = computed(() => {
     admin: 'roles.admin',
     'dept-project-manager': 'roles.deptProjectManager',
     'project-manager': 'roles.projectManager',
-    member: 'roles.member',
-    viewer: 'roles.viewer'
+    member: 'roles.member'
   };
   return currentUser.value ? t(roleMap[currentUser.value.role] || '') : '';
 });

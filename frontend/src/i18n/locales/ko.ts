@@ -788,8 +788,7 @@ export default {
   roles: {
     admin: '관리자',
     projectManager: '프로젝트 관리자',
-    member: '구성원',
-    viewer: '관찰자'
+    member: '구성원'
   },
 
   // 우선순위

@@ -54,10 +54,10 @@ const showHistory = ref(false);
 const projectsInManagedDepts = ref<Project[]>([]);
 const projectsLoading = ref(false);
 
-// ========== 权限(2026-06-12) ==========
+// ========== 权限(2026-06-12;2026-06-17 移除 VIEWER) ==========
 // actor: 谁打开这个对话框
 // - admin: 任意目标,可改成任意角色
-// - dept-pm: 仅本部门目标,只能改成 {project-manager, member, viewer}
+// - dept-pm: 仅本部门目标,只能改成 {project-manager, member}
 const isAdminActor = computed(() => permissionStore.isAdmin());
 const isDeptPmActor = computed(() => permissionStore.isDeptProjectManager());
 const canChangeRole = computed(() => isAdminActor.value || isDeptPmActor.value);
@@ -68,15 +68,13 @@ const availableRoles = computed<Array<{ value: UserRole; label: string; disabled
       { value: 'admin', label: t('roles.admin') },
       { value: 'dept-project-manager', label: t('roles.deptProjectManager') },
       { value: 'project-manager', label: t('roles.projectManager') },
-      { value: 'member', label: t('roles.member') },
-      { value: 'viewer', label: t('roles.viewer') }
+      { value: 'member', label: t('roles.member') }
     ];
   }
   if (isDeptPmActor.value) {
     return [
       { value: 'project-manager', label: t('roles.projectManager') },
-      { value: 'member', label: t('roles.member') },
-      { value: 'viewer', label: t('roles.viewer') }
+      { value: 'member', label: t('roles.member') }
     ];
   }
   return [];
@@ -297,7 +295,7 @@ const formatTime = (iso: string): string => {
             <option v-for="r in availableRoles" :key="r.value" :value="r.value">{{ r.label }}</option>
           </select>
           <p v-if="isDeptPmActor" class="mt-1 text-xs text-secondary-500">
-            您只能将本部门用户改成"项目经理 / 项目人员 / 观察者",不能改成管理员或其他部门的用户。
+            您只能将本部门用户改成"项目经理 / 项目人员",不能改成管理员或其他部门的用户。
           </p>
         </div>
 

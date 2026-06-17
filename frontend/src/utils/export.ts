@@ -115,8 +115,7 @@ function translateRole(role: string): string {
   const roleMap: Record<string, string> = {
     'admin': '管理员',
     'project-manager': '项目经理',
-    'member': '成员',
-    'viewer': '访客'
+    'member': '成员'
   };
   return roleMap[role] || role;
 }

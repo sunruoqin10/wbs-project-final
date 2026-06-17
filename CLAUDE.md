@@ -15,59 +15,22 @@ Full-stack **WBS (Work Breakdown Structure) Project Management System**.
 - **Backend** — Spring Boot 3.2.0 + MyBatis + MySQL, Java 17, Maven. Package root `com.wbs.project`.
 - **Frontend** — Vue 3 + TypeScript + Vite + Tailwind CSS + Pinia + DHTMLX Gantt + ECharts.
 
-**Features** — project/task management with hierarchical WBS, Gantt visualization, weekly reports with approval workflow, versioned document management, overtime tracking, delay statistics + scheduled email notifications, role-based permissions (admin / project-manager / member / viewer), i18n (zh / ko / en), QQ-Mail SMTP notifications, DiceBear-generated avatars (no upload pipeline).
+**Features** — project/task management with hierarchical WBS, Gantt visualization, weekly reports with approval workflow, versioned document management, overtime tracking, delay statistics + scheduled email notifications, role-based permissions (admin / project-manager / member / viewer), i18n (zh / ko), QQ-Mail SMTP notifications, DiceBear-generated avatars (no upload pipeline).
 
 ## Tooling Notes
 
-- **No linters are configured** — no ESLint, Prettier, EditorConfig, or Checkstyle. Follow the existing code style in `AGENTS.md`; do not introduce new linters without asking.
+- **No linters are configured** — no ESLint, Prettier, EditorConfig, or Checkstyle. Follow the conventions in `AGENTS.md`; do not introduce new linters without asking.
 - **No frontend test runner** is configured. Treat `npx vue-tsc` and `npm run build` as the verification gate for frontend changes.
 - **The backend test suite is empty** — `backend/src/test/` has no Java tests. Use `mvn -pl . test -DfailIfNoTests=false` to avoid hard failures, and follow JUnit 5 / Spring Boot starter test conventions when adding new ones.
-
-## Development Commands
-
-### Backend (`backend/`)
-```bash
-mvn clean install                 # build + run all tests
-mvn clean install -DskipTests     # build, skip tests
-mvn spring-boot:run               # runs on http://localhost:8084 (context /api)
-mvn test                          # run all tests
-mvn test -Dtest=UserServiceTest              # run one test class
-mvn test -Dtest=UserServiceTest#createUser   # run a single test method
-```
-
-### Frontend (`frontend/`)
-```bash
-npm install
-npm run dev            # Vite dev server on http://localhost:5173
-npm run build          # vue-tsc (type check) + vite build
-npm run preview        # serve production build
-npx vue-tsc            # type check only
-```
-
-### Database
-MySQL on `localhost:3306`, database `db_webwbs` (charset `utf8mb4`), default creds `root/root`. Init scripts: `backend/init_weekly_report_tables.bat`, `backend/add_*.sql`.
+- **No `.cursor/`, `.cursorrules`, or Copilot instructions exist.** `AGENTS.md` is the only agent rule source.
 
 ## High-Level Architecture
 
-**Layered Spring Boot backend** under `com.wbs.project`:
-- `controller/` — thin REST endpoints; all responses are wrapped in `common.Result<T>` (`{ code, message, data }`, `code === 200` is success).
-- `service/` — business logic, validation, foreign-key / cascade handling. **FKs and cascades are enforced in Java, not in the database** (no `ON DELETE CASCADE`).
-- `mapper/` — MyBatis interfaces with XML in `src/main/resources/mapper/`.
-- `entity/` — domain models; `dto/` — separate request/response payloads (do not return entities to the controller when a DTO exists).
-- `enums/`, `common/Result.java`, `config/` (CORS, FreeMarker), `exception/` (`BusinessException` + `@RestControllerAdvice` `GlobalExceptionHandler`).
-- `interceptor/AuthInterceptor` — server-side auth/role enforcement; **this is the only source of truth for auth — no frontend guards**.
-- `scheduler/` — `@Scheduled` jobs (e.g. delay-notification email).
-- `annotation/` — custom permission/role annotations.
-- `util/` — JWT, date helpers, etc.
+For backend/frontend package layout, naming, ID scheme, soft-delete policy, persistence rules, and the API contract, **read `AGENTS.md`** — it has the canonical versions. Below is a one-paragraph orientation.
 
-**Vue 3 + Pinia frontend** (`frontend/src/`):
-- `views/` — page-level components (Dashboard, ProjectList, TaskBoard, GanttView, Reports, Team, Settings, Login, WeeklyReports, Documents, OvertimeManagement, DelayStats).
-- `components/` — reusable UI, often grouped by domain (`common/`, `project/`, `task/`, `gantt/`, `document/`).
-- `stores/` — Pinia stores by domain (`project`, `task`, `user`, `weeklyReport`, `overtime`, `permission`, `ui`). Stores are thin: HTTP lives in `services/api.ts`.
-- `services/api.ts` — central API client using `VITE_API_BASE_URL` (default `/api`). Unwraps `Result<T>` here; components receive `T` directly and an `ApiError` on failure. `useUserStore` is the single source of truth for `Authorization` / `X-User-Id` / `X-User-Role` headers.
-- `types/index.ts` — TypeScript types mirroring backend entities/DTOs.
-- `i18n/locales/{zh,ko,en}.ts` — translations; user-facing strings should go through `$t(...)` (no hard-coded Chinese/English in templates).
-- `composables/`, `router/`, `directives/`, `utils/`, `data/`.
+**Layered Spring Boot backend** under `com.wbs.project`: `controller/` (thin REST endpoints), `service/` (business logic, validation, FK/cascade handling in Java — never DB), `mapper/` (MyBatis with XML in `src/main/resources/mapper/`), `entity/` + `dto/` (DTOs are distinct; return DTOs, not entities, when a DTO exists), `common/Result.java` (`{ code, message, data }`, `code === 200` is success), `interceptor/AuthInterceptor` (the only source of truth for auth — no frontend guards), `scheduler/` (`@Scheduled` jobs), `annotation/` (permission/role annotations), `exception/` (`BusinessException` + `GlobalExceptionHandler`).
+
+**Vue 3 + Pinia frontend** (`frontend/src/`): `views/` (page-level components — Dashboard, ProjectList, TaskBoard, GanttView, Reports, Team, Settings, Login, WeeklyReports, Documents, OvertimeManagement, DelayStats), `components/` grouped by domain (`common/`, `project/`, `task/`, `gantt/`, `document/`, `weeklyReport/`, …), `stores/` by domain (Pinia; thin — HTTP lives in `services/api.ts`), `services/api.ts` (central API client using `VITE_API_BASE_URL` = `/api`; unwraps `Result<T>` so components see `T` directly and an `ApiError` on failure), `types/index.ts`, `i18n/locales/{zh,ko}.ts` + `index.ts` (note: only `zh` and `ko` ship — there is no `en.ts`), `composables/`, `router/`, `directives/`, `utils/`, `data/`. `useUserStore` owns the JWT and the `Authorization` / `X-User-Id` / `X-User-Role` headers.
 
 ## Critical Project Conventions
 
@@ -109,14 +72,9 @@ All REST responses are `Result<T>`: `{ code: number, message: string, data: T }`
 
 Windows host, **bash** shell by default — use Unix-style paths and forward slashes. PowerShell is **not** the default; `&&` / `||` chain operators may not work there. Prefer `;` for sequential steps in portable commands.
 
-## Detailed Rules
+## Where to Find Things
 
-For backend/frontend code style, naming, Lombok usage, import ordering, store structure, i18n key conventions, persistence patterns, and a list of common pitfalls, see **[`AGENTS.md`](./AGENTS.md)**.
-
-## Common Pitfalls (Quick Reference)
-
-- **Port mismatch** — backend is 8084 (`/api`), not 8080. Verify `VITE_API_BASE_URL` and CORS.
-- **Hardcoded SMTP password** in `application.yml` — override via env vars in any non-dev environment.
-- **Tracked `dist/index.html`** — do not stage without explicit user approval.
-- **No client-side auth** — the backend's `AuthInterceptor` is the only source of truth.
-- **Test suite is empty** — `mvn test` will not fail only if you use the `mvn -pl . test -DfailIfNoTests=false` variant.
+- **Canonical rules (code style, naming, error handling, persistence, git workflow, service startup, common pitfalls):** [`AGENTS.md`](./AGENTS.md)
+- **Backend build / run commands and full API table:** [`backend/README.md`](./backend/README.md) (note: that README still says port 8080 in places — actual port is **8084**)
+- **One-off plans and specs:** `docs/superpowers/{plans,specs}/`
+- **Email notification notes:** `邮件通知功能说明.md`

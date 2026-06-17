@@ -1333,7 +1333,7 @@ const canEdit = (record: OvertimeRecord) => {
   if (record.status === 'approved') return false;
   // 2026-06-14: 对齐 docs/superpowers/specs/2026-06-13-dept-pm-overtime-view-design.md §3
   // 权限矩阵 — 只有 ADMIN 可跨用户改/删;其他角色(PROJECT_MANAGER / 项目 owner /
-  // dept-pm / MEMBER)只能改/删自己的记录。VIEWER 完全无写权。
+// dept-pm / MEMBER)只能改/删自己的记录。
   if (isAdmin.value) return true;
   return record.userId === userStore.currentUserId;
 };

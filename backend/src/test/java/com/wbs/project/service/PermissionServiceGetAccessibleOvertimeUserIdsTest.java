@@ -78,10 +78,4 @@ class PermissionServiceGetAccessibleOvertimeUserIdsTest {
         when(userMapper.selectById("M1")).thenReturn(user("M1", "member"));
         assertEquals(Set.of("M1"), permissionService.getAccessibleOvertimeUserIds("M1"));
     }
-
-    @Test
-    void viewer_returnsSelf() {
-        when(userMapper.selectById("V1")).thenReturn(user("V1", "viewer"));
-        assertEquals(Set.of("V1"), permissionService.getAccessibleOvertimeUserIds("V1"));
-    }
 }

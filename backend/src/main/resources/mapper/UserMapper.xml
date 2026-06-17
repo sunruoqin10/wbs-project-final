@@ -194,7 +194,7 @@
     <!-- 人事数据同步：更新已有用户（仅处理 C/H，含 T→C/H 复活） -->
     <update id="syncHrUpdate">
         UPDATE sys_user u
-        INNER JOIN mdm_if_pa_a p ON u.id = p.EMP_NUM COLLATE utf8mb4_unicode_ci
+        INNER JOIN mdm_if_pa_a p ON u.id = p.EMP_NUM
         LEFT JOIN mdm_if_or_a o  ON p.ORG_CD     = o.ORG_CD
         LEFT JOIN mdm_if_or_a o2 ON p.SUB_ORG_CD = o2.ORG_CD
         SET u.name        = p.EMP_NAM,
@@ -217,7 +217,7 @@
     <!-- 人事数据同步：标记离职（MDM 中为 T 或缺失），含复活由 syncHrUpdate 负责 -->
     <update id="syncHrMarkResigned">
         UPDATE sys_user u
-        LEFT JOIN mdm_if_pa_a p ON u.id = p.EMP_NUM COLLATE utf8mb4_unicode_ci
+        LEFT JOIN mdm_if_pa_a p ON u.id = p.EMP_NUM
         SET u.status = 'T',
             u.updated_at = NOW()
         WHERE u.status != 'T'
@@ -231,7 +231,7 @@
           AND u.status != 'T'
           AND NOT EXISTS (
             SELECT 1 FROM mdm_if_pa_a p
-            WHERE p.EMP_NUM = u.id COLLATE utf8mb4_unicode_ci
+            WHERE p.EMP_NUM = u.id
           );
     </select>
 
@@ -242,7 +242,7 @@
           AND u.status != 'T'
           AND NOT EXISTS (
             SELECT 1 FROM mdm_if_pa_a p
-            WHERE p.EMP_NUM = u.id COLLATE utf8mb4_unicode_ci
+            WHERE p.EMP_NUM = u.id
           )
         ORDER BY u.id;
     </select>

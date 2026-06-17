@@ -56,7 +56,7 @@ export const users: User[] = [
     name: '赵丽',
     email: 'zhaoli@example.com',
     avatar: 'https://api.dicebear.com/7.x/avataaars/svg?seed=ZhaoLi',
-    role: 'viewer',
+    role: 'member',
     department: '市场部',
     skills: ['市场营销', '数据分析', 'SEO'],
     joinedAt: '2024-04-10'

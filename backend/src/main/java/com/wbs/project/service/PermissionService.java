@@ -118,10 +118,6 @@ public class PermissionService {
         return getRole(userId).map(r -> UserRole.MEMBER.code.equals(r)).orElse(false);
     }
 
-    public boolean isViewer(String userId) {
-        return getRole(userId).map(r -> UserRole.VIEWER.code.equals(r)).orElse(false);
-    }
-
     // ============ 数据范围判断（核心） ============
 
     /**
@@ -298,7 +294,6 @@ public class PermissionService {
      * 规则：
      * - admin / dept-pm(部门内) / pm(owner) 全部允许
      * - member: 仅当 task.assigneeId == self
-     * - viewer: 不允许
      */
     public boolean canEditTaskProgress(String userId, String taskId) {
         if (userId == null || taskId == null) {
@@ -765,7 +760,7 @@ public class PermissionService {
 
     /**
      * 返回当前用户能看/管的「文档上传者」userId 集合。
-     * admin 返回 null（语义：不限）；MEMBER/VIEWER 兜底含自己 + 参与项目的成员。
+     * admin 返回 null（语义：不限）；MEMBER 兜底含自己 + 参与项目的成员。
      */
     public Set<String> getAccessibleUploaderIds(String userId) {
         if (userId == null) {
@@ -796,7 +791,7 @@ public class PermissionService {
             ids.add(userId); // 自己上传的总能看到
             return ids;
         }
-        // 项目负责人 / MEMBER / VIEWER 兜底
+        // 项目负责人 / MEMBER 兜底
         List<String> ownerProjects = projectMapper.selectIdsByOwner(userId);
         if (!ownerProjects.isEmpty()) {
             ids.addAll(projectMemberMapper.selectMemberIdsByProjectIds(ownerProjects));
@@ -844,7 +839,7 @@ public class PermissionService {
      *  - project-manager → 其作为 owner 的所有项目的成员 ID
      *  - dept-project-manager → 所辖部门内的在职用户 ID 集合
      *  - 项目负责人（owner 但非 admin/PM/dept-pm）→ 其作为 owner 的所有项目的成员 ID
-     *  - 其他（MEMBER / VIEWER）→ 仅自己
+     *  - 其他（MEMBER）→ 仅自己
      *
      * 业务方应这样用：对 null 跳过 IN 守卫，非空 IN (...) 守卫，空集合 → 直接返回空结果。
      */
@@ -947,7 +942,7 @@ public class PermissionService {
                     && isProjectMember(doc.getUploadedBy(), doc.getProjectId())) {
                 return true;
             }
-            // MEMBER / VIEWER 兜底:参与的项目
+            // MEMBER 兜底:参与的项目
             if (isProjectMember(userId, doc.getProjectId())) {
                 return true;
             }
@@ -964,16 +959,14 @@ public class PermissionService {
      *  4. 项目 PM:doc.projectId ∈ managed_project_ids 且 上传者是该项目成员
      *  5. 项目 owner:project.ownerId = self 且 上传者是该项目成员
      *  6. MEMBER:仅自上传(其他成员上传不可删)
-     *  7. VIEWER:无删除权
      */
     public boolean canDeleteDocument(String userId, Document doc) {
         if (userId == null || doc == null) {
             return false;
         }
         if (isAdmin(userId)) return true;
-        // 自上传 可删(覆盖 dept-pm / PM / owner / MEMBER);
-        // VIEWER 无任何删除权(spec 矩阵),连自上传也不行
-        if (userId.equals(doc.getUploadedBy()) && !isViewer(userId)) return true;
+        // 自上传 可删(覆盖 dept-pm / PM / owner / MEMBER)
+        if (userId.equals(doc.getUploadedBy())) return true;
 
         // 部门 PM:上传者所在部门在 managed_dept_codes 内(含 general 上传者按其 dept_code 判)
         if (isDeptProjectManager(userId)) {
@@ -999,7 +992,6 @@ public class PermissionService {
         }
 
         // MEMBER:仅自上传,已在前面 early return;其他情况 false
-        // VIEWER:无删除权
         return false;
     }
 
@@ -1020,11 +1012,10 @@ public class PermissionService {
         }
         // 项目负责人 / MEMBER 兜底
         if (isProjectMember(userId, projectId)) {
-            // MEMBER 通过此分支放行;VIEWER 由 Controller 角色白名单另外拒
             Project p = projectMapper.selectById(projectId);
             if (p != null && userId.equals(p.getOwnerId())) return true;
             // MEMBER 但非 owner:仅自己参与项目可上传
-            return !isViewer(userId);
+            return true;
         }
         return false;
     }
@@ -1032,7 +1023,7 @@ public class PermissionService {
     /**
      * 加班记录关联任务权限校验 (2026-06-13;2026-06-14 增 PM 分支)
      * 规则:
-     * - admin / dept-project-manager / member / viewer: 只能为自己负责的
+     * - admin / dept-project-manager / member: 只能为自己负责的
      *   任务(task.assigneeId === userId)记加班。
      * - project-manager: 可选项目内任意未完成叶子任务(2026-06-14 业务调整:
      *   PM 需要为所管项目整体加班统计负责,可代为申请)。

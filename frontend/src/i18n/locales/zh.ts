@@ -534,7 +534,6 @@ export default {
       roleDeptProjectManager: '部门项目负责人',
       roleProjectManager: '项目经理',
       roleMember: '项目人员',
-      roleViewer: '观察者',
       company2700: '2700 运营法人',
       company8400: '8400 建设法人',
       previous: '上一页',
@@ -791,7 +790,6 @@ export default {
     projectManager: '项目经理',
     project_manager: '项目经理',
     member: '项目人员',
-    viewer: '观察者',
     project_owner: '项目负责人'
   },
 

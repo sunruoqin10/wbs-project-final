@@ -13,7 +13,6 @@ import { useProjectStore } from './project';
  * - dept-project-manager: 我所管理部门
  * - project-manager     : 我 owner 的项目
  * - member              : 我参与的项目（可改自己任务进度）
- * - viewer              : 我参与的项目（只读）
  */
 
 /**
@@ -76,20 +75,13 @@ export const usePermissionStore = defineStore('permission', () => {
       'overtime:create', 'overtime:view',
       'weekly-report:create', 'weekly-report:edit', 'weekly-report:view',
       'document:create', 'document:view'
-    ],
-    'viewer': [
-      'project:view',
-      'settings:view',
-      'overtime:view',
-      'weekly-report:view',
-      'document:view'
     ]
   };
 
   const currentRole = computed((): UserRole => {
     const role = userStore.currentUser?.role as UserRole | undefined;
     if (role === 'admin' || role === 'dept-project-manager' || role === 'project-manager'
-        || role === 'member' || role === 'viewer') {
+        || role === 'member') {
       return role;
     }
     return 'member';
@@ -140,7 +132,6 @@ export const usePermissionStore = defineStore('permission', () => {
   const isDeptProjectManager = (): boolean => currentRole.value === 'dept-project-manager';
   const isProjectManager = (): boolean => currentRole.value === 'project-manager';
   const isMember = (): boolean => currentRole.value === 'member';
-  const isViewer = (): boolean => currentRole.value === 'viewer';
 
   /**
    * 是否管理指定 deptCode
@@ -181,7 +172,7 @@ export const usePermissionStore = defineStore('permission', () => {
 
   /**
    * 是否能查看该项目（综合判断：数据范围）
-   * 规则：admin 任意;创建者 总可看;dept-pm 看所管部门项目;pm 看 owner 项目;member/viewer 看参与项目
+   * 规则：admin 任意;创建者 总可看;dept-pm 看所管部门项目;pm 看 owner 项目;member 看参与项目
    */
   const canViewProject = (projectId: string): boolean => {
     if (isAdmin()) return true;
@@ -308,7 +299,6 @@ export const usePermissionStore = defineStore('permission', () => {
    * 是否能编辑任务进度
    * 规则：admin / dept-pm(部门内) / pm(owner) 全部允许
    *      member: 仅当 task.assigneeId == self
-   *      viewer: 不允许
    */
   const canEditTaskProgress = (projectId: string, assigneeId?: string): boolean => {
     if (isAdmin()) return true;
@@ -507,7 +497,6 @@ export const usePermissionStore = defineStore('permission', () => {
     isDeptProjectManager,
     isProjectManager,
     isMember,
-    isViewer,
     isDeptManager,
     isProjectOwner,
     isProjectCreator,

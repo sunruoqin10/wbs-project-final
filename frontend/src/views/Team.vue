@@ -131,7 +131,6 @@
                       <option value="dept-project-manager">{{ $t('team.allMembers.roleDeptProjectManager') }}</option>
                       <option value="project-manager">{{ $t('team.allMembers.roleProjectManager') }}</option>
                       <option value="member">{{ $t('team.allMembers.roleMember') }}</option>
-                      <option value="viewer">{{ $t('team.allMembers.roleViewer') }}</option>
                     </select>
                     <select
                       v-model="companyFilter"
@@ -385,7 +384,6 @@
                       <option value="dept-project-manager">{{ $t('team.allMembers.roleDeptProjectManager') }}</option>
                       <option value="project-manager">{{ $t('team.allMembers.roleProjectManager') }}</option>
                       <option value="member">{{ $t('team.allMembers.roleMember') }}</option>
-                      <option value="viewer">{{ $t('team.allMembers.roleViewer') }}</option>
                     </select>
                   </div>
                 </div>
@@ -1149,7 +1147,6 @@ function roleLabel(role: string): string {
     'dept-project-manager': '部门项目负责人',
     'project-manager': '项目经理',
     'member': '项目人员',
-    'viewer': '观察者',
   };
   return map[normalized] || role;
 }
@@ -1161,7 +1158,6 @@ function roleBadgeVariant(role: string): 'default' | 'primary' | 'danger' | 'suc
     'dept-project-manager': 'warning',
     'project-manager': 'warning',
     'member': 'primary',
-    'viewer': 'default',
   };
   return map[normalized] || 'default';
 }

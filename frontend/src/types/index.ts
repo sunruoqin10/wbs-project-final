@@ -3,8 +3,8 @@ export interface User {
   name: string;
   email: string;
   avatar: string;
-  /** 角色管理 v2:5 个枚举 */
-  role: 'admin' | 'dept-project-manager' | 'project-manager' | 'member' | 'viewer';
+  /** 角色管理 v2:4 个枚举（2026-06-17 移除 VIEWER） */
+  role: 'admin' | 'dept-project-manager' | 'project-manager' | 'member';
   department: string;
   skills: string[];
   password?: string;
@@ -223,9 +223,9 @@ export interface Permission {
 }
 
 /**
- * 角色管理 v2:5 个角色
+ * 角色管理 v2:4 个角色（2026-06-17 移除 VIEWER）
  */
-export type UserRole = 'admin' | 'dept-project-manager' | 'project-manager' | 'member' | 'viewer';
+export type UserRole = 'admin' | 'dept-project-manager' | 'project-manager' | 'member';
 
 /**
  * 角色变更请求 DTO

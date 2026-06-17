@@ -296,7 +296,7 @@ const creator = computed(() => {
 
 // 检查用户是否有权限访问当前项目
 // 复用 permissionStore.canViewProject，覆盖 admin / dept-project-manager(部门内) /
-// project-manager(owner) / member / viewer 的完整数据范围。
+// project-manager(owner) / member 的完整数据范围。
 const hasAccessToProject = computed(() => {
   if (!project.value) return false;
   return permissionStore.canViewProject(projectId.value);

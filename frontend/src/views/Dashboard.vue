@@ -449,7 +449,7 @@ const deptFilteredTasks = computed(() => {
   return taskStore.tasks.filter(t => projectIds.has(t.projectId));
 });
 
-// 根据角色过滤项目:dept-pm 看所管部门 + 自己创建 / 参加的项目;member/viewer 看参与项目
+// 根据角色过滤项目:dept-pm 看所管部门 + 自己创建 / 参加的项目;member 看参与项目
 // 2026-06-12:与后端 ProjectService.getAllProjectsForUser 的数据范围对齐——
 // admin 全部;dept-pm 看所管部门;创建者 / owner / member 一律可看
 const userProjects = computed(() => {

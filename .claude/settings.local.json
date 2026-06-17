@@ -34,7 +34,10 @@
       "Bash(xargs cat)",
       "Bash(xargs grep -n \"selectByCondition\\\\|userIds\")",
       "Bash(xargs grep -n \"class OvertimeStats\\\\|class ProjectOvertimeStats\\\\|class ByTypeStats\\\\|thisMonthHours\\\\|byProject\\\\|totalHours\\\\|getHours\\\\|setHours\")",
-      "Bash(xargs grep -n \"private.*hours\\\\|getHours\\\\|setHours\")"
+      "Bash(xargs grep -n \"private.*hours\\\\|getHours\\\\|setHours\")",
+      "Bash(git stash *)",
+      "Bash(echo \"EXIT: $?\")",
+      "Bash(echo \"EXIT_CODE: $?\")"
     ]
   }
 }
