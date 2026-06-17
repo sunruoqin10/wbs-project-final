@@ -388,6 +388,62 @@
           </Card>
         </div>
 
+        <!-- 部门筛选行(2026-06-17 新增,仅 admin 可见,与仪表盘 / 延期统计页面对齐) -->
+        <Card v-if="isAdmin" class="relative">
+          <div class="flex items-center gap-4">
+            <span class="text-sm font-medium text-secondary-600">
+              {{ $t('dashboard.departmentFilter.label') }}
+            </span>
+            <OrgTreeSelect
+              v-model="selectedDeptCode"
+              @update:modelValue="onDeptChange"
+            />
+            <label
+              class="flex items-center gap-2 text-sm text-secondary-600"
+              :class="{ 'cursor-not-allowed opacity-50': isLeaf }"
+              :title="isLeaf ? $t('dashboard.departmentFilter.leafHint') : ''"
+            >
+              <input
+                type="checkbox"
+                v-model="includeSubDepts"
+                :disabled="isLeaf"
+                class="h-4 w-4 rounded border-secondary-300 text-primary-600
+                       focus:ring-primary-500 disabled:opacity-50"
+              />
+              <span>{{ $t('dashboard.departmentFilter.includeSubDepts') }}</span>
+            </label>
+          </div>
+          <!-- deptMissing 提示:当 admin 没有 deptCode 时显示 -->
+          <p
+            v-if="currentUser && !currentUser.deptCode"
+            class="mt-2 text-xs text-warning-600"
+          >
+            {{ $t('dashboard.departmentFilter.deptMissing') }}
+          </p>
+          <!-- 切换中遮罩 -->
+          <Transition name="fade">
+            <div
+              v-if="switching"
+              class="pointer-events-none absolute inset-0 flex items-center
+                     justify-center rounded-lg bg-white/60 backdrop-blur-sm"
+            >
+              <svg
+                class="h-6 w-6 animate-spin text-primary-600"
+                fill="none" viewBox="0 0 24 24"
+              >
+                <circle
+                  class="opacity-25" cx="12" cy="12" r="10"
+                  stroke="currentColor" stroke-width="4"
+                />
+                <path
+                  class="opacity-75" fill="currentColor"
+                  d="M4 12a8 8 0 018-8v4a4 4 0 00-4 4H4z"
+                />
+              </svg>
+            </div>
+          </Transition>
+        </Card>
+
         <div class="grid grid-cols-1 gap-6 lg:grid-cols-2">
           <Card>
             <template #header>
@@ -411,7 +467,7 @@
                 <label class="text-sm text-secondary-600">{{ $t('overtime.filters.project') }}：</label>
                 <select v-model="teamFilters.projectId" class="rounded border border-secondary-300 px-3 py-1 text-sm">
                   <option value="">{{ $t('overtime.filters.allProjects') }}</option>
-                  <option v-for="project in accessibleProjects" :key="project.id" :value="project.id">
+                  <option v-for="project in deptFilteredTeamProjects" :key="project.id" :value="project.id">
                     {{ project.name }}
                   </option>
                 </select>
@@ -654,7 +710,9 @@ import { useProjectStore } from '@/stores/project';
 import { useUserStore } from '@/stores/user';
 import { useTaskStore } from '@/stores/task';
 import { usePermissionStore } from '@/stores/permission';
-import type { OvertimeRecord } from '@/types';
+import { useOrgStore } from '@/stores/org';
+import OrgTreeSelect from '@/components/common/OrgTreeSelect.vue';
+import type { OvertimeRecord, OrgNode } from '@/types';
 import { exportToExcel } from '@/utils/export';
 
 const { t } = useI18n();
@@ -664,6 +722,7 @@ const projectStore = useProjectStore();
 const userStore = useUserStore();
 const taskStore = useTaskStore();
 const permissionStore = usePermissionStore();
+const orgStore = useOrgStore();
 
 const activeTab = ref<'personal' | 'team'>('personal');
 
@@ -735,6 +794,74 @@ const teamSort = ref({
   order: 'desc' as 'asc' | 'desc'
 });
 
+// ============ 部门过滤(admin 专用,2026-06-17 新增) ============ //
+// 仅作用于 teamTab;对齐 Dashboard.vue / DelayStats.vue 的实现。
+// 2026-06-17:OvertimeManagement 的 teamTab 当前对 admin 展示全部他人记录,
+// 缺少按部门下钻能力。这里补齐 — admin 选择某部门(及子部门)后,只展示该项目所属部门
+// 命中该部门集合的加班记录,统计 / 用户下拉 / 项目下拉 / 表格 / 图表 / 导出 全部随之收口。
+const currentUser = computed(() => userStore.currentUser);
+const selectedDeptCode = ref<string | null>(currentUser.value?.deptCode ?? null);
+const includeSubDepts = ref(false);
+const switching = ref(false);
+let switchTimer: number | null = null;
+
+function onDeptChange(newCode: string | null) {
+  switching.value = true;
+  if (switchTimer) window.clearTimeout(switchTimer);
+  switchTimer = window.setTimeout(() => {
+    selectedDeptCode.value = newCode;
+    switching.value = false;
+  }, 100);
+}
+
+/** 工具:从 org 树中找到目标 code 节点,DFS 收集其所有后代 code */
+function collectDescendants(root: OrgNode, targetCode: string): string[] {
+  const result: string[] = [];
+  function find(node: OrgNode): OrgNode | null {
+    if (node.code === targetCode) return node;
+    for (const c of node.children || []) {
+      const hit = find(c);
+      if (hit) return hit;
+    }
+    return null;
+  }
+  const target = find(root);
+  if (!target) return result;
+  function walk(n: OrgNode) {
+    for (const c of n.children || []) {
+      if (c.code) result.push(c.code);
+      walk(c);
+    }
+  }
+  walk(target);
+  return result;
+}
+
+/** 工具:判断指定 code 在树中是否有子节点(用于「含子部门」checkbox enabled) */
+function hasChildrenInTree(root: OrgNode | null, code: string): boolean {
+  if (!root) return false;
+  function dfs(node: OrgNode): boolean {
+    if (node.code === code) return (node.children || []).length > 0;
+    for (const c of node.children || []) if (dfs(c)) return true;
+    return false;
+  }
+  return dfs(root);
+}
+
+const isLeaf = computed(() => {
+  if (selectedDeptCode.value === null) return true;
+  return !hasChildrenInTree(orgStore.tree, selectedDeptCode.value);
+});
+
+const effectiveDeptCodes = computed<Set<string | null>>(() => {
+  if (selectedDeptCode.value === null) return new Set([null]);
+  const codes = new Set<string | null>([selectedDeptCode.value]);
+  if (includeSubDepts.value && orgStore.tree) {
+    collectDescendants(orgStore.tree, selectedDeptCode.value).forEach(c => codes.add(c));
+  }
+  return codes;
+});
+
 const personalRecords = computed(() => {
   const currentUserId = userStore.currentUserId;
   if (!currentUserId) return [];
@@ -778,13 +905,24 @@ const managedRecords = computed(() => {
   return [];
 });
 
+/** 部门过滤后的团队记录(2026-06-17 新增,仅 admin 生效):
+ *  - admin: 仅保留"所属项目部门 ∈ effectiveDeptCodes"的记录(按项目所属部门过滤,与仪表盘口径一致)
+ *  - 其他角色(pm / owner / dept-pm):维持原口径,部门筛选对其无影响 */
+const deptFilteredTeamRecords = computed(() => {
+  if (!isAdmin.value) return managedRecords.value;
+  return managedRecords.value.filter(r => {
+    const project = projectStore.projectById(r.projectId);
+    return effectiveDeptCodes.value.has(project?.deptCode ?? null);
+  });
+});
+
 const teamUsers = computed(() => {
-  const userIds = new Set(managedRecords.value.map(r => r.userId));
+  const userIds = new Set(deptFilteredTeamRecords.value.map(r => r.userId));
   return userStore.users.filter(u => userIds.has(u.id));
 });
 
 const personalApprovedRecords = computed(() => personalRecords.value.filter(r => r.status === 'approved'));
-const teamApprovedRecords = computed(() => managedRecords.value.filter(r => r.status === 'approved'));
+const teamApprovedRecords = computed(() => deptFilteredTeamRecords.value.filter(r => r.status === 'approved'));
 
 const personalTotalCompTimeoff = computed(() => {
   return personalApprovedRecords.value
@@ -854,7 +992,7 @@ const personalStats = computed(() => {
 });
 
 const teamStats = computed(() => {
-  const records = managedRecords.value;
+  const records = deptFilteredTeamRecords.value;
   // 2026-06-16: 团队维度同理 — 已审批记录才计入统计;pendingApprovals 仍是 pending 指标
   const approved = records.filter(r => r.status === 'approved');
   const thisMonth = dayjs().format('YYYY-MM');
@@ -946,7 +1084,7 @@ const filteredPersonalRecords = computed(() => {
 });
 
 const filteredTeamRecords = computed(() => {
-  let result = [...managedRecords.value];
+  let result = [...deptFilteredTeamRecords.value];
 
   if (teamFilters.value.projectId) {
     result = result.filter(r => r.projectId === teamFilters.value.projectId);
@@ -1093,6 +1231,14 @@ const accessibleProjects = computed(() => {
     const isMember = project.memberIds?.includes(currentUserId) || false;
     return isOwner || isMember;
   });
+});
+
+/** 团队 tab 项目下拉(2026-06-17 新增,仅 admin 在 teamTab 受部门过滤影响):
+ *  - admin:在 accessibleProjects 基础上再按 effectiveDeptCodes 收口,
+ *    让项目下拉里只出现当前部门(及子部门)的项目,避免选其他部门后下钻为空。 */
+const deptFilteredTeamProjects = computed(() => {
+  if (!isAdmin.value) return accessibleProjects.value;
+  return accessibleProjects.value.filter(p => effectiveDeptCodes.value.has(p.deptCode ?? null));
 });
 
 const getUserName = (userId: string) => {
@@ -1361,7 +1507,7 @@ const initTeamTrendChart = () => {
     dates.push(date.format('MM-DD'));
     
     const dateStr = date.format('YYYY-MM-DD');
-    const dayHours = managedRecords.value
+    const dayHours = deptFilteredTeamRecords.value
       .filter(r => r.overtimeDate === dateStr && r.status === 'approved')
       .reduce((sum, r) => sum + r.hours, 0);
     hours.push(dayHours);
@@ -1471,6 +1617,13 @@ const handleExportToExcel = () => {
 
   if (activeTab.value === 'team' && teamFilters.value.userId && isManagerOrAdmin.value) {
     exportData = exportData.filter(r => r.userId === teamFilters.value.userId);
+  }
+
+  // 2026-06-17: admin 在 teamTab 触发的导出,需与界面一致 — 收口到部门过滤后的项目集合,
+  // 避免"按部门筛选后导出"导出了其他部门的数据。
+  if (activeTab.value === 'team' && isAdmin.value) {
+    const teamProjectIds = new Set(deptFilteredTeamProjects.value.map(p => p.id));
+    exportData = exportData.filter(r => teamProjectIds.has(r.projectId));
   }
 
   const columns = [
@@ -1732,6 +1885,23 @@ watch(() => overtimeStore.overtimeRecords, () => {
   }, 100);
 }, { deep: true });
 
+// 2026-06-17: 部门过滤变化(切换部门 / 勾选含子部门)时,
+// 部门过滤后的 teamStats / 团队记录 / 图表数据已变化,需要主动重置 teamTab 分页并重绘团队图表。
+watch([selectedDeptCode, includeSubDepts], () => {
+  if (!isAdmin.value) return;
+  // 切换部门后,旧的 projectId / userId 选择可能已不在新部门范围里,清空避免下拉错位。
+  teamFilters.value.projectId = '';
+  teamFilters.value.userId = '';
+  teamPagination.value.currentPage = 1;
+  // 仅当团队 tab 当前可见时才重绘图表(避免销毁/重建 <Card> 时 ref 指向旧 DOM)
+  if (activeTab.value === 'team') {
+    setTimeout(() => {
+      initTeamTrendChart();
+      initTeamDistributionChart();
+    }, 100);
+  }
+});
+
 onUnmounted(() => {
   if (personalTrendChartInstance) {
     personalTrendChartInstance.dispose();
@@ -1751,3 +1921,15 @@ onUnmounted(() => {
   }
 });
 </script>
+
+<style scoped>
+/* 部门筛选行切换遮罩淡入淡出(2026-06-17) */
+.fade-enter-active,
+.fade-leave-active {
+  transition: opacity 100ms ease;
+}
+.fade-enter-from,
+.fade-leave-to {
+  opacity: 0;
+}
+</style>
